@@ -141,6 +141,68 @@ def save_event(save_dir, meta, full_jpeg, crops):
     return saved
 
 
+def show_debug(meta, full_jpeg, entries, match_threshold):
+    """Decode the full frame and draw detections on it for visual debugging.
+
+    Boxes and keypoints are in full-resolution coordinates and full_jpeg is the
+    full-resolution frame, so they overlay 1:1 with no scaling. Needs a display
+    (run on the desktop, or over SSH with X forwarding).
+    """
+    import cv2
+    import numpy as np
+    import time
+
+    # Measure how often results arrive (= the AI processing rate per second).
+    st = show_debug.__dict__
+    st["count"] = st.get("count", 0) + 1
+    now = time.time()
+    if "t0" not in st:
+        st["t0"], st["fps"] = now, 0.0
+    elif now - st["t0"] >= 1.0:
+        st["fps"] = st["count"] / (now - st["t0"])
+        st["count"], st["t0"] = 0, now
+
+    if not full_jpeg:
+        return
+    img = cv2.imdecode(np.frombuffer(full_jpeg, np.uint8), cv2.IMREAD_COLOR)
+    if img is None:
+        return
+
+    for det in meta.get("detections", []):
+        x1, y1 = int(det["x1"]), int(det["y1"])
+        x2, y2 = int(det["x2"]), int(det["y2"])
+
+        label = f"cls{det['classId']} {det['score']:.2f}"
+        color = (0, 255, 0)
+        embedding = det.get("embedding") or []
+        if embedding and entries:
+            name, score = match_face(embedding, entries)
+            if name is not None and score >= match_threshold:
+                label = f"{name} {score:.2f}"
+            else:
+                label = f"unknown {score:.2f}"
+                color = (0, 165, 255)
+
+        cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+        cv2.putText(img, label, (x1, max(14, y1 - 6)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+
+        kps = det.get("keypoints", [])  # flat (x, y, score) triples
+        for k in range(0, len(kps) - 2, 3):
+            if kps[k + 2] > 0:
+                cv2.circle(img, (int(kps[k]), int(kps[k + 1])),
+                           3, (0, 0, 255), -1)
+
+    footer = (f"cam={meta['cameraId']} job={meta['jobId']} "
+              f"seq={meta['seq']} det={len(meta.get('detections', []))} "
+              f"fps={st['fps']:.1f}")
+    cv2.putText(img, footer, (8, img.shape[0] - 8),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
+
+    cv2.imshow(f"AI debug: cam {meta['cameraId']}", img)
+    cv2.waitKey(1)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="AI engine result consumer")
     parser.add_argument("--socket", default="/tmp/ai_engine.sock",
@@ -154,6 +216,9 @@ def parse_args():
                         help="When to persist full + crop images")
     parser.add_argument("--save-dir", default="events",
                         help="Root directory for saved images")
+    parser.add_argument("--show", action="store_true",
+                        help="Show the full frame with detections drawn "
+                             "(needs a display)")
     return parser.parse_args()
 
 
@@ -197,23 +262,26 @@ def main():
             if embedding and entries:
                 name, score = match_face(embedding, entries)
                 if name is not None and score >= args.match_threshold:
-                        print(name,score)
+                    print(name,score,meta['cameraId'])
 
-        #             label = f"{name} ({score:.3f})"
-        #             any_match = True
-        #         else:
-        #             label = f"unknown ({score:.3f})"
-        #     print(f"  cam={meta['cameraId']} job={meta['jobId']} "
-        #           f"seq={meta['seq']} det={i} "
-        #           f"score={det['score']:.3f} box=({det['x1']:.0f},{det['y1']:.0f},"
-        #           f"{det['x2']:.0f},{det['y2']:.0f}) {label}")
+            #         label = f"{name} ({score:.3f})"
+            #         any_match = True
+            #     else:
+            #         label = f"unknown ({score:.3f})"
+            # print(f"  cam={meta['cameraId']} job={meta['jobId']} "
+            #       f"seq={meta['seq']} det={i} "
+            #       f"score={det['score']:.3f} box=({det['x1']:.0f},{det['y1']:.0f},"
+            #       f"{det['x2']:.0f},{det['y2']:.0f}) {label}")
 
-        # should_save = (args.save == "all" and detections) or \
-        #               (args.save == "matched" and any_match)
-        # if should_save:
-        #     saved = save_event(args.save_dir, meta, full_jpeg, crops)
-        #     if saved:
-        #         print(f"  saved {len(saved)} image(s) -> {os.path.dirname(saved[0])}")
+            # should_save = (args.save == "all" and detections) or \
+            #             (args.save == "matched" and any_match)
+            # if should_save:
+            #     saved = save_event(args.save_dir, meta, full_jpeg, crops)
+            #     if saved:
+            #         print(f"  saved {len(saved)} image(s) -> {os.path.dirname(saved[0])}")
+
+        if args.show:
+            show_debug(meta, full_jpeg, entries, args.match_threshold)
 
     sock.close()
     return 0

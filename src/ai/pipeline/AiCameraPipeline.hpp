@@ -163,6 +163,13 @@ private:
         GstSample* sample = gst_app_sink_pull_sample(sink);
         if (!sample) return GST_FLOW_OK;
 
+        // Once stop() is requested, do no RGA / buffer work — the pipeline is
+        // about to be torn down and its decoder buffers freed.
+        if (!m_running.load()) {
+            gst_sample_unref(sample);
+            return GST_FLOW_OK;
+        }
+
         // Decode + letterbox once; fan the shared Frame out to every job.
         FramePtr frame = buildFrame(sample);
         if (frame) {

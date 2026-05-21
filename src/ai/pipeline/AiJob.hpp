@@ -109,6 +109,9 @@ private:
 
     void run() {
         FramePtr frame;
+        uint64_t fpsWindowStart = nowMs();
+        int processedInWindow = 0;
+        unsigned long lastDropped = 0;
         while (m_queue.pop(frame)) {
             if (!frame) continue;
             if (m_cfg.maxFps > 0) {
@@ -118,6 +121,22 @@ private:
                 m_lastProcessMs = now;
             }
             process(frame);
+
+            // Report how many frames this job actually processes per second,
+            // and how many the drop-old queue discarded because the worker
+            // could not keep up.
+            ++processedInWindow;
+            const uint64_t elapsed = nowMs() - fpsWindowStart;
+            if (elapsed >= 1000) {
+                const unsigned long dropped = m_queue.droppedCount();
+                std::fprintf(stderr,
+                             "[ai fps] job %s: %d processed/s, %lu dropped/s\n",
+                             m_cfg.jobId.c_str(), processedInWindow,
+                             dropped - lastDropped);
+                lastDropped = dropped;
+                processedInWindow = 0;
+                fpsWindowStart += elapsed;
+            }
         }
     }
 

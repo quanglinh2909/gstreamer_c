@@ -121,12 +121,17 @@ private:
     };
 
     static void stopGroupRuntime(CameraGroup& group) {
+        // Stop job workers FIRST: a worker may be mid-RGA crop on a frame whose
+        // pixels are backed by the decoder's buffer pool. Tearing the pipeline
+        // down first would free that pool under the worker (RGA then blits
+        // freed memory -> "RGA_BLIT Invalid argument"). job->stop() joins the
+        // worker, so once it returns no frame is in use; then stop the pipeline.
+        for (auto& job : group.jobs) job->stop();
+        group.jobs.clear();
         if (group.pipeline) {
             group.pipeline->stop();
             group.pipeline.reset();
         }
-        for (auto& job : group.jobs) job->stop();
-        group.jobs.clear();
     }
 
     void teardownLocked(CameraGroup& group) { stopGroupRuntime(group); }

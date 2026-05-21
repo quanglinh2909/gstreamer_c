@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <mutex>
 #include <vector>
 
 #include <rga/im2d.h>
@@ -21,6 +22,15 @@
 #include "FrameTypes.hpp"
 
 namespace rga {
+
+// All RGA blits are serialised through one mutex. librga's virtual-address
+// (MMU) path is not reliable when several threads submit blits at once —
+// under multiple AI streams it fails with "RGA_BLIT Invalid argument". RGA is
+// a single hardware engine anyway, so serialising costs little.
+inline std::mutex& rgaMutex() {
+    static std::mutex m;
+    return m;
+}
 
 inline int alignDown2(int v) { return v & ~1; }
 inline int alignUp2(int v) { return (v + 1) & ~1; }
@@ -100,8 +110,12 @@ inline bool letterboxNv12ToRgb(Frame& f, int padColor) {
     im_rect drect = makeRect(offX, offY, newW, newH);
     im_rect prect = makeRect(0, 0, 0, 0);
 
-    IM_STATUS st = improcess(src, dst, pat, srect, drect, prect,
-                             0, nullptr, nullptr, IM_SYNC);
+    IM_STATUS st;
+    {
+        std::lock_guard<std::mutex> lock(rgaMutex());
+        st = improcess(src, dst, pat, srect, drect, prect,
+                       0, nullptr, nullptr, IM_SYNC);
+    }
     return st == IM_STATUS_SUCCESS;
 }
 
@@ -134,8 +148,12 @@ inline bool cropNv12ToRgb(const Frame& f, int x, int y, int w, int h,
     im_rect drect = makeRect(0, 0, dstW, dstH);
     im_rect prect = makeRect(0, 0, 0, 0);
 
-    IM_STATUS st = improcess(src, dst, pat, srect, drect, prect,
-                             0, nullptr, nullptr, IM_SYNC);
+    IM_STATUS st;
+    {
+        std::lock_guard<std::mutex> lock(rgaMutex());
+        st = improcess(src, dst, pat, srect, drect, prect,
+                       0, nullptr, nullptr, IM_SYNC);
+    }
     return st == IM_STATUS_SUCCESS;
 }
 
@@ -171,8 +189,12 @@ inline bool cropNv12ToNv12(const Frame& f, int x, int y, int w, int h,
     im_rect drect = makeRect(0, 0, w, h);
     im_rect prect = makeRect(0, 0, 0, 0);
 
-    IM_STATUS st = improcess(src, dst, pat, srect, drect, prect,
-                             0, nullptr, nullptr, IM_SYNC);
+    IM_STATUS st;
+    {
+        std::lock_guard<std::mutex> lock(rgaMutex());
+        st = improcess(src, dst, pat, srect, drect, prect,
+                       0, nullptr, nullptr, IM_SYNC);
+    }
     return st == IM_STATUS_SUCCESS;
 }
 
