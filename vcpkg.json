@@ -1,0 +1,9 @@
+{
+  "name": "test-gstreamer",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "oatpp",
+    "oatpp-postgresql",
+    "oatpp-swagger"
+  ]
+}

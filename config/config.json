@@ -1,0 +1,30 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8009
+  },
+  "database": {
+    "url": "postgresql://oryza:Oryza%40123@192.168.103.62:5433/test_gstreamer",
+    "poolMaxConnections": 10,
+    "poolIdleSeconds": 60
+  },
+  "swagger": {
+    "title": "test_gstreamer API",
+    "description": "REST API for Camera management",
+    "version": "1.0"
+  },
+  "gstreamer": {
+    "rtspHost": "0.0.0.0",
+    "publicRtspHost": "127.0.0.1",
+    "rtspPort": 8554,
+    "retryInitialMs": 1000,
+    "retryMaxMs": 30000,
+    "sourceLatencyMs": 100,
+    "defaultHardware": "auto",
+    "recordingEnabled": false,
+    "recordingDir": "recordings"
+  },
+  "ai": {
+    "weightsDir": "/home/orangepi/Documents/test/weights"
+  }
+}

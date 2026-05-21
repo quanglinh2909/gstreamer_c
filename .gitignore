@@ -1,0 +1,29 @@
+# Build
+build/
+cmake-build-*/
+out/
+
+# vcpkg
+vcpkg_installed/
+
+# IDE
+.idea/
+.vscode/
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AI models / runtime artifacts (large or generated)
+weights/
+recordings/
+events/
+debug_face/
+
+# Python
+__pycache__/
+*.pyc
+
+# Tooling
+.sixth/
