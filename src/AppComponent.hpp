@@ -23,7 +23,9 @@ public:
         return oatpp::web::server::HttpRouter::createShared();
     }());
 
-    OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, serverConnectionHandler)([] {
+    // Qualified "http": a second ConnectionHandler ("websocket") exists, so an
+    // unqualified lookup of this type would be ambiguous.
+    OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, serverConnectionHandler)("http", [] {
         OATPP_COMPONENT(std::shared_ptr<oatpp::web::server::HttpRouter>, router);
         return oatpp::web::server::HttpConnectionHandler::createShared(router);
     }());

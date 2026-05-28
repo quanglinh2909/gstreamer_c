@@ -4,6 +4,7 @@
   "dependencies": [
     "oatpp",
     "oatpp-postgresql",
-    "oatpp-swagger"
+    "oatpp-swagger",
+    "oatpp-websocket"
   ]
 }

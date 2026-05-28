@@ -34,6 +34,11 @@ struct GStreamerConfig {
     uint32_t retryInitialMs = 1000;
     uint32_t retryMaxMs = 30000;
     uint32_t sourceLatencyMs = 100;
+    // How often a Running stream re-probes its camera to confirm it is still
+    // reachable. The republish pipeline only runs while a client is watching,
+    // so without this poll a camera that drops while unwatched would stay
+    // reported as online forever. 0 disables the poll.
+    uint32_t healthCheckIntervalMs = 20000;
     std::string defaultHardware = "auto";
     bool recordingEnabled = false;
     std::string recordingDir = "recordings";
@@ -102,20 +107,11 @@ inline const char* toString(StreamCodec codec) {
     }
 }
 
+// Public, user-facing camera state. The fine-grained StreamState enum drives
+// runtime logic (reconnect timers, error classification), but externally a
+// camera is only ever reported as one of three values: online, offline, or
+// error. Diagnostic detail remains available via lastError / retryCount.
 inline const char* toString(StreamState state) {
-    switch (state) {
-        case StreamState::Stopped: return "stopped";
-        case StreamState::Starting: return "starting";
-        case StreamState::Running: return "running";
-        case StreamState::Reconnecting: return "reconnecting";
-        case StreamState::AuthError: return "auth_error";
-        case StreamState::UnsupportedCodec: return "unsupported_codec";
-        case StreamState::Error:
-        default: return "error";
-    }
-}
-
-inline const char* cameraStatusFromState(StreamState state) {
     switch (state) {
         case StreamState::Running:
             return "online";

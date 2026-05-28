@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <mutex>
 #include <vector>
@@ -120,6 +121,9 @@ inline bool letterboxNv12ToRgb(Frame& f, int padColor) {
 }
 
 // Crop a box (full-res coordinates) and resize+convert it to packed RGB888.
+// RGA requires RGB888 pixel stride to be 16-aligned. When the requested dstW
+// is not, we route the blit through a wider scratch buffer, then memcpy each
+// row back into the tight `out` the caller expects.
 inline bool cropNv12ToRgb(const Frame& f, int x, int y, int w, int h,
                           int dstW, int dstH, std::vector<uint8_t>& out) {
     if (!f.nv12 || dstW <= 0 || dstH <= 0) return false;
@@ -137,11 +141,22 @@ inline bool cropNv12ToRgb(const Frame& f, int x, int y, int w, int h,
                              ? static_cast<int>(f.uvOffset / ywstride)
                              : f.height;
 
+    const int alignedDstW = (dstW + 15) & ~15;
+    std::vector<uint8_t> scratch;
+    uint8_t* dstPtr = out.data();
+    int dstStridePixels = dstW;
+    if (alignedDstW != dstW) {
+        scratch.assign(static_cast<size_t>(alignedDstW) * dstH * 3, 0);
+        dstPtr = scratch.data();
+        dstStridePixels = alignedDstW;
+    }
+
     rga_buffer_t src = wrapbuffer_virtualaddr(f.nv12, f.width, f.height,
                                               RK_FORMAT_YCbCr_420_SP,
                                               ywstride, yhstride);
-    rga_buffer_t dst = wrapbuffer_virtualaddr(out.data(), dstW, dstH,
-                                              RK_FORMAT_RGB_888, dstW, dstH);
+    rga_buffer_t dst = wrapbuffer_virtualaddr(dstPtr, dstW, dstH,
+                                              RK_FORMAT_RGB_888,
+                                              dstStridePixels, dstH);
     rga_buffer_t pat = emptyBuffer();
 
     im_rect srect = makeRect(x, y, w, h);
@@ -154,7 +169,24 @@ inline bool cropNv12ToRgb(const Frame& f, int x, int y, int w, int h,
         st = improcess(src, dst, pat, srect, drect, prect,
                        0, nullptr, nullptr, IM_SYNC);
     }
-    return st == IM_STATUS_SUCCESS;
+    if (st != IM_STATUS_SUCCESS) {
+        std::fprintf(stderr,
+                     "cropNv12ToRgb: improcess failed src=%dx%d (ystride=%d) "
+                     "rect=(%d,%d,%d,%d) dst=%dx%d stride=%d status=%d msg=%s\n",
+                     f.width, f.height, ywstride, x, y, w, h,
+                     dstW, dstH, dstStridePixels,
+                     static_cast<int>(st), imStrError(st));
+        return false;
+    }
+
+    if (dstPtr != out.data()) {
+        for (int row = 0; row < dstH; ++row) {
+            std::memcpy(out.data() + static_cast<size_t>(row) * dstW * 3,
+                        scratch.data() + static_cast<size_t>(row) * alignedDstW * 3,
+                        static_cast<size_t>(dstW) * 3);
+        }
+    }
+    return true;
 }
 
 // Crop a box (full-res coordinates) to a packed NV12 buffer of the crop size.
@@ -194,6 +226,38 @@ inline bool cropNv12ToNv12(const Frame& f, int x, int y, int w, int h,
         std::lock_guard<std::mutex> lock(rgaMutex());
         st = improcess(src, dst, pat, srect, drect, prect,
                        0, nullptr, nullptr, IM_SYNC);
+    }
+    return st == IM_STATUS_SUCCESS;
+}
+
+// Packed RGB888 (w x h) -> tightly-packed NV12 (w x h). Caller MUST pass even
+// w and h (NV12 chroma is 2x2-subsampled). Logs the RGA status on failure so
+// the caller knows whether it was an argument problem or a hardware reject.
+inline bool rgbToNv12(const uint8_t* rgb, int w, int h, uint8_t* nv12Out) {
+    if (!rgb || !nv12Out || w <= 0 || h <= 0 || (w & 1) || (h & 1)) {
+        std::fprintf(stderr,
+                     "rgbToNv12: invalid args (rgb=%p out=%p w=%d h=%d)\n",
+                     rgb, nv12Out, w, h);
+        return false;
+    }
+
+    rga_buffer_t src = wrapbuffer_virtualaddr(const_cast<uint8_t*>(rgb), w, h,
+                                              RK_FORMAT_RGB_888, w, h);
+    rga_buffer_t dst = wrapbuffer_virtualaddr(nv12Out, w, h,
+                                              RK_FORMAT_YCbCr_420_SP, w, h);
+    rga_buffer_t pat = emptyBuffer();
+
+    im_rect r = makeRect(0, 0, w, h);
+    im_rect p = makeRect(0, 0, 0, 0);
+
+    IM_STATUS st;
+    {
+        std::lock_guard<std::mutex> lock(rgaMutex());
+        st = improcess(src, dst, pat, r, r, p, 0, nullptr, nullptr, IM_SYNC);
+    }
+    if (st != IM_STATUS_SUCCESS) {
+        std::fprintf(stderr, "rgbToNv12: improcess failed (w=%d h=%d) status=%d msg=%s\n",
+                     w, h, static_cast<int>(st), imStrError(st));
     }
     return st == IM_STATUS_SUCCESS;
 }

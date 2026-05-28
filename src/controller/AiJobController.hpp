@@ -33,6 +33,20 @@ public:
                                  m_service.getAllAiJobs(limit, offset));
     }
 
+    ENDPOINT_INFO(getByCamera) {
+        info->summary = "List AI jobs for a camera";
+        info->addResponse<oatpp::List<oatpp::Object<AiJobDto>>>(
+            Status::CODE_200, "application/json");
+        info->addResponse<oatpp::Object<StatusDto>>(
+            Status::CODE_404, "application/json");
+    }
+    ENDPOINT("GET", "/cameras/{cameraId}/ai-jobs", getByCamera,
+             PATH(oatpp::String, cameraId))
+    {
+        return createDtoResponse(Status::CODE_200,
+                                 m_service.getAiJobsByCamera(cameraId));
+    }
+
     ENDPOINT_INFO(getModels) {
         info->summary = "List .rknn models in the weights directory";
         info->addResponse<oatpp::List<oatpp::Object<AiModelDto>>>(

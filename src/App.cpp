@@ -2,9 +2,12 @@
 #include "DatabaseComponent.hpp"
 #include "GStreamerComponent.hpp"
 #include "SwaggerComponent.hpp"
+#include "WebSocketComponent.hpp"
 #include "config/ConfigComponent.hpp"
 #include "controller/CameraController.hpp"
 #include "controller/AiJobController.hpp"
+#include "controller/ImageInferenceController.hpp"
+#include "controller/WebSocketController.hpp"
 #include "AiComponent.hpp"
 
 #include "oatpp-swagger/Controller.hpp"
@@ -38,6 +41,7 @@ void run(const std::string& configPath) {
     AppComponent      appComponents;
     SwaggerComponent  swaggerComponents;
     DatabaseComponent databaseComponents;
+    WebSocketComponent webSocketComponents;
     GStreamerComponent gstreamerComponents;
     AiComponent        aiComponents;
 
@@ -54,6 +58,12 @@ void run(const std::string& configPath) {
     auto aiJobController = std::make_shared<AiJobController>();
     router->addController(aiJobController);
 
+    auto imageInferenceController = std::make_shared<ImageInferenceController>();
+    router->addController(imageInferenceController);
+
+    auto webSocketController = std::make_shared<WebSocketController>();
+    router->addController(webSocketController);
+
     CameraService startupCameraService;
     startupCameraService.startAllStreamsFromDatabase();
 
@@ -63,11 +73,12 @@ void run(const std::string& configPath) {
 
     auto docEndpoints = cameraController->getEndpoints();
     docEndpoints.append(aiJobController->getEndpoints());
+    docEndpoints.append(imageInferenceController->getEndpoints());
     auto swaggerController = oatpp::swagger::Controller::createShared(docEndpoints);
     router->addController(swaggerController);
 
     OATPP_COMPONENT(std::shared_ptr<oatpp::network::ServerConnectionProvider>, provider);
-    OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>,        handler);
+    OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>,        handler, "http");
 
     g_server = oatpp::network::Server::createShared(provider, handler);
 

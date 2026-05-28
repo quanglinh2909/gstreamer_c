@@ -3,14 +3,13 @@
 
 Wire format (big-endian integers), one framed message per result:
 
-    [u32 total_len][u32 json_len][json][full jpeg][crop jpeg...]
+    [u32 total_len][u32 json_len][json][full jpeg]
 
-The JSON carries every size so the trailing binary blob is sliced
-deterministically: the full-frame JPEG first, then one crop JPEG per
-detection that has cropJpegSize > 0, in detection order.
+The engine sends only the full-frame JPEG; per-detection crops are cut from it
+here in Python. The JSON carries fullJpegSize and the detection metadata.
 
 This is where Python "owns the decision": it matches face embeddings against
-a gallery and then persists the full + crop images for events worth keeping.
+a gallery and then persists the full frame + crops for events worth keeping.
 """
 
 import argparse
@@ -46,7 +45,7 @@ def recv_exact(sock, n):
 
 
 def recv_message(sock):
-    """Return (meta_dict, full_jpeg_bytes, [crop_jpeg_bytes]) or None on close."""
+    """Return (meta_dict, full_jpeg_bytes) or None when the peer closes."""
     header = recv_exact(sock, 4)
     if header is None:
         return None
@@ -57,22 +56,8 @@ def recv_message(sock):
 
     json_len = struct.unpack(">I", body[:4])[0]
     meta = json.loads(body[4:4 + json_len].decode("utf-8"))
-    blob = body[4 + json_len:]
-
-    offset = 0
-    full_size = int(meta.get("fullJpegSize", 0))
-    full_jpeg = blob[offset:offset + full_size]
-    offset += full_size
-
-    crops = []
-    for det in meta.get("detections", []):
-        size = int(det.get("cropJpegSize", 0))
-        if size > 0:
-            crops.append(blob[offset:offset + size])
-            offset += size
-        else:
-            crops.append(b"")
-    return meta, full_jpeg, crops
+    full_jpeg = body[4 + json_len:]  # the rest of the body is the full JPEG
+    return meta, full_jpeg
 
 
 def load_face_db(path):
@@ -118,26 +103,40 @@ def match_face(embedding, entries):
     return best_name, best_score
 
 
-def save_event(save_dir, meta, full_jpeg, crops):
-    """Persist the full frame and per-detection crops for one result."""
+def save_event(save_dir, meta, full_jpeg):
+    """Persist the full frame, plus per-detection crops cut from it.
+
+    The engine no longer encodes crop JPEGs, so the crops are decoded and cut
+    from the full frame here (Python has CPU headroom and only does this for
+    events worth keeping)."""
+    if not full_jpeg:
+        return []
     date = datetime.date.today().isoformat()
     folder = os.path.join(save_dir, str(meta["cameraId"]), date)
     os.makedirs(folder, exist_ok=True)
-    seq = meta["seq"]
-    stem = os.path.join(folder, f"{seq:010d}")
+    stem = os.path.join(folder, f"{int(meta['seq']):010d}")
 
     saved = []
-    if full_jpeg:
-        full_path = f"{stem}_full.jpg"
-        with open(full_path, "wb") as fp:
-            fp.write(full_jpeg)
-        saved.append(full_path)
-    for i, crop in enumerate(crops):
-        if crop:
-            crop_path = f"{stem}_det{i}.jpg"
-            with open(crop_path, "wb") as fp:
-                fp.write(crop)
-            saved.append(crop_path)
+    full_path = f"{stem}_full.jpg"
+    with open(full_path, "wb") as fp:
+        fp.write(full_jpeg)
+    saved.append(full_path)
+
+    detections = meta.get("detections", [])
+    if detections:
+        import cv2
+        import numpy as np
+        img = cv2.imdecode(np.frombuffer(full_jpeg, np.uint8), cv2.IMREAD_COLOR)
+        if img is not None:
+            h, w = img.shape[:2]
+            for i, det in enumerate(detections):
+                x1 = max(0, min(int(det["x1"]), w - 1))
+                y1 = max(0, min(int(det["y1"]), h - 1))
+                x2 = max(x1 + 1, min(int(det["x2"]), w))
+                y2 = max(y1 + 1, min(int(det["y2"]), h))
+                crop_path = f"{stem}_det{i}.jpg"
+                cv2.imwrite(crop_path, img[y1:y2, x1:x2])
+                saved.append(crop_path)
     return saved
 
 
@@ -252,7 +251,8 @@ def main():
             print("AI engine closed the connection", file=sys.stderr)
             break
 
-        meta, full_jpeg, crops = message
+        meta, full_jpeg = message
+        # print(meta)
         detections = meta.get("detections", [])
         any_match = False
 
@@ -264,21 +264,21 @@ def main():
                 if name is not None and score >= args.match_threshold:
                     print(name,score,meta['cameraId'])
 
-            #         label = f"{name} ({score:.3f})"
-            #         any_match = True
-            #     else:
-            #         label = f"unknown ({score:.3f})"
-            # print(f"  cam={meta['cameraId']} job={meta['jobId']} "
-            #       f"seq={meta['seq']} det={i} "
-            #       f"score={det['score']:.3f} box=({det['x1']:.0f},{det['y1']:.0f},"
-            #       f"{det['x2']:.0f},{det['y2']:.0f}) {label}")
+                    label = f"{name} ({score:.3f})"
+                    any_match = True
+                else:
+                    label = f"unknown ({score:.3f})"
+            print(f"  cam={meta['cameraId']} job={meta['jobId']} "
+                  f"seq={meta['seq']} det={i} "
+                  f"score={det['score']:.3f} box=({det['x1']:.0f},{det['y1']:.0f},"
+                  f"{det['x2']:.0f},{det['y2']:.0f}) {label}")
 
-            # should_save = (args.save == "all" and detections) or \
-            #             (args.save == "matched" and any_match)
-            # if should_save:
-            #     saved = save_event(args.save_dir, meta, full_jpeg, crops)
-            #     if saved:
-            #         print(f"  saved {len(saved)} image(s) -> {os.path.dirname(saved[0])}")
+            should_save = (args.save == "all" and detections) or \
+                        (args.save == "matched" and any_match)
+            if should_save:
+                saved = save_event(args.save_dir, meta, full_jpeg)
+                if saved:
+                    print(f"  saved {len(saved)} image(s) -> {os.path.dirname(saved[0])}")
 
         if args.show:
             show_debug(meta, full_jpeg, entries, args.match_threshold)

@@ -1,6 +1,7 @@
 #ifndef test_gstreamer_CameraService_hpp
 #define test_gstreamer_CameraService_hpp
 
+#include "ai/AiManager.hpp"
 #include "db/CameraDb.hpp"
 #include "dto/CameraDto.hpp"
 #include "dto/RecordingDto.hpp"
@@ -9,6 +10,7 @@
 #include "http/Uuid.hpp"
 #include "service/GStreamerService.hpp"
 #include "service/RecordingTypes.hpp"
+#include "service/SnapshotGrabber.hpp"
 
 #include "oatpp/core/macro/component.hpp"
 #include "oatpp/web/protocol/http/Http.hpp"
@@ -21,9 +23,8 @@ public:
 
     oatpp::Object<CameraDto> createCamera(const oatpp::Object<CreateCameraDto>& in) {
         validate(in, /* requireAll */ true);
-        auto status = in->status ? in->status : oatpp::String("offline");
 
-        auto res = m_db->createCamera(in->name, in->rtsp, status,
+        auto res = m_db->createCamera(in->name, in->rtsp,
                                       in->hardware, in->recordingEnabled,
                                       in->recordingMode, in->motionEnabled,
                                       in->motionSensitivity, in->motionThreshold,
@@ -40,6 +41,42 @@ public:
         auto res = m_db->getCameraById(id);
         assertSuccess(res);
         return fetchOne(res, Status::CODE_404, "Camera not found");
+    }
+
+    // Captures one JPEG frame from the camera's live RTSP stream.
+    //
+    // Fast path: if the in-process AI pipeline is running for this camera
+    // it has already RGA-cropped and hardware-encoded the latest frame to
+    // JPEG; serve that without touching the network. This is both faster
+    // (microseconds, no RTSP handshake / first-I-frame wait) and friendlier
+    // to the camera (no extra concurrent RTSP session, which is what
+    // causes the intermittent 502s under load).
+    //
+    // Fallback: AI not running for the camera, or the cached frame is
+    // older than the freshness window — open the short-lived snapshot
+    // pipeline and grab from RTSP.
+    std::string getSnapshot(const oatpp::String& id) {
+        auto camera = getCameraById(id);  // validates id, 404 if missing
+        const std::string cameraId =
+            camera->id ? std::string(camera->id->c_str()) : std::string();
+
+        if (!cameraId.empty()) {
+            auto cached = m_ai->getLatestJpeg(cameraId, /*maxAgeMs=*/2000);
+            if (!cached.empty()) {
+                return std::string(cached.begin(), cached.end());
+            }
+        }
+
+        const std::string rtsp =
+            camera->rtsp ? std::string(camera->rtsp->c_str()) : std::string();
+        auto grab = snapshot::grabJpeg(rtsp,
+                                       m_streams->getConfig().sourceLatencyMs);
+        if (!grab.ok()) {
+            const std::string message =
+                grab.error.empty() ? "Snapshot failed" : grab.error;
+            OATPP_ASSERT_HTTP(false, Status::CODE_502, message.c_str());
+        }
+        return std::string(grab.jpeg.begin(), grab.jpeg.end());
     }
 
     oatpp::List<oatpp::Object<CameraDto>>
@@ -65,7 +102,7 @@ public:
 
         // Pass nullable strings straight through — the SQL COALESCEs against
         // the existing row, so missing fields keep their current values.
-        auto res = m_db->updateCamera(id, in->name, in->rtsp, in->status,
+        auto res = m_db->updateCamera(id, in->name, in->rtsp,
                                       in->hardware, in->recordingEnabled,
                                       in->recordingMode, in->motionEnabled,
                                       in->motionSensitivity, in->motionThreshold,
@@ -85,7 +122,10 @@ public:
         auto res = m_db->deleteCameraReturning(id);
         assertSuccess(res);
         fetchOne(res, Status::CODE_404, "Camera not found");
+        // ai_jobs rows are removed by ON DELETE CASCADE; stop the live AI
+        // runtime (pipeline + workers) so it does not outlive the camera.
         m_streams->cleanupCamera(id);
+        m_ai->removeCamera(id->c_str());
 
         auto dto = StatusDto::createShared();
         dto->statusCode = 200;
@@ -169,6 +209,7 @@ public:
 private:
     OATPP_COMPONENT(std::shared_ptr<CameraDb>, m_db);
     OATPP_COMPONENT(std::shared_ptr<GStreamerService>, m_streams);
+    OATPP_COMPONENT(std::shared_ptr<AiManager>, m_ai);
 
     static void validate(const oatpp::Object<CreateCameraDto>& in, bool requireAll) {
         OATPP_ASSERT_HTTP(in, Status::CODE_400, "Body required");
@@ -192,11 +233,6 @@ private:
         if (in->rtsp) {
             OATPP_ASSERT_HTTP(in->rtsp->find("rtsp://") == 0,
                               Status::CODE_400, "rtsp must start with rtsp://");
-        }
-        if (in->status) {
-            auto s = in->status;
-            OATPP_ASSERT_HTTP(s == "online" || s == "offline" || s == "error",
-                              Status::CODE_400, "status must be online|offline|error");
         }
         if (in->hardware) {
             OATPP_ASSERT_HTTP(in->hardware->size() > 0,

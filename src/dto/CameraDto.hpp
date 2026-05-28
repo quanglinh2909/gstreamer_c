@@ -18,10 +18,7 @@ class CameraDto : public oatpp::DTO {
     DTO_FIELD_INFO(rtsp) { info->description = "RTSP stream URL"; }
     DTO_FIELD(String, rtsp);
 
-    DTO_FIELD_INFO(status) { info->description = "online | offline | error"; }
-    DTO_FIELD(String, status);
-
-    DTO_FIELD_INFO(state) { info->description = "Detailed stream state"; }
+    DTO_FIELD_INFO(state) { info->description = "Camera state: online | offline | error"; }
     DTO_FIELD(String, state);
 
     DTO_FIELD_INFO(inputRtsp) { info->description = "Input RTSP URL used by runtime stream"; }
@@ -78,7 +75,6 @@ class CreateCameraDto : public oatpp::DTO {
 
     DTO_FIELD(String, name);
     DTO_FIELD(String, rtsp);
-    DTO_FIELD(String, status);  // optional; defaults to "offline" in service
     DTO_FIELD(String, hardware);
     DTO_FIELD(Boolean, recordingEnabled);
     DTO_FIELD(String, recordingMode);

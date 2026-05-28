@@ -51,6 +51,7 @@ public:
 
     void start() {
         stopReconnectTimer();
+        stopHealthCheckTimer();
         stopRecordingLockedFree();
 
         {
@@ -143,6 +144,7 @@ public:
             m_retryCount = 0;
             m_lastError.clear();
             touchLocked();
+            scheduleHealthCheckLocked();
         }
         startRecording(probe.codec);
         notifyStatusChanged();
@@ -150,6 +152,7 @@ public:
 
     void stop() {
         stopReconnectTimer();
+        stopHealthCheckTimer();
         stopRecordingLockedFree();
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -176,6 +179,7 @@ public:
 
     void cleanup() {
         stopReconnectTimer();
+        stopHealthCheckTimer();
         stopRecordingLockedFree();
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -352,6 +356,18 @@ private:
         }
 
         const GstStructure* structure = gst_caps_get_structure(caps, 0);
+
+        // rtspsrc exposes one pad per stream (video, audio, ...). Only the
+        // video stream's codec matters here; ignore audio pads (PCMA/PCMU/...)
+        // and anything else so they are not misreported as an unsupported
+        // codec — that would wrongly drop the stream into the terminal
+        // UnsupportedCodec state and stop reconnects.
+        const gchar* media = gst_structure_get_string(structure, "media");
+        if (media && g_strcmp0(media, "video") != 0) {
+            gst_caps_unref(caps);
+            return;
+        }
+
         const gchar* encoding = gst_structure_get_string(structure, "encoding-name");
         const auto codec = stream::codecFromEncodingName(encoding ? encoding : "");
         if (codec == stream::StreamCodec::H264 || codec == stream::StreamCodec::H265) {
@@ -464,6 +480,7 @@ private:
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             cleanupMountLocked();
+            cancelHealthCheckLocked();
             m_state = stream::StreamState::AuthError;
             m_lastError = error;
             touchLocked();
@@ -475,6 +492,7 @@ private:
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             cleanupMountLocked();
+            cancelHealthCheckLocked();
             m_state = stream::StreamState::Reconnecting;
             m_lastError = error;
             touchLocked();
@@ -527,6 +545,86 @@ private:
         }
     }
 
+    // --- Periodic liveness probe -------------------------------------------
+    // The republish pipeline is instantiated by gst-rtsp-server only while a
+    // client is watching, so its bus watch cannot notice a camera dropping
+    // while unwatched. While the stream is Running we therefore re-probe the
+    // camera every healthCheckIntervalMs; a failed probe demotes the stream to
+    // Reconnecting, after which the reconnect loop owns re-probing until the
+    // camera recovers.
+
+    void scheduleHealthCheckLocked() {
+        cancelHealthCheckLocked();
+        if (m_config.healthCheckIntervalMs == 0) return;
+        auto* weak = new std::weak_ptr<CameraStreamSession>(shared_from_this());
+        m_healthCheckSourceId = g_timeout_add_full(
+            G_PRIORITY_DEFAULT,
+            m_config.healthCheckIntervalMs,
+            &CameraStreamSession::onHealthCheckTick,
+            weak,
+            [](gpointer data) {
+                delete static_cast<std::weak_ptr<CameraStreamSession>*>(data);
+            });
+    }
+
+    void cancelHealthCheckLocked() {
+        if (m_healthCheckSourceId != 0) {
+            g_source_remove(m_healthCheckSourceId);
+            m_healthCheckSourceId = 0;
+        }
+    }
+
+    void stopHealthCheckTimer() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        cancelHealthCheckLocked();
+    }
+
+    static gboolean onHealthCheckTick(gpointer userData) {
+        auto* weak = static_cast<std::weak_ptr<CameraStreamSession>*>(userData);
+        auto self = weak->lock();
+        if (!self) return G_SOURCE_REMOVE;
+
+        bool launchProbe = false;
+        {
+            std::lock_guard<std::mutex> lock(self->m_mutex);
+            // Only poll a Running stream; skip if a probe is still in flight.
+            if (self->m_state == stream::StreamState::Running &&
+                !self->m_healthProbeInFlight) {
+                self->m_healthProbeInFlight = true;
+                launchProbe = true;
+            }
+        }
+        if (launchProbe) {
+            std::thread([self] { self->runHealthProbe(); }).detach();
+        }
+        return G_SOURCE_CONTINUE;
+    }
+
+    // Runs on a detached thread: probeCodec() blocks for up to a few seconds.
+    void runHealthProbe() {
+        auto probe = probeCodec();
+
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_healthProbeInFlight = false;
+            // If the stream left Running while we were probing, stop()/the
+            // reconnect loop already owns the state — discard this result.
+            if (m_state != stream::StreamState::Running) return;
+        }
+
+        if (probe.authError) {
+            markAuthError(probe.error.empty() ? "Authentication failed"
+                                              : probe.error);
+            return;
+        }
+        if (probe.codec == stream::StreamCodec::H264 ||
+            probe.codec == stream::StreamCodec::H265) {
+            return;  // camera still reachable — nothing to do
+        }
+        markTransientError(probe.error.empty() ? "Camera health check failed"
+                                               : probe.error);
+    }
+
     void cleanupMountLocked() {
         for (auto id : m_busWatchIds) {
             if (id != 0) g_source_remove(id);
@@ -568,6 +666,8 @@ private:
     std::string m_lastError;
     std::string m_lastChangedAt;
     guint m_reconnectSourceId = 0;
+    guint m_healthCheckSourceId = 0;
+    bool m_healthProbeInFlight = false;
     std::vector<guint> m_busWatchIds;
 };
 

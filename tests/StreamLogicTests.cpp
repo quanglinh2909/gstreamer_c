@@ -46,14 +46,15 @@ void testAuthErrorClassification() {
     assert(!stream::isAuthErrorMessage("Connection timed out"));
 }
 
-void testCameraStatusFromStreamState() {
-    assert(std::string(stream::cameraStatusFromState(stream::StreamState::Running)) == "online");
-    assert(std::string(stream::cameraStatusFromState(stream::StreamState::Stopped)) == "offline");
-    assert(std::string(stream::cameraStatusFromState(stream::StreamState::Starting)) == "offline");
-    assert(std::string(stream::cameraStatusFromState(stream::StreamState::Reconnecting)) == "offline");
-    assert(std::string(stream::cameraStatusFromState(stream::StreamState::AuthError)) == "error");
-    assert(std::string(stream::cameraStatusFromState(stream::StreamState::UnsupportedCodec)) == "error");
-    assert(std::string(stream::cameraStatusFromState(stream::StreamState::Error)) == "error");
+void testStreamStateToStringIsCoarse() {
+    // 'state' is user-facing and collapses to online | offline | error.
+    assert(std::string(stream::toString(stream::StreamState::Running)) == "online");
+    assert(std::string(stream::toString(stream::StreamState::Stopped)) == "offline");
+    assert(std::string(stream::toString(stream::StreamState::Starting)) == "offline");
+    assert(std::string(stream::toString(stream::StreamState::Reconnecting)) == "offline");
+    assert(std::string(stream::toString(stream::StreamState::AuthError)) == "error");
+    assert(std::string(stream::toString(stream::StreamState::UnsupportedCodec)) == "error");
+    assert(std::string(stream::toString(stream::StreamState::Error)) == "error");
 }
 
 void testLaunchStringUsesPassthroughCodecElements() {
@@ -398,7 +399,7 @@ int main() {
     testMountAndOutputUrl();
     testRetryDelayCapsAtMaximum();
     testAuthErrorClassification();
-    testCameraStatusFromStreamState();
+    testStreamStateToStringIsCoarse();
     testLaunchStringUsesPassthroughCodecElements();
     testRecordingModeParsing();
     testRecordingPatchPresenceRequiresRuntimeRestart();

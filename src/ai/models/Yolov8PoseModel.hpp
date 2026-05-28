@@ -1,22 +1,30 @@
 #ifndef AI_ENGINE_YOLOV8_POSE_MODEL_HPP
 #define AI_ENGINE_YOLOV8_POSE_MODEL_HPP
 
-// Stage-1 detector: YOLOv8 pose — boxes plus keypoints (e.g. 5 facial
-// landmarks for the face cascade).
+// YOLOv8 pose — boxes plus keypoints (e.g. 5 facial landmarks for the face
+// cascade). Usable as model 1 or, via the inherited default runStage2(), as
+// model 2.
 
 #include <cstring>
 
-#include "Detector.hpp"
+#include "AiModel.hpp"
 #include "yolov8.h"
 #include "yolov8_pose.h"
 
-class Yolov8PoseModel : public Detector {
+class Yolov8PoseModel : public AiModel {
 public:
     ~Yolov8PoseModel() override { release_yolov8_pose_model(&m_ctx); }
 
     bool load(const std::string& modelPath) override {
         std::memset(&m_ctx, 0, sizeof(m_ctx));
         return init_yolov8_pose_model(modelPath.c_str(), &m_ctx) == 0;
+    }
+
+    int inputWidth() const override {
+        return m_ctx.model_width > 0 ? m_ctx.model_width : 640;
+    }
+    int inputHeight() const override {
+        return m_ctx.model_height > 0 ? m_ctx.model_height : 640;
     }
 
     bool detect(image_buffer_t& img, object_detect_result_list& out) override {

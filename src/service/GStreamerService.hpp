@@ -290,7 +290,7 @@ private:
             : stream::outputUrlForCamera(config, id);
 
         dto->id = camera->id;
-        dto->state = camera->state ? camera->state : oatpp::String("stopped");
+        dto->state = camera->state ? camera->state : oatpp::String("offline");
         dto->inputRtsp = camera->inputRtsp && camera->inputRtsp->size() > 0
             ? camera->inputRtsp
             : camera->rtsp;
@@ -303,9 +303,10 @@ private:
             camera->recordingMode &&
             recording::recordingModeFromString(camera->recordingMode->c_str()) !=
                 recording::RecordingMode::Off;
+        // getValue(): oatpp::Boolean::operator bool() returns the value, not a
+        // null check, so a plain ternary mis-reads an explicit false.
         const bool recordingEnabled = recordingModeEnabled ||
-            (camera->recordingEnabled ? static_cast<bool>(*camera->recordingEnabled)
-                                      : config.recordingEnabled);
+            camera->recordingEnabled.getValue(config.recordingEnabled);
         dto->recordingEnabled = recordingEnabled;
         dto->retryCount = camera->retryCount
             ? camera->retryCount

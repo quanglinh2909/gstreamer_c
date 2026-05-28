@@ -4,8 +4,7 @@ CREATE TABLE IF NOT EXISTS cameras (
   id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   name              VARCHAR(128) NOT NULL,
   rtsp              VARCHAR(512) NOT NULL,
-  status            VARCHAR(16)  NOT NULL DEFAULT 'offline',
-  state             VARCHAR(32)  NOT NULL DEFAULT 'stopped',
+  state             VARCHAR(32)  NOT NULL DEFAULT 'offline',
   input_rtsp        VARCHAR(512) NOT NULL DEFAULT '',
   output_rtsp       VARCHAR(512) NOT NULL DEFAULT '',
   codec             VARCHAR(16)  NOT NULL DEFAULT 'unknown',
@@ -23,9 +22,11 @@ CREATE TABLE IF NOT EXISTS cameras (
   last_error        TEXT         NOT NULL DEFAULT '',
   last_changed_at   VARCHAR(32)  NOT NULL DEFAULT ''
 );
-CREATE INDEX IF NOT EXISTS idx_cameras_status ON cameras(status);
+-- 'status' was redundant (always derivable from 'state'); drop it.
+DROP INDEX IF EXISTS idx_cameras_status;
+ALTER TABLE IF EXISTS cameras DROP COLUMN IF EXISTS status;
 
-ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS state VARCHAR(32) NOT NULL DEFAULT 'stopped';
+ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS state VARCHAR(32) NOT NULL DEFAULT 'offline';
 ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS input_rtsp VARCHAR(512) NOT NULL DEFAULT '';
 ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS output_rtsp VARCHAR(512) NOT NULL DEFAULT '';
 ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS codec VARCHAR(16) NOT NULL DEFAULT 'unknown';
@@ -44,6 +45,17 @@ ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS last_error TEXT NOT NULL 
 ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS last_changed_at VARCHAR(32) NOT NULL DEFAULT '';
 
 UPDATE cameras SET input_rtsp = rtsp WHERE input_rtsp = '';
+
+-- 'state' is now a coarse, user-facing value: online | offline | error.
+-- Ensure existing columns carry the new default and normalize any rows that
+-- still hold the old detailed runtime states.
+ALTER TABLE IF EXISTS cameras ALTER COLUMN state SET DEFAULT 'offline';
+UPDATE cameras SET state = CASE
+    WHEN state = 'running'                                  THEN 'online'
+    WHEN state IN ('auth_error', 'unsupported_codec', 'error') THEN 'error'
+    ELSE 'offline'
+  END
+  WHERE state NOT IN ('online', 'offline', 'error');
 
 CREATE TABLE IF NOT EXISTS motion_events (
   id          UUID             PRIMARY KEY DEFAULT gen_random_uuid(),

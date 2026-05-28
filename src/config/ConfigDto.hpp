@@ -34,6 +34,7 @@ class GStreamerConfigDto : public oatpp::DTO {
     DTO_FIELD(UInt32, retryInitialMs);
     DTO_FIELD(UInt32, retryMaxMs);
     DTO_FIELD(UInt32, sourceLatencyMs);
+    DTO_FIELD(UInt32, healthCheckIntervalMs);
     DTO_FIELD(String, defaultHardware);
     DTO_FIELD(Boolean, recordingEnabled);
     DTO_FIELD(String, recordingDir);

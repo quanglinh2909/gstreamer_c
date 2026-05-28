@@ -20,6 +20,7 @@ weights/
 recordings/
 events/
 debug_face/
+gstreamer_ai_python/
 
 # Python
 __pycache__/

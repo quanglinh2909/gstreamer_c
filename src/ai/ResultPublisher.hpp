@@ -96,6 +96,29 @@ public:
         }
     }
 
+    // Serializes one AiResult to the same JSON shape the consumer receives over
+    // the socket. Exposed so one-shot HTTP endpoints can reuse the exact format.
+    static std::string buildJson(const AiResult& res) {
+        std::ostringstream os;
+        os.setf(std::ios::fixed);
+        os.precision(4);
+        os << '{';
+        os << "\"cameraId\":"; jsonEscape(os, res.cameraId); os << ',';
+        os << "\"jobId\":"; jsonEscape(os, res.jobId); os << ',';
+        os << "\"seq\":" << res.seq << ',';
+        os << "\"tsUs\":" << res.tsUs << ',';
+        os << "\"origWidth\":" << res.origWidth << ',';
+        os << "\"origHeight\":" << res.origHeight << ',';
+        os << "\"fullJpegSize\":" << res.fullJpeg.size() << ',';
+        os << "\"detections\":[";
+        for (size_t i = 0; i < res.detections.size(); ++i) {
+            if (i) os << ',';
+            writeDetection(os, res.detections[i]);
+        }
+        os << "]}";
+        return os.str();
+    }
+
 private:
     void acceptLoop() {
         while (m_running.load()) {
@@ -141,49 +164,33 @@ private:
         os << '"';
     }
 
-    static std::string buildJson(const AiResult& res) {
-        std::ostringstream os;
-        os.setf(std::ios::fixed);
-        os.precision(4);
+    // Writes one detection as a JSON object. Recurses into `children` so a
+    // stage-2 detector's sub-detections (e.g. OCR characters) are carried too.
+    static void writeDetection(std::ostringstream& os, const Detection& d) {
         os << '{';
-        os << "\"cameraId\":"; jsonEscape(os, res.cameraId); os << ',';
-        os << "\"jobId\":"; jsonEscape(os, res.jobId); os << ',';
-        os << "\"seq\":" << res.seq << ',';
-        os << "\"tsUs\":" << res.tsUs << ',';
-        os << "\"origWidth\":" << res.origWidth << ',';
-        os << "\"origHeight\":" << res.origHeight << ',';
-        os << "\"fullJpegSize\":" << res.fullJpeg.size() << ',';
-        os << "\"detections\":[";
-        for (size_t i = 0; i < res.detections.size(); ++i) {
-            const Detection& d = res.detections[i];
-            if (i) os << ',';
-            os << '{';
-            os << "\"x1\":" << d.x1 << ",\"y1\":" << d.y1
-               << ",\"x2\":" << d.x2 << ",\"y2\":" << d.y2 << ',';
-            os << "\"score\":" << d.score << ',';
-            os << "\"classId\":" << d.classId << ',';
-            os << "\"keypoints\":[";
-            for (size_t k = 0; k < d.keypoints.size(); ++k) {
-                if (k) os << ',';
-                os << d.keypoints[k];
-            }
-            os << "],";
-            os << "\"embedding\":[";
-            for (size_t e = 0; e < d.embedding.size(); ++e) {
-                if (e) os << ',';
-                os << d.embedding[e];
-            }
-            os << "],";
-            uint32_t cropSize = 0;
-            if (d.cropJpegIndex >= 0 &&
-                d.cropJpegIndex < static_cast<int>(res.cropJpegs.size())) {
-                cropSize = static_cast<uint32_t>(res.cropJpegs[d.cropJpegIndex].size());
-            }
-            os << "\"cropJpegSize\":" << cropSize;
-            os << '}';
+        os << "\"x1\":" << d.x1 << ",\"y1\":" << d.y1
+           << ",\"x2\":" << d.x2 << ",\"y2\":" << d.y2 << ',';
+        os << "\"score\":" << d.score << ',';
+        os << "\"classId\":" << d.classId << ',';
+        os << "\"keypoints\":[";
+        for (size_t k = 0; k < d.keypoints.size(); ++k) {
+            if (k) os << ',';
+            os << d.keypoints[k];
         }
-        os << "]}";
-        return os.str();
+        os << "],";
+        os << "\"embedding\":[";
+        for (size_t e = 0; e < d.embedding.size(); ++e) {
+            if (e) os << ',';
+            os << d.embedding[e];
+        }
+        os << "],";
+        os << "\"children\":[";
+        for (size_t c = 0; c < d.children.size(); ++c) {
+            if (c) os << ',';
+            writeDetection(os, d.children[c]);
+        }
+        os << "]";
+        os << '}';
     }
 
     static std::vector<uint8_t> serialize(const AiResult& res) {
@@ -193,13 +200,6 @@ private:
         appendU32(body, static_cast<uint32_t>(json.size()));
         body.insert(body.end(), json.begin(), json.end());
         body.insert(body.end(), res.fullJpeg.begin(), res.fullJpeg.end());
-        for (const Detection& d : res.detections) {
-            if (d.cropJpegIndex >= 0 &&
-                d.cropJpegIndex < static_cast<int>(res.cropJpegs.size())) {
-                const auto& blob = res.cropJpegs[d.cropJpegIndex];
-                body.insert(body.end(), blob.begin(), blob.end());
-            }
-        }
 
         std::vector<uint8_t> msg;
         appendU32(msg, static_cast<uint32_t>(body.size()));

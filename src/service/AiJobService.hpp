@@ -56,6 +56,17 @@ public:
         return res->fetch<oatpp::List<oatpp::Object<AiJobDto>>>();
     }
 
+    // All AI jobs (enabled and disabled) belonging to one camera.
+    oatpp::List<oatpp::Object<AiJobDto>>
+    getAiJobsByCamera(const oatpp::String& cameraId) {
+        validateUuid(cameraId, "Invalid camera id");
+        OATPP_ASSERT_HTTP(fetchCamera(cameraId), Status::CODE_404,
+                          "Camera not found");
+        auto res = m_db->getAiJobsByCamera(cameraId);
+        assertSuccess(res);
+        return res->fetch<oatpp::List<oatpp::Object<AiJobDto>>>();
+    }
+
     oatpp::Object<AiJobDto> updateAiJob(const oatpp::String& id,
                                         const oatpp::Object<CreateAiJobDto>& in) {
         validate(in, /* requireAll */ false);
@@ -152,17 +163,16 @@ public:
         return list;
     }
 
-    // Supported model-type values for modelType (stage 1) and modelType2
-    // (stage 2). Driven by AiCatalog — a newly registered model type shows up
-    // here automatically.
+    // Supported model-type values for modelType (model 1) and modelType2
+    // (model 2). Models are stage-agnostic, so both lists are identical.
+    // Driven by AiCatalog — a newly registered model type shows up here
+    // automatically.
     oatpp::Object<AiModelTypesDto> getModelTypes() {
         auto dto = AiModelTypesDto::createShared();
         dto->stage1 = oatpp::List<oatpp::String>::createShared();
-        for (const auto& type : ai::detectorTypes()) {
-            dto->stage1->push_back(oatpp::String(type.c_str()));
-        }
         dto->stage2 = oatpp::List<oatpp::String>::createShared();
-        for (const auto& type : ai::stage2Types()) {
+        for (const auto& type : ai::modelTypes()) {
+            dto->stage1->push_back(oatpp::String(type.c_str()));
             dto->stage2->push_back(oatpp::String(type.c_str()));
         }
         return dto;
@@ -211,7 +221,10 @@ private:
         aiJob.jobId = stdstr(job->id);
         aiJob.name = stdstr(job->name);
         aiJob.cameraId = stdstr(job->cameraId);
-        aiJob.enabled = job->enabled ? *job->enabled : true;
+        // NOTE: oatpp::Boolean::operator bool() returns the *value*, not a
+        // null check — so `job->enabled ? *job->enabled : true` wrongly
+        // yields true when enabled is false. getValue() reads it correctly.
+        aiJob.enabled = job->enabled.getValue(true);
         aiJob.model1Path = stdstr(job->modelPath);
         aiJob.model1Type = stdstr(job->modelType);
         aiJob.classFilter = cfg::parseClassFilter(stdstr(job->classFilter));
@@ -254,16 +267,17 @@ private:
         }
 
         // Model types and transforms are validated against the AiCatalog
-        // registry, so adding a new type needs no change here.
+        // registry, so adding a new type needs no change here. Models are
+        // stage-agnostic: any registered type is valid for either stage.
         if (in->modelType) {
-            OATPP_ASSERT_HTTP(ai::isDetectorType(in->modelType->c_str()),
+            OATPP_ASSERT_HTTP(ai::isModelType(in->modelType->c_str()),
                               Status::CODE_400,
-                              "modelType is not a registered detector");
+                              "modelType is not a registered model");
         }
         if (in->modelType2 && in->modelType2->size() > 0) {
-            OATPP_ASSERT_HTTP(ai::isStage2Type(in->modelType2->c_str()),
+            OATPP_ASSERT_HTTP(ai::isModelType(in->modelType2->c_str()),
                               Status::CODE_400,
-                              "modelType2 is not a registered stage-2 model");
+                              "modelType2 is not a registered model");
         }
         if (in->transformData && in->transformData->size() > 0) {
             OATPP_ASSERT_HTTP(ai::getTransform(in->transformData->c_str()) != nullptr,

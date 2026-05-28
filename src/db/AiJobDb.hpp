@@ -80,6 +80,17 @@ public:
           "max_fps AS \"maxFps\" "
           "FROM ai_jobs WHERE enabled = true ORDER BY id;")
 
+    QUERY(getAiJobsByCamera,
+          "SELECT CAST(id AS text) AS id, name, "
+          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
+          "model_path AS \"modelPath\", model_type AS \"modelType\", "
+          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
+          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
+          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
+          "max_fps AS \"maxFps\" "
+          "FROM ai_jobs WHERE camera_id = CAST(:cameraId AS uuid) ORDER BY id;",
+          PARAM(oatpp::String, cameraId))
+
     QUERY(updateAiJob,
           "UPDATE ai_jobs SET "
           "  name           = COALESCE(:name, name), "

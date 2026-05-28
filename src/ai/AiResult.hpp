@@ -17,8 +17,10 @@ struct Detection {
     // Face embedding vector (empty for non-face jobs).
     std::vector<float> embedding;
 
-    // Index into AiResult::cropJpegs, or -1 if no crop image was attached.
-    int cropJpegIndex = -1;
+    // Stage-2 sub-detections produced when model 2 is itself a detector
+    // (e.g. OCR characters found inside this detection's crop). Coordinates
+    // are in stage-2 crop space. Empty for single-stage / embedding jobs.
+    std::vector<Detection> children;
 };
 
 // One inference result for one frame of one AI job. Carries the structured
@@ -33,8 +35,7 @@ struct AiResult {
     int origHeight = 0;
 
     std::vector<Detection> detections;
-    std::vector<uint8_t> fullJpeg;                 // may be empty
-    std::vector<std::vector<uint8_t>> cropJpegs;   // referenced by Detection
+    std::vector<uint8_t> fullJpeg;                 // full frame; may be empty
 };
 
 #endif  // AI_ENGINE_AI_RESULT_HPP

@@ -5,6 +5,7 @@
 #include "db/CameraDb.hpp"
 #include "service/GStreamerService.hpp"
 #include "service/StreamTypes.hpp"
+#include "ws/CameraStateSocket.hpp"
 
 #include "oatpp/core/macro/component.hpp"
 
@@ -15,33 +16,40 @@ public:
     OATPP_CREATE_COMPONENT(std::shared_ptr<GStreamerService>, gStreamerService)([] {
         OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
         OATPP_COMPONENT(std::shared_ptr<CameraDb>, cameraDb);
+        OATPP_COMPONENT(std::shared_ptr<ws::CameraStateRegistry>, stateRegistry);
         return std::make_shared<GStreamerService>(
             toStreamConfig(config),
-            [cameraDb](const stream::StreamStatusSnapshot& snapshot) {
-                if (!cameraDb || snapshot.id.empty()) return;
-                try {
-                    auto res = cameraDb->updateCameraStreamSnapshot(
-                        snapshot.id.c_str(),
-                        stream::cameraStatusFromState(snapshot.state),
-                        stream::toString(snapshot.state),
-                        snapshot.inputRtsp.c_str(),
-                        snapshot.outputRtsp.c_str(),
-                        stream::toString(snapshot.codec),
-                        snapshot.hardware.c_str(),
-                        snapshot.recordingEnabled,
-                        snapshot.retryCount,
-                        snapshot.lastError.c_str(),
-                        snapshot.lastChangedAt.c_str());
-                    if (res && !res->isSuccess()) {
-                        std::cerr << "[gstreamer] stream status update failed: "
-                                  << res->getErrorMessage()->c_str() << std::endl;
+            [cameraDb, stateRegistry](const stream::StreamStatusSnapshot& snapshot) {
+                if (snapshot.id.empty()) return;
+                if (cameraDb) {
+                    try {
+                        auto res = cameraDb->updateCameraStreamSnapshot(
+                            snapshot.id.c_str(),
+                            stream::toString(snapshot.state),
+                            snapshot.inputRtsp.c_str(),
+                            snapshot.outputRtsp.c_str(),
+                            stream::toString(snapshot.codec),
+                            snapshot.hardware.c_str(),
+                            snapshot.recordingEnabled,
+                            snapshot.retryCount,
+                            snapshot.lastError.c_str(),
+                            snapshot.lastChangedAt.c_str());
+                        if (res && !res->isSuccess()) {
+                            std::cerr << "[gstreamer] stream status update failed: "
+                                      << res->getErrorMessage()->c_str() << std::endl;
+                        }
+                    } catch (const std::exception& error) {
+                        std::cerr << "[gstreamer] stream status update threw: "
+                                  << error.what() << std::endl;
+                    } catch (...) {
+                        std::cerr << "[gstreamer] stream status update threw unknown error"
+                                  << std::endl;
                     }
-                } catch (const std::exception& error) {
-                    std::cerr << "[gstreamer] stream status update threw: "
-                              << error.what() << std::endl;
-                } catch (...) {
-                    std::cerr << "[gstreamer] stream status update threw unknown error"
-                              << std::endl;
+                }
+                // Push the change to any connected camera-state WebSocket
+                // clients. broadcastState swallows its own send errors.
+                if (stateRegistry) {
+                    stateRegistry->broadcastState(snapshot);
                 }
             },
             [cameraDb](const recording::RecordingSegmentSnapshot& segment) {
@@ -107,6 +115,7 @@ private:
         if (in->retryInitialMs) out.retryInitialMs = *in->retryInitialMs;
         if (in->retryMaxMs) out.retryMaxMs = *in->retryMaxMs;
         if (in->sourceLatencyMs) out.sourceLatencyMs = *in->sourceLatencyMs;
+        if (in->healthCheckIntervalMs) out.healthCheckIntervalMs = *in->healthCheckIntervalMs;
         out.defaultHardware = toStdString(in->defaultHardware, out.defaultHardware);
         if (in->recordingEnabled) out.recordingEnabled = *in->recordingEnabled;
         out.recordingDir = toStdString(in->recordingDir, out.recordingDir);

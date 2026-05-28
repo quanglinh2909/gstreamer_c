@@ -11,11 +11,14 @@
 // All public methods are thread-safe (HTTP handler threads call applyJob /
 // removeJob concurrently with each other and with startup loading).
 
+#include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "AiResult.hpp"
@@ -87,6 +90,26 @@ public:
         rebuildLocked(group);
     }
 
+    // Returns the most recent full-frame JPEG captured by any AI job
+    // running on this camera, but only if it is younger than maxAgeMs.
+    // Empty vector when AI is not running for the camera or the latest
+    // frame is too stale. Thread-safe; intended for HTTP handlers that
+    // want a "free" snapshot piggybacking on the in-process AI pipeline
+    // instead of opening a fresh RTSP connection (avoids the second
+    // concurrent RTSP session that some cameras refuse with a 502).
+    std::vector<uint8_t> getLatestJpeg(const std::string& cameraId,
+                                       uint32_t maxAgeMs = 2000) const {
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        auto it = m_latestJpegs.find(cameraId);
+        if (it == m_latestJpegs.end() || it->second.jpeg.empty()) {
+            return {};
+        }
+        const auto age = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - it->second.timestamp).count();
+        if (static_cast<uint32_t>(age) > maxAgeMs) return {};
+        return it->second.jpeg;  // copy
+    }
+
     // Removes one job and rebuilds (or drops) its camera's pipeline.
     void removeJob(const std::string& cameraId, const std::string& jobId) {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -110,6 +133,21 @@ public:
         } else {
             rebuildLocked(group);
         }
+    }
+
+    // Stops and drops a camera's entire AI runtime — every job worker and its
+    // ingest pipeline. Called when the camera itself is deleted; the ai_jobs
+    // rows are removed from the database by an ON DELETE CASCADE. No-op if the
+    // camera has no AI jobs.
+    void removeCamera(const std::string& cameraId) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_started) return;
+
+        auto found = m_groups.find(cameraId);
+        if (found == m_groups.end()) return;
+
+        teardownLocked(found->second);
+        m_groups.erase(found);
     }
 
 private:
@@ -143,8 +181,15 @@ private:
 
         for (const cfg::AiJob& jc : group.jobConfigs) {
             if (!jc.enabled) continue;
+            const std::string cameraId = group.camera.id;
             auto job = std::unique_ptr<AiJob>(new AiJob(
-                jc, [this](AiResult r) {
+                jc, [this, cameraId](AiResult r) {
+                    // Stash the latest encoded full frame before the
+                    // result is published, so the snapshot endpoint can
+                    // serve it without opening another RTSP session.
+                    if (!r.fullJpeg.empty()) {
+                        cacheLatestJpeg(cameraId, r.fullJpeg);
+                    }
                     if (m_publisher) m_publisher->publish(r);
                 }));
             if (!job->init()) {
@@ -171,6 +216,22 @@ private:
                      group.camera.id.c_str(), group.jobs.size());
     }
 
+    struct CachedJpeg {
+        std::vector<uint8_t> jpeg;
+        std::chrono::steady_clock::time_point timestamp;
+    };
+
+    // Called from every AI job's worker thread on every result frame.
+    // Separate mutex from m_mutex so snapshot reads (HTTP handlers) and
+    // applyJob/removeJob (HTTP handlers too) do not block AI workers.
+    void cacheLatestJpeg(const std::string& cameraId,
+                         const std::vector<uint8_t>& jpeg) {
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        auto& slot = m_latestJpegs[cameraId];
+        slot.jpeg = jpeg;  // copy; ~100KB
+        slot.timestamp = std::chrono::steady_clock::now();
+    }
+
     static constexpr const char* kSocketPath = "/tmp/ai_engine.sock";
     static constexpr int kInferW = 640;
     static constexpr int kInferH = 640;
@@ -180,6 +241,9 @@ private:
     bool m_started = false;
     std::unique_ptr<ResultPublisher> m_publisher;
     std::map<std::string, CameraGroup> m_groups;
+
+    mutable std::mutex m_cacheMutex;
+    std::unordered_map<std::string, CachedJpeg> m_latestJpegs;
 };
 
 #endif  // AI_ENGINE_AI_MANAGER_HPP

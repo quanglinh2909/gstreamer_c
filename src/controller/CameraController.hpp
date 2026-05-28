@@ -76,6 +76,26 @@ public:
                                  m_service.getStreamStatus(id));
     }
 
+    ENDPOINT_INFO(getSnapshot) {
+        info->summary = "Capture a JPEG snapshot from the camera's live stream";
+        info->addResponse<String>(Status::CODE_200, "image/jpeg");
+        info->addResponse<oatpp::Object<StatusDto>>(
+            Status::CODE_404, "application/json");
+        info->addResponse<oatpp::Object<StatusDto>>(
+            Status::CODE_502, "application/json");
+    }
+    ENDPOINT("GET", "/cameras/{id}/snapshot", getSnapshot,
+             PATH(oatpp::String, id))
+    {
+        const std::string jpeg = m_service.getSnapshot(id);
+        auto response = createResponse(
+            Status::CODE_200, oatpp::String(jpeg.data(), jpeg.size()));
+        response->putHeader("Content-Type", "image/jpeg");
+        response->putHeader("Cache-Control", "no-store");
+        response->putHeader("Access-Control-Allow-Origin", "*");
+        return response;
+    }
+
     ENDPOINT_INFO(create) {
         info->summary = "Create a camera";
         info->addConsumes<oatpp::Object<CreateCameraDto>>("application/json");

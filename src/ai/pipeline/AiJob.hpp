@@ -26,8 +26,7 @@
 #include "FrameTypes.hpp"
 #include "JpegEncoder.hpp"
 #include "RgaConverter.hpp"
-#include "models/Detector.hpp"
-#include "models/Stage2Model.hpp"
+#include "models/AiModel.hpp"
 #include "transforms/Transform.hpp"
 
 #include "common.h"
@@ -47,26 +46,26 @@ public:
 
     // Resolves and loads the models/transform. Call before start().
     bool init() {
-        m_detector = ai::createDetector(m_cfg.model1Type);
-        if (!m_detector) {
+        m_model1 = ai::createModel(m_cfg.model1Type);
+        if (!m_model1) {
             std::fprintf(stderr, "[job %s] unknown model_type: %s\n",
                          m_cfg.jobId.c_str(), m_cfg.model1Type.c_str());
             return false;
         }
-        if (!m_detector->load(m_cfg.model1Path)) {
+        if (!m_model1->load(m_cfg.model1Path)) {
             std::fprintf(stderr, "[job %s] failed to load model 1: %s\n",
                          m_cfg.jobId.c_str(), m_cfg.model1Path.c_str());
             return false;
         }
 
         if (m_cfg.hasModel2()) {
-            m_stage2 = ai::createStage2(m_cfg.model2Type);
-            if (!m_stage2) {
+            m_model2 = ai::createModel(m_cfg.model2Type);
+            if (!m_model2) {
                 std::fprintf(stderr, "[job %s] unknown model_type_2: %s\n",
                              m_cfg.jobId.c_str(), m_cfg.model2Type.c_str());
                 return false;
             }
-            if (!m_stage2->load(m_cfg.model2Path)) {
+            if (!m_model2->load(m_cfg.model2Path)) {
                 std::fprintf(stderr, "[job %s] failed to load model 2: %s\n",
                              m_cfg.jobId.c_str(), m_cfg.model2Path.c_str());
                 return false;
@@ -90,8 +89,8 @@ public:
         if (!m_running.exchange(false)) return;
         m_queue.close();
         if (m_thread.joinable()) m_thread.join();
-        m_detector.reset();
-        m_stage2.reset();
+        m_model1.reset();
+        m_model2.reset();
     }
 
     // Called from the camera pipeline thread; never blocks (drop-old queue).
@@ -123,8 +122,7 @@ private:
             process(frame);
 
             // Report how many frames this job actually processes per second,
-            // and how many the drop-old queue discarded because the worker
-            // could not keep up.
+            // and how many the drop-old queue discarded.
             ++processedInWindow;
             const uint64_t elapsed = nowMs() - fpsWindowStart;
             if (elapsed >= 1000) {
@@ -154,7 +152,7 @@ private:
 
         object_detect_result_list results;
         std::memset(&results, 0, sizeof(results));
-        if (!m_detector->detect(img, results)) return;
+        if (!m_model1->detect(img, results)) return;
 
         AiResult res;
         res.cameraId = m_cfg.cameraId;
@@ -192,7 +190,7 @@ private:
                 det.keypoints.push_back(d.keypoints[k].score);
             }
 
-            if (m_stage2) runStage2(*f, det);
+            if (m_model2) runStage2(*f, det);
 
             res.detections.push_back(std::move(det));
         }
@@ -201,14 +199,14 @@ private:
         if (m_sink) m_sink(std::move(res));
     }
 
-    // Transform the detection crop, then run the stage-2 model on it.
+    // Transform the detection crop, then run model 2 on it.
     void runStage2(const Frame& f, Detection& det) {
         TransformContext ctx;
         ctx.frame = &f;
         ctx.det = &det;
         ctx.keypoints = &det.keypoints;
-        ctx.targetW = m_stage2->inputWidth();
-        ctx.targetH = m_stage2->inputHeight();
+        ctx.targetW = m_model2->inputWidth();
+        ctx.targetH = m_model2->inputHeight();
 
         std::vector<uint8_t> stageInput;
         if (!m_transform->apply(ctx, stageInput)) return;
@@ -224,44 +222,27 @@ private:
         img.size = static_cast<int>(stageInput.size());
         img.fd = -1;
 
-        m_stage2->run(img, det);
+        m_model2->runStage2(img, det);
     }
 
+    // Encodes only the full frame to JPEG. Per-detection crops are deliberately
+    // NOT encoded here — the Python consumer cuts them out of this full frame.
+    // Skipping the per-crop RGA + JPEG work keeps it off the hot path.
     void encodeImages(const Frame& f, AiResult& res) {
         std::vector<uint8_t> packed;
         int pw = 0, ph = 0;
         if (rga::cropNv12ToNv12(f, 0, 0, f.width, f.height, packed, pw, ph)) {
-            jpeg::encodeNv12(packed.data(), pw, ph, res.fullJpeg);
-        }
-
-        for (auto& det : res.detections) {
-            int cx = std::max(0, static_cast<int>(det.x1));
-            int cy = std::max(0, static_cast<int>(det.y1));
-            int cw = static_cast<int>(det.x2) - cx;
-            int ch = static_cast<int>(det.y2) - cy;
-            if (cw <= 1 || ch <= 1) continue;
-            // Pad small detections out so RGA can crop them (RGA rejects tiny
-            // regions); a saved crop with some context is fine.
-            rga::expandCropToMin(cx, cy, cw, ch, f.width, f.height);
-            std::vector<uint8_t> cropNv12;
-            int ow = 0, oh = 0;
-            if (!rga::cropNv12ToNv12(f, cx, cy, cw, ch, cropNv12, ow, oh)) {
-                continue;
-            }
-            std::vector<uint8_t> jpegBytes;
-            if (jpeg::encodeNv12(cropNv12.data(), ow, oh, jpegBytes)) {
-                res.cropJpegs.push_back(std::move(jpegBytes));
-                det.cropJpegIndex = static_cast<int>(res.cropJpegs.size()) - 1;
-            }
+            m_jpeg.encodeNv12(packed.data(), pw, ph, res.fullJpeg);
         }
     }
 
     cfg::AiJob m_cfg;
     ResultSink m_sink;
 
-    std::unique_ptr<Detector> m_detector;
-    std::unique_ptr<Stage2Model> m_stage2;
-    Transform* m_transform = nullptr;  // owned by AiCatalog (shared singleton)
+    std::unique_ptr<AiModel> m_model1;  // stage 1: runs on the full frame
+    std::unique_ptr<AiModel> m_model2;  // stage 2: runs on each crop (optional)
+    Transform* m_transform = nullptr;   // owned by AiCatalog (shared singleton)
+    JpegEncoder m_jpeg;                // persistent hardware JPEG pipeline
 
     BoundedQueue<FramePtr> m_queue{1};
     std::thread m_thread;

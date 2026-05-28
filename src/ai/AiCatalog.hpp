@@ -4,22 +4,24 @@
 // Central registry for AI model types and stage-2 helpers — the one place
 // that knows which concrete classes exist.
 //
+// Models are stage-agnostic: every registered model type may be picked as
+// model 1 (runs on the full frame) or model 2 (runs on each crop). A model
+// only acts on the role it implements — see AiModel — so e.g. face_recognition
+// picked as model 1 simply yields no detections.
+//
 // ────────────────────── To add a new type ──────────────────────
-//  * new stage-1 detector : implement Detector in models/, add one line to
-//                           createDetector() and detectorTypes()
-//  * new stage-2 model    : implement Stage2Model in models/, add one line to
-//                           createStage2() and stage2Types()
-//  * new helper/transform : implement Transform in transforms/, add one line
-//                           to transformList()
+//  * new model     : implement AiModel in models/, add one line to
+//                     createModel() and modelTypes()
+//  * new transform : implement Transform in transforms/, add one line to
+//                     transformList()
 // Nothing else in the codebase needs to change — AiJob, the REST validation
-// and GET /ai-transforms all read from here.
+// and the GET /ai-* endpoints all read from here.
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "models/Detector.hpp"
-#include "models/Stage2Model.hpp"
+#include "models/AiModel.hpp"
 #include "transforms/Transform.hpp"
 
 #include "models/FaceRecognitionModel.hpp"
@@ -33,26 +35,23 @@
 
 namespace ai {
 
-// --- stage-1 detectors -------------------------------------------------------
-inline std::unique_ptr<Detector> createDetector(const std::string& type) {
-    if (type == "yolov8_detect") return std::unique_ptr<Detector>(new Yolov8DetectModel());
-    if (type == "yolov8_pose")   return std::unique_ptr<Detector>(new Yolov8PoseModel());
-    if (type == "yolov8_seg")    return std::unique_ptr<Detector>(new Yolov8SegModel());
+// --- models ------------------------------------------------------------------
+// One factory for both stages: the returned model can be used as model 1 or
+// model 2 — AiModel handles whichever role the job assigns it.
+inline std::unique_ptr<AiModel> createModel(const std::string& type) {
+    if (type == "yolov8_detect")    return std::unique_ptr<AiModel>(new Yolov8DetectModel());
+    if (type == "yolov8_pose")      return std::unique_ptr<AiModel>(new Yolov8PoseModel());
+    if (type == "yolov8_seg")       return std::unique_ptr<AiModel>(new Yolov8SegModel());
+    if (type == "face_recognition") return std::unique_ptr<AiModel>(new FaceRecognitionModel());
     return nullptr;
 }
 
-inline std::vector<std::string> detectorTypes() {
-    return {"yolov8_detect", "yolov8_pose", "yolov8_seg"};
+inline std::vector<std::string> modelTypes() {
+    return {"yolov8_detect", "yolov8_pose", "yolov8_seg", "face_recognition"};
 }
 
-// --- stage-2 models ----------------------------------------------------------
-inline std::unique_ptr<Stage2Model> createStage2(const std::string& type) {
-    if (type == "face_recognition") return std::unique_ptr<Stage2Model>(new FaceRecognitionModel());
-    return nullptr;
-}
-
-inline std::vector<std::string> stage2Types() {
-    return {"face_recognition"};
+inline bool isModelType(const std::string& type) {
+    return createModel(type) != nullptr;
 }
 
 // --- stage-2 helpers (transforms) -------------------------------------------
@@ -73,14 +72,6 @@ inline Transform* getTransform(const std::string& id) {
         if (transform->id() == id) return transform.get();
     }
     return nullptr;
-}
-
-inline bool isDetectorType(const std::string& type) {
-    return createDetector(type) != nullptr;
-}
-
-inline bool isStage2Type(const std::string& type) {
-    return createStage2(type) != nullptr;
 }
 
 }  // namespace ai

@@ -1,15 +1,17 @@
 #ifndef AI_ENGINE_FACE_RECOGNITION_MODEL_HPP
 #define AI_ENGINE_FACE_RECOGNITION_MODEL_HPP
 
-// Stage-2 model: face embedding network (e.g. ArcFace / AdaFace). Consumes an
-// aligned face crop and writes a feature vector into the detection.
+// Face embedding network (e.g. ArcFace / AdaFace). A stage-2-style model: it
+// consumes an aligned face crop and writes a feature vector into the parent
+// detection. It is not a detector, so detect() keeps the AiModel default —
+// picking it as model 1 simply yields no detections.
 
 #include <cstring>
 
-#include "Stage2Model.hpp"
+#include "AiModel.hpp"
 #include "face_recognition.h"
 
-class FaceRecognitionModel : public Stage2Model {
+class FaceRecognitionModel : public AiModel {
 public:
     ~FaceRecognitionModel() override { release_face_recognition_model(&m_ctx); }
 
@@ -25,14 +27,14 @@ public:
         return m_ctx.model_height > 0 ? m_ctx.model_height : 112;
     }
 
-    bool run(image_buffer_t& img, Detection& det) override {
+    bool runStage2(image_buffer_t& img, Detection& parent) override {
         face_embedding_result_t emb;
         std::memset(&emb, 0, sizeof(emb));
         if (inference_face_recognition_model(&m_ctx, &img, &emb) != 0 ||
             !emb.valid) {
             return false;
         }
-        det.embedding.assign(emb.embedding, emb.embedding + emb.dim);
+        parent.embedding.assign(emb.embedding, emb.embedding + emb.dim);
         return true;
     }
 

@@ -72,8 +72,14 @@ private:
 
     void buildAndStart() {
         GError* err = nullptr;
+        // application/x-rtp,media=video filter drops any audio RTP stream
+        // the camera also emits — without it, decodebin tries to handle
+        // every dynamic pad rtspsrc exposes, and a single failed audio
+        // negotiation tears the whole pipeline down with the famously
+        // unhelpful "Internal data stream error".
         m_pipeline = gst_parse_launch(
             "rtspsrc name=src latency=200 protocols=tcp drop-on-latency=true ! "
+            "application/x-rtp,media=video ! "
             "decodebin ! video/x-raw,format=NV12 ! "
             "appsink name=sink sync=false max-buffers=2 drop=true",
             &err);
@@ -112,6 +118,11 @@ private:
         }
     }
 
+    // Mark the current attempt as healthy. The bus watch flips us back
+    // to PLAYING once it sees a buffer flow successfully; until then we
+    // assume the connect is still tentative and keep the backoff state.
+    void noteHealthy() { m_reconnectAttempts = 0; }
+
     void teardown() {
         if (m_pipeline) {
             gst_element_set_state(m_pipeline, GST_STATE_NULL);
@@ -123,14 +134,25 @@ private:
     void scheduleReconnect() {
         if (!m_running.load()) return;
         teardown();
-        g_timeout_add(2000, &AiCameraPipeline::onReconnectThunk, this);
+        // Exponential backoff capped at 30s. Without it a camera that's
+        // permanently down (wrong URL, credential change, hardware off)
+        // triggers a connect attempt every 2s — floods logs, hammers the
+        // camera's RTSP port and burns CPU on pipeline build/teardown.
+        // Reset to 2s once a fresh frame proves the link is healthy.
+        const guint delays_ms[] = {2000, 5000, 10000, 20000, 30000};
+        const size_t idx = m_reconnectAttempts < sizeof(delays_ms) / sizeof(delays_ms[0])
+                               ? m_reconnectAttempts
+                               : sizeof(delays_ms) / sizeof(delays_ms[0]) - 1;
+        ++m_reconnectAttempts;
+        g_timeout_add(delays_ms[idx], &AiCameraPipeline::onReconnectThunk, this);
     }
 
     static gboolean onReconnectThunk(gpointer user) {
         auto* self = static_cast<AiCameraPipeline*>(user);
         if (self->m_running.load()) {
-            std::fprintf(stderr, "[ai cam %s] reconnecting...\n",
-                         self->m_camera.id.c_str());
+            std::fprintf(stderr, "[ai cam %s] reconnecting (attempt %u)...\n",
+                         self->m_camera.id.c_str(),
+                         self->m_reconnectAttempts);
             self->buildAndStart();
         }
         return G_SOURCE_REMOVE;
@@ -144,9 +166,14 @@ private:
                 GError* e = nullptr;
                 gchar* dbg = nullptr;
                 gst_message_parse_error(msg, &e, &dbg);
-                std::fprintf(stderr, "[ai cam %s] error: %s\n",
+                // GStreamer's e->message is famously generic ("Internal
+                // data stream error"); the real cause (element name,
+                // pad, codec mismatch, ...) is in `dbg`. Logging both
+                // makes per-camera failures actually diagnosable.
+                std::fprintf(stderr, "[ai cam %s] error: %s | debug: %s\n",
                              self->m_camera.id.c_str(),
-                             e && e->message ? e->message : "unknown");
+                             e && e->message ? e->message : "unknown",
+                             dbg ? dbg : "(none)");
                 if (e) g_error_free(e);
                 if (dbg) g_free(dbg);
             }
@@ -173,6 +200,10 @@ private:
         // Decode + letterbox once; fan the shared Frame out to every job.
         FramePtr frame = buildFrame(sample);
         if (frame) {
+            // A successful sample means the link is alive — clear any
+            // reconnect backoff so a *future* failure starts again at the
+            // short 2s interval instead of the capped 30s.
+            noteHealthy();
             for (AiJob* job : m_jobs) job->submit(frame);
         }
         return GST_FLOW_OK;
@@ -238,6 +269,9 @@ private:
     GMainLoop* m_loop = nullptr;
     GstElement* m_pipeline = nullptr;
     std::atomic<uint64_t> m_seq{0};
+    // Only touched from the GLib main-loop thread (build/teardown/reconnect
+    // callbacks all run there), so no atomicity required.
+    unsigned m_reconnectAttempts = 0;
 };
 
 #endif  // AI_ENGINE_AI_CAMERA_PIPELINE_HPP

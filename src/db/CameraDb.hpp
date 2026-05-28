@@ -19,21 +19,21 @@ public:
 
     QUERY(createCamera,
           "INSERT INTO cameras("
-          "  name, rtsp, status, state, input_rtsp, output_rtsp, codec, "
+          "  name, rtsp, state, input_rtsp, output_rtsp, codec, "
           "  hardware, recording_enabled, recording_mode, motion_enabled, "
           "  motion_sensitivity, motion_threshold, pre_motion_seconds, "
           "  post_motion_seconds, segment_seconds, motion_keyframe_only, "
           "  retry_count, last_error, last_changed_at"
           ") "
           "VALUES ("
-          "  :name, :rtsp, :status, 'stopped', :rtsp, '', 'unknown', "
+          "  :name, :rtsp, 'offline', :rtsp, '', 'unknown', "
           "  COALESCE(:hardware, 'auto'), COALESCE(:recordingEnabled, false), "
           "  COALESCE(:recordingMode, 'off'), COALESCE(:motionEnabled, false), "
           "  COALESCE(:motionSensitivity, 0.5), COALESCE(:motionThreshold, 0.01), "
           "  COALESCE(:preMotionSeconds, 10), COALESCE(:postMotionSeconds, 20), "
           "  COALESCE(:segmentSeconds, 10), COALESCE(:motionKeyframeOnly, false), 0, '', ''"
           ") "
-          "RETURNING CAST(id AS text) AS id, name, rtsp, status, state, "
+          "RETURNING CAST(id AS text) AS id, name, rtsp, state, "
           "input_rtsp AS \"inputRtsp\", output_rtsp AS \"outputRtsp\", codec, hardware, "
           "recording_enabled AS \"recordingEnabled\", retry_count AS \"retryCount\", "
           "recording_mode AS \"recordingMode\", motion_enabled AS \"motionEnabled\", "
@@ -43,9 +43,7 @@ public:
           "motion_keyframe_only AS \"motionKeyframeOnly\", "
           "last_error AS \"lastError\", last_changed_at AS \"lastChangedAt\";",
           PARAM(oatpp::String, name),
-          PARAM(oatpp::String, rtsp),
-          PARAM(oatpp::String, status),
-          PARAM(oatpp::String, hardware),
+          PARAM(oatpp::String, rtsp),          PARAM(oatpp::String, hardware),
           PARAM(oatpp::Boolean, recordingEnabled),
           PARAM(oatpp::String, recordingMode),
           PARAM(oatpp::Boolean, motionEnabled),
@@ -57,7 +55,7 @@ public:
           PARAM(oatpp::Boolean, motionKeyframeOnly))
 
     QUERY(getCameraById,
-          "SELECT CAST(id AS text) AS id, name, rtsp, status, state, "
+          "SELECT CAST(id AS text) AS id, name, rtsp, state, "
           "input_rtsp AS \"inputRtsp\", output_rtsp AS \"outputRtsp\", codec, hardware, "
           "recording_enabled AS \"recordingEnabled\", retry_count AS \"retryCount\", "
           "recording_mode AS \"recordingMode\", motion_enabled AS \"motionEnabled\", "
@@ -70,7 +68,7 @@ public:
           PARAM(oatpp::String, id))
 
     QUERY(getAllCameras,
-          "SELECT CAST(id AS text) AS id, name, rtsp, status, state, "
+          "SELECT CAST(id AS text) AS id, name, rtsp, state, "
           "input_rtsp AS \"inputRtsp\", output_rtsp AS \"outputRtsp\", codec, hardware, "
           "recording_enabled AS \"recordingEnabled\", retry_count AS \"retryCount\", "
           "recording_mode AS \"recordingMode\", motion_enabled AS \"motionEnabled\", "
@@ -84,7 +82,7 @@ public:
           PARAM(oatpp::Int64, offset))
 
     QUERY(getAllCamerasForStartup,
-          "SELECT CAST(id AS text) AS id, name, rtsp, status, state, "
+          "SELECT CAST(id AS text) AS id, name, rtsp, state, "
           "input_rtsp AS \"inputRtsp\", output_rtsp AS \"outputRtsp\", codec, hardware, "
           "recording_enabled AS \"recordingEnabled\", retry_count AS \"retryCount\", "
           "recording_mode AS \"recordingMode\", motion_enabled AS \"motionEnabled\", "
@@ -100,7 +98,6 @@ public:
           "  name              = COALESCE(:name, name), "
           "  rtsp              = COALESCE(:rtsp, rtsp), "
           "  input_rtsp        = COALESCE(:rtsp, input_rtsp), "
-          "  status            = COALESCE(:status, status), "
           "  hardware          = COALESCE(:hardware, hardware), "
           "  recording_enabled = COALESCE(:recordingEnabled, recording_enabled), "
           "  recording_mode    = COALESCE(:recordingMode, recording_mode), "
@@ -112,7 +109,7 @@ public:
           "  segment_seconds   = COALESCE(:segmentSeconds, segment_seconds), "
           "  motion_keyframe_only = COALESCE(:motionKeyframeOnly, motion_keyframe_only) "
           "WHERE id = CAST(:id AS uuid) "
-          "RETURNING CAST(id AS text) AS id, name, rtsp, status, state, "
+          "RETURNING CAST(id AS text) AS id, name, rtsp, state, "
           "input_rtsp AS \"inputRtsp\", output_rtsp AS \"outputRtsp\", codec, hardware, "
           "recording_enabled AS \"recordingEnabled\", retry_count AS \"retryCount\", "
           "recording_mode AS \"recordingMode\", motion_enabled AS \"motionEnabled\", "
@@ -123,9 +120,7 @@ public:
           "last_error AS \"lastError\", last_changed_at AS \"lastChangedAt\";",
           PARAM(oatpp::String, id),
           PARAM(oatpp::String, name),
-          PARAM(oatpp::String, rtsp),
-          PARAM(oatpp::String, status),
-          PARAM(oatpp::String, hardware),
+          PARAM(oatpp::String, rtsp),          PARAM(oatpp::String, hardware),
           PARAM(oatpp::Boolean, recordingEnabled),
           PARAM(oatpp::String, recordingMode),
           PARAM(oatpp::Boolean, motionEnabled),
@@ -138,7 +133,6 @@ public:
 
     QUERY(updateCameraStreamSnapshot,
           "UPDATE cameras SET "
-          "  status            = :status, "
           "  state             = :state, "
           "  input_rtsp        = :inputRtsp, "
           "  output_rtsp       = :outputRtsp, "
@@ -149,9 +143,7 @@ public:
           "  last_error        = :lastError, "
           "  last_changed_at   = :lastChangedAt "
           "WHERE id = CAST(:id AS uuid);",
-          PARAM(oatpp::String, id),
-          PARAM(oatpp::String, status),
-          PARAM(oatpp::String, state),
+          PARAM(oatpp::String, id),          PARAM(oatpp::String, state),
           PARAM(oatpp::String, inputRtsp),
           PARAM(oatpp::String, outputRtsp),
           PARAM(oatpp::String, codec),
@@ -167,7 +159,7 @@ public:
 
     QUERY(deleteCameraReturning,
           "DELETE FROM cameras WHERE id = CAST(:id AS uuid) "
-          "RETURNING CAST(id AS text) AS id, name, rtsp, status, state, "
+          "RETURNING CAST(id AS text) AS id, name, rtsp, state, "
           "input_rtsp AS \"inputRtsp\", output_rtsp AS \"outputRtsp\", codec, hardware, "
           "recording_enabled AS \"recordingEnabled\", retry_count AS \"retryCount\", "
           "recording_mode AS \"recordingMode\", motion_enabled AS \"motionEnabled\", "

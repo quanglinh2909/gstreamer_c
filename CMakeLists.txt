@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(oatpp CONFIG REQUIRED)
 find_package(oatpp-postgresql CONFIG REQUIRED)
 find_package(oatpp-swagger CONFIG REQUIRED)
+find_package(oatpp-websocket CONFIG REQUIRED)
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GSTREAMER QUIET IMPORTED_TARGET
@@ -59,6 +60,7 @@ target_link_libraries(test_gstreamer PRIVATE
     oatpp::oatpp
     oatpp::oatpp-postgresql
     oatpp::oatpp-swagger
+    oatpp::oatpp-websocket
     PkgConfig::GSTREAMER
     PkgConfig::OPENCV
     rknnrt
