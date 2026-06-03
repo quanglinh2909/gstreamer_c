@@ -4,6 +4,7 @@
 // The default stage-2 helper: crop the detection box straight from the frame
 // and resize it to the model-2 input size. No alignment.
 
+#include "CpuCrop.hpp"
 #include "RgaConverter.hpp"
 #include "Transform.hpp"
 
@@ -22,6 +23,18 @@ public:
         int w = static_cast<int>(d.x2 - d.x1);
         int h = static_cast<int>(d.y2 - d.y1);
         if (w <= 1 || h <= 1) return false;
+        // DETR-style stage-2 models (rf_detect) want the object to fill the
+        // input — crop tight to the box (no context padding), matching the
+        // reference rfdetr.predict(crop). RGA can't do this: its ~16x scale
+        // limit fails when a small crop (e.g. a 30px plate) is blown up to the
+        // 512 model input, so route the tight path through the CPU cropper,
+        // which has no scale limit. yolov8 keeps the RGA context crop.
+        if (ctx.tightCrop) {
+            const Frame& fr = *ctx.frame;
+            return cropNv12ToRgbCpu(fr.nv12, fr.width, fr.height, fr.yStride,
+                                    fr.uvOffset, fr.uvStride, x, y, w, h,
+                                    ctx.targetW, ctx.targetH, outRgb);
+        }
         rga::expandCropToMin(x, y, w, h, ctx.frame->width, ctx.frame->height);
         return rga::cropNv12ToRgb(*ctx.frame, x, y, w, h, ctx.targetW,
                                   ctx.targetH, outRgb);

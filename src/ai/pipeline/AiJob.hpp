@@ -207,6 +207,7 @@ private:
         ctx.keypoints = &det.keypoints;
         ctx.targetW = m_model2->inputWidth();
         ctx.targetH = m_model2->inputHeight();
+        ctx.tightCrop = m_model2->prefersTightCrop();
 
         std::vector<uint8_t> stageInput;
         if (!m_transform->apply(ctx, stageInput)) return;

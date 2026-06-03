@@ -25,6 +25,7 @@
 #include "transforms/Transform.hpp"
 
 #include "models/FaceRecognitionModel.hpp"
+#include "models/RfDetectModel.hpp"
 #include "models/Yolov8DetectModel.hpp"
 #include "models/Yolov8PoseModel.hpp"
 #include "models/Yolov8SegModel.hpp"
@@ -42,12 +43,13 @@ inline std::unique_ptr<AiModel> createModel(const std::string& type) {
     if (type == "yolov8_detect")    return std::unique_ptr<AiModel>(new Yolov8DetectModel());
     if (type == "yolov8_pose")      return std::unique_ptr<AiModel>(new Yolov8PoseModel());
     if (type == "yolov8_seg")       return std::unique_ptr<AiModel>(new Yolov8SegModel());
+    if (type == "rf_detect")        return std::unique_ptr<AiModel>(new RfDetectModel());
     if (type == "face_recognition") return std::unique_ptr<AiModel>(new FaceRecognitionModel());
     return nullptr;
 }
 
 inline std::vector<std::string> modelTypes() {
-    return {"yolov8_detect", "yolov8_pose", "yolov8_seg", "face_recognition"};
+    return {"yolov8_detect", "yolov8_pose", "yolov8_seg", "rf_detect", "face_recognition"};
 }
 
 inline bool isModelType(const std::string& type) {

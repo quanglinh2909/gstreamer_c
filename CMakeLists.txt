@@ -31,8 +31,19 @@ pkg_check_modules(OPENCV REQUIRED IMPORTED_TARGET opencv4)
 
 # RKNN runtime headers. librknnrt.so / librga.so live in /usr/lib.
 set(RKNN_INCLUDE_DIR
-    "/home/orangepi/Documents/rknn-toolkit2/rknpu2/runtime/Linux/librknn_api/include"
+    "/home/orangepi/Documents/rknn_model_zoo/3rdparty/rknpu2/include"
     CACHE PATH "Directory containing rknn_api.h")
+
+# ONNX Runtime (CPU) for the RF-DETR detection head. Vendored prebuilt aarch64
+# release lives under third_party/onnxruntime (headers + libonnxruntime.so).
+set(ONNXRUNTIME_DIR
+    "${CMAKE_SOURCE_DIR}/third_party/onnxruntime"
+    CACHE PATH "ONNX Runtime install dir containing include/ and lib/")
+find_library(ONNXRUNTIME_LIB
+    NAMES onnxruntime
+    PATHS "${ONNXRUNTIME_DIR}/lib"
+    NO_DEFAULT_PATH
+    REQUIRED)
 
 # Reused detect_ai core (yolov8 / postprocess / bytetrack / face_align / ...).
 set(AI_DETECT_SOURCES
@@ -47,6 +58,8 @@ set(AI_DETECT_SOURCES
 add_executable(test_gstreamer
     src/App.cpp
     ${AI_DETECT_SOURCES}
+    src/ai/models/RfDetectModel.cc
+    src/ai/CpuCrop.cc
 )
 
 target_include_directories(test_gstreamer PRIVATE
@@ -54,6 +67,7 @@ target_include_directories(test_gstreamer PRIVATE
     src/ai
     src/ai/detect_ai
     ${RKNN_INCLUDE_DIR}
+    ${ONNXRUNTIME_DIR}/include
 )
 
 target_link_libraries(test_gstreamer PRIVATE
@@ -65,6 +79,7 @@ target_link_libraries(test_gstreamer PRIVATE
     PkgConfig::OPENCV
     rknnrt
     rga
+    ${ONNXRUNTIME_LIB}
 )
 
 # Path to swagger UI static resources, shipped with oatpp-swagger.
@@ -85,6 +100,13 @@ message(STATUS "Swagger UI resources: ${OATPP_SWAGGER_RES_DIR}")
 
 target_compile_definitions(test_gstreamer PRIVATE
     OATPP_SWAGGER_RES_PATH="${OATPP_SWAGGER_RES_DIR}"
+)
+
+# Let the binary find the vendored libonnxruntime.so at runtime without
+# needing LD_LIBRARY_PATH.
+set_target_properties(test_gstreamer PROPERTIES
+    BUILD_RPATH "${ONNXRUNTIME_DIR}/lib"
+    INSTALL_RPATH "${ONNXRUNTIME_DIR}/lib"
 )
 
 # Make config/ and sql/ available next to the binary so the default

@@ -161,7 +161,6 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
     image_buffer_t dst_img;
     letterbox_t letter_box;
     rknn_input inputs[1];  // Fixed size - model has 1 input
-    rknn_output outputs[12];  // Fixed size - max outputs (model has 9)
     const float nms_threshold = NMS_THRESH;      // 默认的NMS阈值
     const float box_conf_threshold = BOX_THRESH; // 默认的置信度阈值
     int bg_color = 114;
@@ -172,16 +171,21 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
                app_ctx, img, od_results);
         return -1;
     }
-    
+
     if (app_ctx->rknn_ctx == 0) {
         printf("ERROR: RKNN context is invalid!\n");
         return -1;
     }
 
+    // Size the output buffer to the model's real output count. A fixed [12]
+    // array previously overflowed the stack for models with more tensors
+    // (e.g. a 13-output yolov8-seg export loaded as yolov8_detect), corrupting
+    // the caller's frame and crashing in rknn_outputs_get.
+    std::vector<rknn_output> outputs(app_ctx->io_num.n_output);
+
     memset(od_results, 0x00, sizeof(*od_results));
     memset(&letter_box, 0, sizeof(letterbox_t));
     memset(inputs, 0, sizeof(inputs));
-    memset(outputs, 0, sizeof(outputs));
 
     // Skip letterbox conversion - input is already preprocessed in main
     // Set letterbox to identity transform
@@ -219,13 +223,13 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
     }
 
     // Get Output
-    memset(outputs, 0, sizeof(outputs));
+    memset(outputs.data(), 0, outputs.size() * sizeof(rknn_output));
     for (int i = 0; i < app_ctx->io_num.n_output; i++)
     {
         outputs[i].index = i;
         outputs[i].want_float = 1;
     }
-    ret = rknn_outputs_get(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs, NULL);
+    ret = rknn_outputs_get(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs.data(), NULL);
     if (ret < 0)
     {
         printf("rknn_outputs_get fail! ret=%d\n", ret);
@@ -233,10 +237,10 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
     }
 
     // Post Process
-    post_process(app_ctx, outputs, &letter_box, box_conf_threshold, nms_threshold, od_results);
+    post_process(app_ctx, outputs.data(), &letter_box, box_conf_threshold, nms_threshold, od_results);
 
     // Remeber to release rknn output
-    rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs);
+    rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs.data());
 
 out:
     // Note: dst_img not used anymore, using input buffer directly

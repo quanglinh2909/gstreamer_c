@@ -25,8 +25,8 @@ struct AiJob {
     std::string cameraId;
     bool enabled = true;
 
-    std::string model1Path;
-    std::string model1Type;       // yolov8_detect | yolov8_pose | yolov8_seg
+    std::string model1Path;       // rf_detect: backbone .rknn; head .onnx is "<stem>_detect.onnx" beside it
+    std::string model1Type;       // yolov8_detect | yolov8_pose | yolov8_seg | rf_detect
     std::set<int> classFilter;    // empty => keep all classes
 
     std::string model2Path;       // empty => single-stage job

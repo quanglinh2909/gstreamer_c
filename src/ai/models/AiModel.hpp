@@ -62,6 +62,12 @@ public:
     virtual int inputWidth() const = 0;
     virtual int inputHeight() const = 0;
 
+    // When this model runs as stage 2, whether the crop should be tight to the
+    // detection box (object fills the input) rather than expanded with context.
+    // DETR-style detectors (rf_detect) are trained on a plain resize-to-square
+    // of the tight object, so they override this. yolov8 wants context → false.
+    virtual bool prefersTightCrop() const { return false; }
+
     // Stage-1 role: run on the (letterboxed) inference frame and produce a
     // list of detections. Default: this model is not a detector.
     virtual bool detect(image_buffer_t& /*img*/,

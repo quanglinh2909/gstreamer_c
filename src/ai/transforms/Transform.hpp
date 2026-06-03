@@ -23,6 +23,10 @@ struct TransformContext {
     const std::vector<float>* keypoints;  // flat (x,y,score) triples, full-res
     int targetW;                          // stage-2 model input width
     int targetH;                          // stage-2 model input height
+    // When true the helper crops tight to the detection box (no context
+    // padding) so the object fills the model input — what DETR-style models
+    // (rf_detect) expect. Set by AiJob from the stage-2 model's preference.
+    bool tightCrop = false;
 };
 
 class Transform {
