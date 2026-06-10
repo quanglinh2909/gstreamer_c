@@ -1,0 +1,25 @@
+services:
+  postgres:
+    container_name: postgres-sql-parking
+    image: postgres
+    environment:
+      POSTGRES_USER: oryza
+      POSTGRES_PASSWORD: Oryza@123
+      PGDATA: /var/lib/postgresql/data
+      POSTGRES_DB: parking
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - 5433:5432
+    networks:
+      - network-parking
+    restart: unless-stopped
+  
+networks:
+  network-parking:
+    driver: bridge
+
+volumes:
+  postgres:
+    driver: local
