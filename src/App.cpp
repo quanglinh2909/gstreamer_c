@@ -19,6 +19,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <thread>
+#include <algorithm>
 
 namespace {
 std::shared_ptr<oatpp::network::Server> g_server;
@@ -31,6 +34,37 @@ std::string resolveConfigPath(int argc, char* argv[]) {
     if (argc > 1) return argv[1];
     if (const char* env = std::getenv("CONFIG_PATH")) return env;
     return "config/config.json";
+}
+
+// Retry a startup step that depends on the database. Postgres (often a Docker
+// container) may not be ready when this process starts, in which case oatpp
+// throws std::runtime_error("...Can't connect.") from getConnection(). Without
+// this, the exception propagates out of run()/main, std::terminate aborts the
+// process and a core dump is written. We instead wait with backoff and retry.
+template <typename Fn>
+void runDbStartupStep(const char* what, Fn&& step) {
+    constexpr int   kMaxAttempts = 30;   // ~ up to ~2 min total with the cap below
+    constexpr int   kInitialMs   = 1000;
+    constexpr int   kMaxMs       = 5000;
+    int delayMs = kInitialMs;
+    for (int attempt = 1; ; ++attempt) {
+        try {
+            step();
+            return;
+        } catch (const std::exception& e) {
+            if (attempt >= kMaxAttempts) {
+                std::cerr << "[startup] " << what << " failed after " << attempt
+                          << " attempts: " << e.what()
+                          << " -- giving up, continuing without it." << std::endl;
+                return;
+            }
+            std::cerr << "[startup] " << what << " failed (attempt " << attempt
+                      << "): " << e.what() << " -- retrying in " << delayMs
+                      << "ms (is PostgreSQL up?)" << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+            delayMs = std::min(delayMs * 2, kMaxMs);
+        }
+    }
 }
 }
 
@@ -64,12 +98,16 @@ void run(const std::string& configPath) {
     auto webSocketController = std::make_shared<WebSocketController>();
     router->addController(webSocketController);
 
-    CameraService startupCameraService;
-    startupCameraService.startAllStreamsFromDatabase();
+    runDbStartupStep("start camera streams from database", [] {
+        CameraService startupCameraService;
+        startupCameraService.startAllStreamsFromDatabase();
+    });
 
     // Load enabled AI jobs from the database into the live AI subsystem.
-    AiJobService startupAiJobService;
-    startupAiJobService.startAllFromDatabase();
+    runDbStartupStep("load AI jobs from database", [] {
+        AiJobService startupAiJobService;
+        startupAiJobService.startAllFromDatabase();
+    });
 
     auto docEndpoints = cameraController->getEndpoints();
     docEndpoints.append(aiJobController->getEndpoints());
