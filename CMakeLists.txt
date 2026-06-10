@@ -30,8 +30,10 @@ endif()
 pkg_check_modules(OPENCV REQUIRED IMPORTED_TARGET opencv4)
 
 # RKNN runtime headers. librknnrt.so / librga.so live in /usr/lib.
+# Headers are vendored under third_party/rknpu2/include so the build does not
+# depend on an external rknn_model_zoo checkout.
 set(RKNN_INCLUDE_DIR
-    "/home/orangepi/Documents/rknn_model_zoo/3rdparty/rknpu2/include"
+    "${CMAKE_SOURCE_DIR}/third_party/rknpu2/include"
     CACHE PATH "Directory containing rknn_api.h")
 
 # ONNX Runtime (CPU) for the RF-DETR detection head. Vendored prebuilt aarch64
