@@ -35,12 +35,12 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
 {
     int ret;
     int model_len = 0;
-    char *model;
+    char *model = NULL;
     rknn_context ctx = 0;
 
     // Load RKNN Model
     model_len = read_data_from_file(model_path, &model);
-    if (model == NULL)
+    if (model_len < 0 || model == NULL)
     {
         printf("load_model fail!\n");
         return -1;

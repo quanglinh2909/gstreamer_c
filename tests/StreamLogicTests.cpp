@@ -243,9 +243,15 @@ void testMotionDecoderCandidates() {
             == std::vector<std::string>{"nvh265dec", "avdec_h265"}));
     assert((recording::motionDecoderCandidates("v4l2", SC::H264)
             == std::vector<std::string>{"v4l2h264dec", "avdec_h264"}));
+    assert((recording::motionDecoderCandidates("mpp", SC::H264)
+            == std::vector<std::string>{"mppvideodec", "avdec_h264"}));
+    assert((recording::motionDecoderCandidates("rockchip", SC::H265)
+            == std::vector<std::string>{"mppvideodec", "avdec_h265"}));
 
+    // mppvideodec leads "auto": on Rockchip boards it is usually the only
+    // decoder installed, and on everything else factory resolution skips it.
     assert((recording::motionDecoderCandidates("auto", SC::H264)
-            == std::vector<std::string>{"vah264dec", "nvh264dec", "v4l2h264dec", "avdec_h264"}));
+            == std::vector<std::string>{"mppvideodec", "vah264dec", "nvh264dec", "v4l2h264dec", "avdec_h264"}));
 
     // Unknown / empty values behave like "auto".
     assert(recording::motionDecoderCandidates("banana", SC::H264)

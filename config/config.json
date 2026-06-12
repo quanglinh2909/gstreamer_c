@@ -4,7 +4,7 @@
     "port": 8009
   },
   "database": {
-    "url": "postgresql://oryza:Oryza%40123@localhost:5433/test_gstreamer",
+    "url": "postgresql://oryza:Oryza%40123@localhost:5433/parking",
     "poolMaxConnections": 10,
     "poolIdleSeconds": 60
   },

@@ -142,8 +142,25 @@ public:
         return createDtoResponse(Status::CODE_200, m_service.deleteAiJob(id));
     }
 
+    ENDPOINT_INFO(debugArm) {
+        info->summary =
+            "Keep a job's live debug stream encoding for a few seconds. The "
+            "MJPEG viewer calls this on connect and periodically; the engine "
+            "auto-stops debug encoding once the calls stop.";
+        info->addResponse<oatpp::String>(Status::CODE_200, "text/plain");
+    }
+    ENDPOINT("POST", "/ai-jobs/{id}/debug-arm", debugArm, PATH(oatpp::String, id))
+    {
+        // 5s TTL: comfortably longer than the viewer's ~2s re-arm interval, so
+        // a brief network hiccup doesn't stutter the stream, yet it goes idle
+        // within a few seconds of the viewer disconnecting.
+        m_ai->armJobDebug(std::string(id->c_str()), 5000);
+        return createResponse(Status::CODE_200, "armed");
+    }
+
 private:
     AiJobService m_service;
+    OATPP_COMPONENT(std::shared_ptr<AiManager>, m_ai);
 };
 
 #include OATPP_CODEGEN_END(ApiController)

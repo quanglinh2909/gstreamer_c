@@ -17,6 +17,7 @@ pkg_check_modules(GSTREAMER QUIET IMPORTED_TARGET
     gstreamer-rtsp-server-1.0
     gstreamer-app-1.0
     gstreamer-video-1.0
+    gstreamer-allocators-1.0
 )
 if(NOT GSTREAMER_FOUND)
     message(FATAL_ERROR

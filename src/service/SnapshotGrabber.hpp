@@ -10,6 +10,7 @@
 // connection is held open. Blocking: call it from an HTTP handler thread, not
 // from a GLib main-loop thread.
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -35,9 +36,21 @@ inline GrabResult grabJpeg(const std::string& rtspUrl,
         return result;
     }
 
+    // Prefer the Rockchip MPP hardware JPEG encoder: with mppvideodec
+    // upstream the NV12 buffer goes straight in (videoconvert collapses to
+    // passthrough) and the CPU encodes nothing. jpegenc stays as the
+    // software fallback for other platforms.
+    std::string jpegEncoder = "jpegenc quality=" + std::to_string(jpegQuality);
+    if (GstElementFactory* f = gst_element_factory_find("mppjpegenc")) {
+        gst_object_unref(f);
+        // mppjpegenc's q-factor range is 1..99 (jpegenc allows up to 100).
+        const int qf = std::max(1, std::min(99, jpegQuality));
+        jpegEncoder = "mppjpegenc q-factor=" + std::to_string(qf);
+    }
+
     // The application/x-rtp,media=video filter drops the audio stream so
     // decodebin only ever sees video; video/x-raw forces a system-memory
-    // buffer that videoconvert / jpegenc can consume on any decoder.
+    // buffer that videoconvert / the JPEG encoder can consume on any decoder.
     const std::string launch =
         "rtspsrc name=src protocols=tcp drop-on-latency=true latency=" +
         std::to_string(latencyMs) +
@@ -45,7 +58,7 @@ inline GrabResult grabJpeg(const std::string& rtspUrl,
         " ! decodebin"
         " ! video/x-raw"
         " ! videoconvert"
-        " ! jpegenc quality=" + std::to_string(jpegQuality) +
+        " ! " + jpegEncoder +
         " ! appsink name=sink max-buffers=1 drop=false sync=false";
 
     GError* err = nullptr;

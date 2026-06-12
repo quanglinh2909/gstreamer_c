@@ -1,0 +1,602 @@
+2026-06-12 16:11:15 [ai] started, socket /tmp/ai_engine.sock
+2026-06-12 16:11:15 Server running on http://0.0.0.0:8009  (Swagger UI: /swagger/ui)  [config: config/config.json]
+2026-06-12 16:11:16 ResultPublisher: consumer connected (fd=7)
+2026-06-12 16:11:17 model input num: 1, output num: 13
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=375, n_dims=4, dims=[1, 64, 80, 80], n_elems=409600, size=409600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-30, scale=0.833956
+2026-06-12 16:11:17   index=1, name=onnx::ReduceSum_383, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=2, name=388, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000417
+2026-06-12 16:11:17   index=3, name=354, n_dims=4, dims=[1, 32, 80, 80], n_elems=204800, size=204800, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-1, scale=0.043489
+2026-06-12 16:11:17   index=4, name=395, n_dims=4, dims=[1, 64, 40, 40], n_elems=102400, size=102400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-40, scale=1.170820
+2026-06-12 16:11:17   index=5, name=onnx::ReduceSum_403, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=6, name=407, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000129
+2026-06-12 16:11:17   index=7, name=361, n_dims=4, dims=[1, 32, 40, 40], n_elems=51200, size=51200, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=25, scale=0.053781
+2026-06-12 16:11:17   index=8, name=414, n_dims=4, dims=[1, 64, 20, 20], n_elems=25600, size=25600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-52, scale=0.052178
+2026-06-12 16:11:17   index=9, name=onnx::ReduceSum_422, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=10, name=426, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000000
+2026-06-12 16:11:17   index=11, name=368, n_dims=4, dims=[1, 32, 20, 20], n_elems=12800, size=12800, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=7, scale=0.010816
+2026-06-12 16:11:17   index=12, name=347, n_dims=4, dims=[1, 32, 160, 160], n_elems=819200, size=819200, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-122, scale=0.048829
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:17 model input num: 1, output num: 9
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=318, n_dims=4, dims=[1, 64, 80, 80], n_elems=409600, size=409600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-43, scale=0.453074
+2026-06-12 16:11:17   index=1, name=onnx::ReduceSum_326, n_dims=4, dims=[1, 31, 80, 80], n_elems=198400, size=198400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=2, name=331, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001771
+2026-06-12 16:11:17   index=3, name=338, n_dims=4, dims=[1, 64, 40, 40], n_elems=102400, size=102400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-28, scale=0.181241
+2026-06-12 16:11:17   index=4, name=onnx::ReduceSum_346, n_dims=4, dims=[1, 31, 40, 40], n_elems=49600, size=49600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003170
+2026-06-12 16:11:17   index=5, name=350, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003311
+2026-06-12 16:11:17   index=6, name=357, n_dims=4, dims=[1, 64, 20, 20], n_elems=25600, size=25600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-83, scale=0.048392
+2026-06-12 16:11:17   index=7, name=onnx::ReduceSum_365, n_dims=4, dims=[1, 31, 20, 20], n_elems=12400, size=12400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=8, name=369, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000425
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:17 [ai] camera 81ef53eb-f0b2-4828-bcff-0b1f8350ae11 running 1 job(s)
+2026-06-12 16:11:17 model input num: 1, output num: 13
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=375, n_dims=4, dims=[1, 64, 80, 80], n_elems=409600, size=409600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-30, scale=0.833956
+2026-06-12 16:11:17   index=1, name=onnx::ReduceSum_383, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=2, name=388, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000417
+2026-06-12 16:11:17   index=3, name=354, n_dims=4, dims=[1, 32, 80, 80], n_elems=204800, size=204800, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-1, scale=0.043489
+2026-06-12 16:11:17   index=4, name=395, n_dims=4, dims=[1, 64, 40, 40], n_elems=102400, size=102400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-40, scale=1.170820
+2026-06-12 16:11:17   index=5, name=onnx::ReduceSum_403, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=6, name=407, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000129
+2026-06-12 16:11:17   index=7, name=361, n_dims=4, dims=[1, 32, 40, 40], n_elems=51200, size=51200, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=25, scale=0.053781
+2026-06-12 16:11:17   index=8, name=414, n_dims=4, dims=[1, 64, 20, 20], n_elems=25600, size=25600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-52, scale=0.052178
+2026-06-12 16:11:17   index=9, name=onnx::ReduceSum_422, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=10, name=426, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000000
+2026-06-12 16:11:17   index=11, name=368, n_dims=4, dims=[1, 32, 20, 20], n_elems=12800, size=12800, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=7, scale=0.010816
+2026-06-12 16:11:17   index=12, name=347, n_dims=4, dims=[1, 32, 160, 160], n_elems=819200, size=819200, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-122, scale=0.048829
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:17 model input num: 1, output num: 9
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=318, n_dims=4, dims=[1, 64, 80, 80], n_elems=409600, size=409600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-43, scale=0.453074
+2026-06-12 16:11:17   index=1, name=onnx::ReduceSum_326, n_dims=4, dims=[1, 31, 80, 80], n_elems=198400, size=198400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=2, name=331, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001771
+2026-06-12 16:11:17   index=3, name=338, n_dims=4, dims=[1, 64, 40, 40], n_elems=102400, size=102400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-28, scale=0.181241
+2026-06-12 16:11:17   index=4, name=onnx::ReduceSum_346, n_dims=4, dims=[1, 31, 40, 40], n_elems=49600, size=49600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003170
+2026-06-12 16:11:17   index=5, name=350, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003311
+2026-06-12 16:11:17   index=6, name=357, n_dims=4, dims=[1, 64, 20, 20], n_elems=25600, size=25600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-83, scale=0.048392
+2026-06-12 16:11:17   index=7, name=onnx::ReduceSum_365, n_dims=4, dims=[1, 31, 20, 20], n_elems=12400, size=12400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=8, name=369, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000425
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:17 [ai] camera f1ddc4e2-ae91-412b-872f-664d7c42aba6 running 1 job(s)
+2026-06-12 16:11:17 model input num: 1, output num: 13
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=375, n_dims=4, dims=[1, 64, 80, 80], n_elems=409600, size=409600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-30, scale=0.833956
+2026-06-12 16:11:17   index=1, name=onnx::ReduceSum_383, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=2, name=388, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000417
+2026-06-12 16:11:17   index=3, name=354, n_dims=4, dims=[1, 32, 80, 80], n_elems=204800, size=204800, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-1, scale=0.043489
+2026-06-12 16:11:17   index=4, name=395, n_dims=4, dims=[1, 64, 40, 40], n_elems=102400, size=102400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-40, scale=1.170820
+2026-06-12 16:11:17   index=5, name=onnx::ReduceSum_403, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=6, name=407, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000129
+2026-06-12 16:11:17   index=7, name=361, n_dims=4, dims=[1, 32, 40, 40], n_elems=51200, size=51200, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=25, scale=0.053781
+2026-06-12 16:11:17   index=8, name=414, n_dims=4, dims=[1, 64, 20, 20], n_elems=25600, size=25600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-52, scale=0.052178
+2026-06-12 16:11:17   index=9, name=onnx::ReduceSum_422, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=10, name=426, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000000
+2026-06-12 16:11:17   index=11, name=368, n_dims=4, dims=[1, 32, 20, 20], n_elems=12800, size=12800, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=7, scale=0.010816
+2026-06-12 16:11:17   index=12, name=347, n_dims=4, dims=[1, 32, 160, 160], n_elems=819200, size=819200, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-122, scale=0.048829
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:17 model input num: 1, output num: 9
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=318, n_dims=4, dims=[1, 64, 80, 80], n_elems=409600, size=409600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-43, scale=0.453074
+2026-06-12 16:11:17   index=1, name=onnx::ReduceSum_326, n_dims=4, dims=[1, 31, 80, 80], n_elems=198400, size=198400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=2, name=331, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001771
+2026-06-12 16:11:17   index=3, name=338, n_dims=4, dims=[1, 64, 40, 40], n_elems=102400, size=102400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-28, scale=0.181241
+2026-06-12 16:11:17   index=4, name=onnx::ReduceSum_346, n_dims=4, dims=[1, 31, 40, 40], n_elems=49600, size=49600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003170
+2026-06-12 16:11:17   index=5, name=350, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003311
+2026-06-12 16:11:17   index=6, name=357, n_dims=4, dims=[1, 64, 20, 20], n_elems=25600, size=25600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-83, scale=0.048392
+2026-06-12 16:11:17   index=7, name=onnx::ReduceSum_365, n_dims=4, dims=[1, 31, 20, 20], n_elems=12400, size=12400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=8, name=369, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000425
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:17 [ai] camera 61a4e5d0-849f-482f-a004-b25ee95e29ad running 1 job(s)
+2026-06-12 16:11:17 model input num: 1, output num: 13
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=375, n_dims=4, dims=[1, 64, 80, 80], n_elems=409600, size=409600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-30, scale=0.833956
+2026-06-12 16:11:17   index=1, name=onnx::ReduceSum_383, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=2, name=388, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000417
+2026-06-12 16:11:17   index=3, name=354, n_dims=4, dims=[1, 32, 80, 80], n_elems=204800, size=204800, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-1, scale=0.043489
+2026-06-12 16:11:17   index=4, name=395, n_dims=4, dims=[1, 64, 40, 40], n_elems=102400, size=102400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-40, scale=1.170820
+2026-06-12 16:11:17   index=5, name=onnx::ReduceSum_403, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=6, name=407, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000129
+2026-06-12 16:11:17   index=7, name=361, n_dims=4, dims=[1, 32, 40, 40], n_elems=51200, size=51200, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=25, scale=0.053781
+2026-06-12 16:11:17   index=8, name=414, n_dims=4, dims=[1, 64, 20, 20], n_elems=25600, size=25600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-52, scale=0.052178
+2026-06-12 16:11:17   index=9, name=onnx::ReduceSum_422, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=10, name=426, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000000
+2026-06-12 16:11:17   index=11, name=368, n_dims=4, dims=[1, 32, 20, 20], n_elems=12800, size=12800, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=7, scale=0.010816
+2026-06-12 16:11:17   index=12, name=347, n_dims=4, dims=[1, 32, 160, 160], n_elems=819200, size=819200, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-122, scale=0.048829
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:17 model input num: 1, output num: 9
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=318, n_dims=4, dims=[1, 64, 80, 80], n_elems=409600, size=409600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-43, scale=0.453074
+2026-06-12 16:11:17   index=1, name=onnx::ReduceSum_326, n_dims=4, dims=[1, 31, 80, 80], n_elems=198400, size=198400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=2, name=331, n_dims=4, dims=[1, 1, 80, 80], n_elems=6400, size=6400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001771
+2026-06-12 16:11:17   index=3, name=338, n_dims=4, dims=[1, 64, 40, 40], n_elems=102400, size=102400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-28, scale=0.181241
+2026-06-12 16:11:17   index=4, name=onnx::ReduceSum_346, n_dims=4, dims=[1, 31, 40, 40], n_elems=49600, size=49600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003170
+2026-06-12 16:11:17   index=5, name=350, n_dims=4, dims=[1, 1, 40, 40], n_elems=1600, size=1600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003311
+2026-06-12 16:11:17   index=6, name=357, n_dims=4, dims=[1, 64, 20, 20], n_elems=25600, size=25600, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-83, scale=0.048392
+2026-06-12 16:11:17   index=7, name=onnx::ReduceSum_365, n_dims=4, dims=[1, 31, 20, 20], n_elems=12400, size=12400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.001961
+2026-06-12 16:11:17   index=8, name=369, n_dims=4, dims=[1, 1, 20, 20], n_elems=400, size=400, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.000425
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:17 [ai] camera ca8ffe13-f9bb-4f53-a039-accbec0f2c89 running 1 job(s)
+2026-06-12 16:11:17 model input num: 1, output num: 4
+2026-06-12 16:11:17 input tensors:
+2026-06-12 16:11:17   index=0, name=images, n_dims=4, dims=[1, 640, 640, 3], n_elems=1228800, size=1228800, fmt=NHWC, type=INT8, qnt_type=AFFINE, zp=-128, scale=0.003922
+2026-06-12 16:11:17 output tensors:
+2026-06-12 16:11:17   index=0, name=384, n_dims=4, dims=[1, 65, 80, 80], n_elems=416000, size=416000, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=74, scale=0.263038
+2026-06-12 16:11:17   index=1, name=399, n_dims=4, dims=[1, 65, 40, 40], n_elems=104000, size=104000, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=27, scale=0.401044
+2026-06-12 16:11:17   index=2, name=414, n_dims=4, dims=[1, 65, 20, 20], n_elems=26000, size=26000, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=49, scale=0.198288
+2026-06-12 16:11:17   index=3, name=535, n_dims=4, dims=[1, 5, 3, 8400], n_elems=126000, size=126000, fmt=NCHW, type=INT8, qnt_type=AFFINE, zp=-85, scale=3.668259
+2026-06-12 16:11:17 model is NHWC input fmt
+2026-06-12 16:11:17 model input height=640, width=640, channel=3
+2026-06-12 16:11:18 face_recognition input num: 1, output num: 2
+2026-06-12 16:11:18 face_recognition input tensors:
+2026-06-12 16:11:18   index=0, name=input, n_dims=4, dims=[1, 112, 112, 3], n_elems=37632, size=75264, fmt=NHWC, type=FP16, qnt_type=AFFINE, zp=0, scale=1.000000
+2026-06-12 16:11:18 face_recognition output tensors:
+2026-06-12 16:11:18   index=0, name=embedding, n_dims=2, dims=[1, 512, 0, 0], n_elems=512, size=1024, fmt=UNDEFINED, type=FP16, qnt_type=AFFINE, zp=0, scale=1.000000
+2026-06-12 16:11:18   index=1, name=norm, n_dims=2, dims=[1, 1, 0, 0], n_elems=1, size=2, fmt=UNDEFINED, type=FP16, qnt_type=AFFINE, zp=0, scale=1.000000
+2026-06-12 16:11:18 face_recognition input height=112, width=112, channel=3
+2026-06-12 16:11:18 [ai] camera 00e50e11-0b60-4496-8cb2-9f69e3e51b70 running 1 job(s)
+2026-06-12 16:11:18 rga_api version 1.9.3_[2]
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=1 channels=1 grid=6400 min=0.001961 max=0.001961 mean=0.001961 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=1 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=2 channels=1 grid=6400 min=0.002086 max=0.002086 mean=0.002086 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=2 first_values=0.002086,0.002086,0.002086,0.002086,0.002086
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=5 channels=1 grid=1600 min=0.001961 max=0.001961 mean=0.001961 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=5 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=6 channels=1 grid=1600 min=0.001935 max=0.001935 mean=0.001935 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=6 first_values=0.001935,0.001935,0.001935,0.001935,0.001935
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=9 channels=1 grid=400 min=0.001961 max=0.001961 mean=0.001961 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=9 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=10 channels=1 grid=400 min=0.000028 max=0.000028 mean=0.000028 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=10 first_values=0.000028,0.000028,0.000028,0.000028,0.000028
+2026-06-12 16:11:18 [postprocess-debug] seg selected_boxes=0 conf_threshold=0.100
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=1 channels=1 grid=6400 min=0.001961 max=0.005882 mean=0.001961 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=1 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=2 channels=1 grid=6400 min=0.002086 max=0.005842 mean=0.002087 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=2 first_values=0.002086,0.002086,0.002086,0.002086,0.002086
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=5 channels=1 grid=1600 min=0.001961 max=0.001961 mean=0.001961 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=5 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=6 channels=1 grid=1600 min=0.001935 max=0.001935 mean=0.001935 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=6 first_values=0.001935,0.001935,0.001935,0.001935,0.001935
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=9 channels=1 grid=400 min=0.001961 max=0.001961 mean=0.001961 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=9 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=10 channels=1 grid=400 min=0.000028 max=0.000028 mean=0.000028 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=10 first_values=0.000028,0.000028,0.000028,0.000028,0.000028
+2026-06-12 16:11:18 [postprocess-debug] seg selected_boxes=0 conf_threshold=0.100
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=1 channels=1 grid=6400 min=0.001961 max=0.005882 mean=0.001963 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=1 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=2 channels=1 grid=6400 min=0.002086 max=0.005842 mean=0.002088 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=2 first_values=0.002086,0.002086,0.002086,0.002086,0.002086
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=5 channels=1 grid=1600 min=0.001961 max=0.009804 mean=0.001968 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=5 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=6 channels=1 grid=1600 min=0.001935 max=0.009806 mean=0.001943 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=6 first_values=0.001935,0.001935,0.001935,0.001935,0.001935
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=9 channels=1 grid=400 min=0.001961 max=0.001961 mean=0.001961 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-score tensor=9 first_values=0.001961,0.001961,0.001961,0.001961,0.001961
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=10 channels=1 grid=400 min=0.000028 max=0.000028 mean=0.000028 gt0.1=0 gt0.25=0 gt0.5=0
+2026-06-12 16:11:18 [postprocess-debug] seg-aux tensor=10 first_values=0.000028,0.000028,0.000028,0.000028,0.000028
+2026-06-12 16:11:18 [postprocess-debug] seg selected_boxes=0 conf_threshold=0.100
+2026-06-12 16:11:18 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 3 processed/s, 4 dropped/s
+2026-06-12 16:11:18 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:18 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:18 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:19 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 1 processed/s, 6 dropped/s
+2026-06-12 16:11:19 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:20 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:20 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:20 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:20 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:20 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:21 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:21 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:21 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:21 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 5 dropped/s
+2026-06-12 16:11:21 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:22 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:22 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:22 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:22 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:23 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 14 dropped/s
+2026-06-12 16:11:23 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:23 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:23 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:24 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:24 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 8 dropped/s
+2026-06-12 16:11:24 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 3 processed/s, 5 dropped/s
+2026-06-12 16:11:24 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 4 dropped/s
+2026-06-12 16:11:25 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:25 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:25 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 11 dropped/s
+2026-06-12 16:11:25 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:25 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:26 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:26 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:26 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:26 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:27 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:27 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 7 dropped/s
+2026-06-12 16:11:27 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:28 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:28 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:28 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:28 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 4 dropped/s
+2026-06-12 16:11:28 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:29 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:29 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:29 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 2 dropped/s
+2026-06-12 16:11:29 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 2 processed/s, 10 dropped/s
+2026-06-12 16:11:30 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:30 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:30 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:30 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:30 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:31 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:31 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:31 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 3 dropped/s
+2026-06-12 16:11:31 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:31 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 11 dropped/s
+2026-06-12 16:11:32 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:32 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 2 dropped/s
+2026-06-12 16:11:32 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 2 dropped/s
+2026-06-12 16:11:32 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:33 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:33 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:33 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:33 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:33 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:34 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:34 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:34 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:34 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:34 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:35 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:35 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:36 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:36 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:36 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:37 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:37 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 5 dropped/s
+2026-06-12 16:11:37 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 10 dropped/s
+2026-06-12 16:11:37 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:37 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 3 dropped/s
+2026-06-12 16:11:38 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:38 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:38 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:38 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 4 dropped/s
+2026-06-12 16:11:38 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:39 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:39 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:39 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:39 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 3 dropped/s
+2026-06-12 16:11:39 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:40 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:40 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:40 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:40 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:41 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 4 dropped/s
+2026-06-12 16:11:41 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:41 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:41 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:42 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:42 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 6 dropped/s
+2026-06-12 16:11:42 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:42 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:42 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:43 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 2 dropped/s
+2026-06-12 16:11:43 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 1 processed/s, 7 dropped/s
+2026-06-12 16:11:43 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:43 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:43 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:44 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:44 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:44 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:44 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:45 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:45 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 10 dropped/s
+2026-06-12 16:11:45 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:45 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:46 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:46 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:46 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 0 dropped/s
+2026-06-12 16:11:46 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:47 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:47 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:47 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 2 dropped/s
+2026-06-12 16:11:47 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:48 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:48 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:48 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:48 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:48 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 2 processed/s, 2 dropped/s
+2026-06-12 16:11:49 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:49 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:49 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:49 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:50 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 4 dropped/s
+2026-06-12 16:11:50 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:50 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:50 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:50 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:51 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:51 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 2 processed/s, 4 dropped/s
+2026-06-12 16:11:51 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:52 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:52 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:52 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 8 dropped/s
+2026-06-12 16:11:52 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:52 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 3 dropped/s
+2026-06-12 16:11:53 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:11:53 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:53 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 2 processed/s, 11 dropped/s
+2026-06-12 16:11:53 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:54 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:54 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:54 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:54 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:55 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 2 dropped/s
+2026-06-12 16:11:55 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 5 dropped/s
+2026-06-12 16:11:55 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 2 dropped/s
+2026-06-12 16:11:55 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:55 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 0 dropped/s
+2026-06-12 16:11:56 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:56 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 9 dropped/s
+2026-06-12 16:11:56 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:56 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:56 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:11:57 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 3 processed/s, 4 dropped/s
+2026-06-12 16:11:57 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 2 processed/s, 3 dropped/s
+2026-06-12 16:11:57 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:57 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:11:57 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 2 dropped/s
+2026-06-12 16:11:58 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:58 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:11:58 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:58 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 15 dropped/s
+2026-06-12 16:11:59 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:11:59 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:00 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:00 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:00 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 3 dropped/s
+2026-06-12 16:12:00 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:01 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:01 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:01 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 5 dropped/s
+2026-06-12 16:12:01 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:01 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:02 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:02 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:02 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 4 dropped/s
+2026-06-12 16:12:02 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:02 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:03 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:03 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:03 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 6 dropped/s
+2026-06-12 16:12:03 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:03 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:04 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:04 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:04 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:05 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:05 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 9 dropped/s
+2026-06-12 16:12:05 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:05 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:05 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:06 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:06 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 5 dropped/s
+2026-06-12 16:12:06 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:06 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 3 processed/s, 1 dropped/s
+2026-06-12 16:12:06 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:07 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:07 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 2 processed/s, 5 dropped/s
+2026-06-12 16:12:07 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:07 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 4 dropped/s
+2026-06-12 16:12:07 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:08 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:08 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:09 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:09 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:09 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 12 dropped/s
+2026-06-12 16:12:09 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:09 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:10 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:10 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 8 dropped/s
+2026-06-12 16:12:10 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:11 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:11 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:11 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 3 dropped/s
+2026-06-12 16:12:11 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 5 dropped/s
+2026-06-12 16:12:11 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:12 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:12 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:12 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:12 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:13 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 5 dropped/s
+2026-06-12 16:12:13 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:13 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:13 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:13 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:14 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 9 dropped/s
+2026-06-12 16:12:14 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:14 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:14 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:15 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:15 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 13 dropped/s
+2026-06-12 16:12:15 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:15 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:16 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:16 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:16 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:17 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:17 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 6 dropped/s
+2026-06-12 16:12:17 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:17 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:17 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:18 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 6 dropped/s
+2026-06-12 16:12:18 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:18 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:18 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:19 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:19 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 8 dropped/s
+2026-06-12 16:12:19 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:19 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 3 dropped/s
+2026-06-12 16:12:19 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:20 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:20 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:20 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:20 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:20 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:21 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:21 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 2 processed/s, 7 dropped/s
+2026-06-12 16:12:21 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:21 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:21 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:22 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:22 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 12 dropped/s
+2026-06-12 16:12:22 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:22 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:23 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:23 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:23 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:23 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 3 dropped/s
+2026-06-12 16:12:24 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:24 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:24 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 3 processed/s, 3 dropped/s
+2026-06-12 16:12:24 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:25 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:25 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:25 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 3 processed/s, 1 dropped/s
+2026-06-12 16:12:25 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:25 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:26 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:26 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:26 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 3 dropped/s
+2026-06-12 16:12:26 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:27 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:27 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:27 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:27 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 2 processed/s, 3 dropped/s
+2026-06-12 16:12:27 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:28 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:28 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:28 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:29 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 10 dropped/s
+2026-06-12 16:12:29 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:29 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:29 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:30 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:30 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:30 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 1 processed/s, 4 dropped/s
+2026-06-12 16:12:30 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 2 dropped/s
+2026-06-12 16:12:31 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:31 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:31 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:31 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 12 dropped/s
+2026-06-12 16:12:31 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:32 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:32 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:32 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:32 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 2 dropped/s
+2026-06-12 16:12:33 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:33 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 4 processed/s, 11 dropped/s
+2026-06-12 16:12:33 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 3 dropped/s
+2026-06-12 16:12:33 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:34 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:34 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:34 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:34 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:35 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 6 processed/s, 15 dropped/s
+2026-06-12 16:12:35 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 3 dropped/s
+2026-06-12 16:12:35 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 4 processed/s, 1 dropped/s
+2026-06-12 16:12:35 [ai fps] job ee1aac25-81a2-46ff-a0a0-a3bb207ce666: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:35 [ai fps] job 9c68a63b-8291-472d-a5ec-48b8e45993a4: 5 processed/s, 1 dropped/s
+2026-06-12 16:12:36 [ai fps] job 62efaf2f-6e1f-4f13-9db7-e63acba2042d: 4 processed/s, 0 dropped/s
+2026-06-12 16:12:36 [ai fps] job fa8b31f9-326b-4732-8944-db1711130b2d: 5 processed/s, 6 dropped/s
+2026-06-12 16:12:36 [ai fps] job c98963db-fba5-462c-8514-17e86c0675d4: 5 processed/s, 0 dropped/s
+2026-06-12 16:12:38 jpeg: no output within timeout
+2026-06-12 16:13:02 
+2026-06-12 16:13:02 (test_gstreamer:13971): GStreamer-Video-CRITICAL **: 16:13:02.955: gst_video_decoder_negotiate_default: assertion 'GST_VIDEO_INFO_WIDTH (&state->info) != 0' failed
+2026-06-12 16:13:03 
+2026-06-12 16:13:03 (test_gstreamer:13971): GStreamer-Video-CRITICAL **: 16:13:03.076: gst_video_decoder_negotiate_default: assertion 'GST_VIDEO_INFO_WIDTH (&state->info) != 0' failed
+2026-06-12 16:13:03 
+2026-06-12 16:13:03 (test_gstreamer:13971): GStreamer-Video-CRITICAL **: 16:13:03.302: gst_video_decoder_negotiate_default: assertion 'GST_VIDEO_INFO_WIDTH (&state->info) != 0' failed
+2026-06-12 16:13:03 
+2026-06-12 16:13:03 (test_gstreamer:13971): GStreamer-Video-CRITICAL **: 16:13:03.420: gst_video_decoder_negotiate_default: assertion 'GST_VIDEO_INFO_WIDTH (&state->info) != 0' failed
+2026-06-12 16:13:04 
+2026-06-12 16:13:04 (test_gstreamer:13971): GStreamer-Video-CRITICAL **: 16:13:04.947: gst_video_decoder_negotiate_default: assertion 'GST_VIDEO_INFO_WIDTH (&state->info) != 0' failed
+2026-06-12 16:13:05 [ai cam f1ddc4e2-ae91-412b-872f-664d7c42aba6] reconnecting (attempt 1)...
+2026-06-12 16:13:05 [ai cam 61a4e5d0-849f-482f-a004-b25ee95e29ad] reconnecting (attempt 1)...
+2026-06-12 16:13:05 [ai cam 00e50e11-0b60-4496-8cb2-9f69e3e51b70] reconnecting (attempt 1)...
+2026-06-12 16:13:05 [ai cam ca8ffe13-f9bb-4f53-a039-accbec0f2c89] reconnecting (attempt 1)...
+2026-06-12 16:13:10 [ai cam 81ef53eb-f0b2-4828-bcff-0b1f8350ae11] reconnecting (attempt 1)...
+2026-06-12 16:13:23 [ai cam f1ddc4e2-ae91-412b-872f-664d7c42aba6] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline38/GstRTSPSrc:src:
+2026-06-12 16:13:23 Failed to connect. (Generic error)
+2026-06-12 16:13:24 [ai cam 61a4e5d0-849f-482f-a004-b25ee95e29ad] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline40/GstRTSPSrc:src:
+2026-06-12 16:13:24 Failed to connect. (Generic error)
+2026-06-12 16:13:24 [ai cam ca8ffe13-f9bb-4f53-a039-accbec0f2c89] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline42/GstRTSPSrc:src:
+2026-06-12 16:13:24 Failed to connect. (Generic error)
+2026-06-12 16:13:25 [ai cam 00e50e11-0b60-4496-8cb2-9f69e3e51b70] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline41/GstRTSPSrc:src:
+2026-06-12 16:13:25 Failed to connect. (Timeout while waiting for server response)
+2026-06-12 16:13:28 [ai cam f1ddc4e2-ae91-412b-872f-664d7c42aba6] reconnecting (attempt 2)...
+2026-06-12 16:13:29 [ai cam 61a4e5d0-849f-482f-a004-b25ee95e29ad] reconnecting (attempt 2)...
+2026-06-12 16:13:29 [ai cam ca8ffe13-f9bb-4f53-a039-accbec0f2c89] reconnecting (attempt 2)...
+2026-06-12 16:13:30 [ai cam 00e50e11-0b60-4496-8cb2-9f69e3e51b70] reconnecting (attempt 2)...
+2026-06-12 16:13:30 [ai cam 81ef53eb-f0b2-4828-bcff-0b1f8350ae11] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline44/GstRTSPSrc:src:
+2026-06-12 16:13:30 Failed to connect. (Timeout while waiting for server response)
+2026-06-12 16:13:32 [ai cam f1ddc4e2-ae91-412b-872f-664d7c42aba6] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline48/GstRTSPSrc:src:
+2026-06-12 16:13:32 Failed to connect. (Generic error)
+2026-06-12 16:13:32 [ai cam 61a4e5d0-849f-482f-a004-b25ee95e29ad] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline49/GstRTSPSrc:src:
+2026-06-12 16:13:32 Failed to connect. (Generic error)
+2026-06-12 16:13:33 [ai cam ca8ffe13-f9bb-4f53-a039-accbec0f2c89] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline50/GstRTSPSrc:src:
+2026-06-12 16:13:33 Failed to connect. (Generic error)
+2026-06-12 16:13:35 [ai cam 81ef53eb-f0b2-4828-bcff-0b1f8350ae11] reconnecting (attempt 2)...
+2026-06-12 16:13:42 [ai cam f1ddc4e2-ae91-412b-872f-664d7c42aba6] reconnecting (attempt 3)...
+2026-06-12 16:13:42 [ai cam 61a4e5d0-849f-482f-a004-b25ee95e29ad] reconnecting (attempt 3)...
+2026-06-12 16:13:43 [ai cam ca8ffe13-f9bb-4f53-a039-accbec0f2c89] reconnecting (attempt 3)...
+2026-06-12 16:13:44 [ai cam ca8ffe13-f9bb-4f53-a039-accbec0f2c89] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline57/GstRTSPSrc:src:
+2026-06-12 16:13:44 Failed to connect. (Generic error)
+2026-06-12 16:13:45 [ai cam f1ddc4e2-ae91-412b-872f-664d7c42aba6] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline55/GstRTSPSrc:src:
+2026-06-12 16:13:45 Failed to connect. (Generic error)
+2026-06-12 16:13:45 [ai cam 61a4e5d0-849f-482f-a004-b25ee95e29ad] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline56/GstRTSPSrc:src:
+2026-06-12 16:13:45 Failed to connect. (Generic error)
+2026-06-12 16:13:50 [ai cam 00e50e11-0b60-4496-8cb2-9f69e3e51b70] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline51/GstRTSPSrc:src:
+2026-06-12 16:13:50 Failed to connect. (Timeout while waiting for server response)
+2026-06-12 16:13:56 [ai cam 81ef53eb-f0b2-4828-bcff-0b1f8350ae11] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline52/GstRTSPSrc:src:
+2026-06-12 16:13:56 Failed to connect. (Timeout while waiting for server response)
+2026-06-12 16:14:00 [ai cam 00e50e11-0b60-4496-8cb2-9f69e3e51b70] reconnecting (attempt 3)...
+2026-06-12 16:14:04 [ai cam ca8ffe13-f9bb-4f53-a039-accbec0f2c89] reconnecting (attempt 4)...
+2026-06-12 16:14:05 [ai cam f1ddc4e2-ae91-412b-872f-664d7c42aba6] reconnecting (attempt 4)...
+2026-06-12 16:14:05 [ai cam 61a4e5d0-849f-482f-a004-b25ee95e29ad] reconnecting (attempt 4)...
+2026-06-12 16:14:06 [ai cam 81ef53eb-f0b2-4828-bcff-0b1f8350ae11] reconnecting (attempt 3)...
+2026-06-12 16:14:07 [ai cam ca8ffe13-f9bb-4f53-a039-accbec0f2c89] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline60/GstRTSPSrc:src:
+2026-06-12 16:14:07 Failed to connect. (Generic error)
+2026-06-12 16:14:08 [ai cam f1ddc4e2-ae91-412b-872f-664d7c42aba6] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline61/GstRTSPSrc:src:
+2026-06-12 16:14:08 Failed to connect. (Generic error)
+2026-06-12 16:14:09 [ai cam 61a4e5d0-849f-482f-a004-b25ee95e29ad] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline62/GstRTSPSrc:src:
+2026-06-12 16:14:09 Failed to connect. (Generic error)
+2026-06-12 16:14:20 [ai cam 00e50e11-0b60-4496-8cb2-9f69e3e51b70] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline58/GstRTSPSrc:src:
+2026-06-12 16:14:20 Failed to connect. (Timeout while waiting for server response)
+2026-06-12 16:14:26 [ai cam 81ef53eb-f0b2-4828-bcff-0b1f8350ae11] error: Could not open resource for reading and writing. | debug: ../gst/rtsp/gstrtspsrc.c(8130): gst_rtspsrc_retrieve_sdp (): /GstPipeline:pipeline63/GstRTSPSrc:src:
+2026-06-12 16:14:26 Failed to connect. (Timeout while waiting for server response)

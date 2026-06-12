@@ -96,6 +96,15 @@ public:
     // Called from the camera pipeline thread; never blocks (drop-old queue).
     void submit(FramePtr frame) { m_queue.push(std::move(frame)); }
 
+    // Keep the debug stream alive for ttlMs more. Called repeatedly (every
+    // couple of seconds) by the Python MJPEG viewer over HTTP while a client
+    // is watching. Auto-expires so a closed tab / crashed viewer simply stops
+    // re-arming and the per-frame debug encode goes idle on its own — no
+    // stuck-on CPU. Thread-safe and cheap (one atomic store).
+    void armDebug(uint32_t ttlMs) {
+        m_debugUntilMs.store(nowMs() + ttlMs, std::memory_order_relaxed);
+    }
+
     const std::string& cameraId() const { return m_cfg.cameraId; }
     const std::string& jobId() const { return m_cfg.jobId; }
 
@@ -195,7 +204,22 @@ private:
             res.detections.push_back(std::move(det));
         }
 
-        if (!res.detections.empty()) encodeImages(*f, res);
+        // Encode a JPEG when there are detections (every detection frame, so
+        // the Python consumer can cut crops) OR when a debug viewer is
+        // currently watching this job. The debug-only encode is rate-capped
+        // (~5 fps) so a continuous live debug stream stays cheap, and the
+        // arming auto-expires so it costs nothing once the viewer leaves.
+        const bool hasDet = !res.detections.empty();
+        bool encode = hasDet;
+        if (!hasDet &&
+            nowMs() < m_debugUntilMs.load(std::memory_order_relaxed)) {
+            const uint64_t now = nowMs();
+            if (now - m_lastDebugMs >= kDebugMinGapMs) {
+                m_lastDebugMs = now;
+                encode = true;
+            }
+        }
+        if (encode) encodeImages(*f, res);
         if (m_sink) m_sink(std::move(res));
     }
 
@@ -230,10 +254,15 @@ private:
     // NOT encoded here — the Python consumer cuts them out of this full frame.
     // Skipping the per-crop RGA + JPEG work keeps it off the hot path.
     void encodeImages(const Frame& f, AiResult& res) {
-        std::vector<uint8_t> packed;
-        int pw = 0, ph = 0;
-        if (rga::cropNv12ToNv12(f, 0, 0, f.width, f.height, packed, pw, ph)) {
-            m_jpeg.encodeNv12(packed.data(), pw, ph, res.fullJpeg);
+        // Points into a per-thread staging buffer; valid until the next RGA
+        // call on this worker thread — encodeNv12 completes synchronously
+        // before that can happen. The encoder takes it BY FD (dmabuf) when
+        // available so mppjpegenc never get_user_pages a mapped pointer (that
+        // faults the jpege IOMMU and freezes the board).
+        rga::PackedNv12 packed = rga::cropNv12ToNv12(f, 0, 0, f.width, f.height);
+        if (packed) {
+            m_jpeg.encodeNv12(packed.ptr, packed.w, packed.h, res.fullJpeg,
+                              packed.fd);
         }
     }
 
@@ -249,6 +278,12 @@ private:
     std::thread m_thread;
     std::atomic<bool> m_running{false};
     uint64_t m_lastProcessMs = 0;
+
+    // Debug-stream gating (see armDebug). When m_debugUntilMs is in the past,
+    // no debug-only frames are encoded — zero cost when nobody is watching.
+    std::atomic<uint64_t> m_debugUntilMs{0};
+    uint64_t m_lastDebugMs = 0;                       // worker-thread only
+    static constexpr uint64_t kDebugMinGapMs = 200;   // ~5 fps debug cap
 };
 
 #endif  // AI_ENGINE_AI_JOB_HPP

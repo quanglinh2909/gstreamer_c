@@ -3,17 +3,24 @@
 
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include <gst/gst.h>
+#include <rga/im2d.h>
+
+#include "RgaLock.hpp"
 
 // One decoded camera frame. Created once per frame by the camera decoder and
 // shared (shared_ptr) to every AI job queue of that camera — decode once,
 // fan out by ref-count.
 //
 // It carries two views of the same picture:
-//   * the full-resolution NV12 buffer, kept alive through the GstSample ref,
-//     used for stage-2 crops and for JPEG encoding of saved images;
+//   * the full-resolution NV12 buffer, kept alive through the GstSample ref.
+//     When the decoder hands us a dmabuf (the normal case with mppvideodec),
+//     the buffer is imported into RGA by fd — the pixels are never touched by
+//     the CPU and never mapped into this process unless a CPU-only transform
+//     explicitly asks via cpuNv12(). Otherwise it is a plain mapped view.
 //   * a letterboxed RGB888 image at inference size (640x640) that every
 //     detector consumes directly.
 struct Frame {
@@ -22,14 +29,24 @@ struct Frame {
 
     // --- full-res NV12 (zero-copy view into the decoder's GstBuffer) ---
     GstSample* sample = nullptr;
-    GstMapInfo map{};
-    bool mapped = false;
-    uint8_t* nv12 = nullptr;   // == map.data
     int width = 0;
     int height = 0;
     int yStride = 0;           // Y plane row stride in bytes
     int uvStride = 0;          // interleaved UV plane row stride in bytes
     size_t uvOffset = 0;       // byte offset of the UV plane inside nv12
+
+    // dmabuf fd of the decoder buffer (owned by the GstBuffer, not by us) and
+    // the librga import handle for it (owned: released in the destructor).
+    // When rgaHandle != 0 the RGA converter blits straight from the dmabuf;
+    // nv12/map stay unset until someone needs CPU access.
+    int dmaFd = -1;
+    rga_buffer_handle_t rgaHandle = 0;
+
+    // CPU view of the NV12 pixels. Populated eagerly when the decoder gives
+    // system memory, lazily via cpuNv12() when it gives a dmabuf.
+    mutable GstMapInfo map{};
+    mutable bool mapped = false;
+    mutable uint8_t* nv12 = nullptr;   // == map.data once mapped
 
     // --- inference image: letterboxed RGB888 at infer size ---
     int inferW = 0;
@@ -48,11 +65,30 @@ struct Frame {
     Frame& operator=(const Frame&) = delete;
 
     ~Frame() {
+        if (rgaHandle) {
+            std::lock_guard<std::mutex> lock(rga::rgaMutex());
+            releasebuffer_handle(rgaHandle);
+        }
         if (mapped && sample) {
             GstBuffer* buf = gst_sample_get_buffer(sample);
             if (buf) gst_buffer_unmap(buf, &map);
         }
         if (sample) gst_sample_unref(sample);
+    }
+
+    // CPU pointer to the NV12 pixels, mapping the GstBuffer on first use.
+    // Thread-safe (jobs share the frame). Returns nullptr if mapping fails.
+    // Note: on the dmabuf path this mmap may be uncached memory — fine for
+    // the occasional CPU crop, do not put per-pixel hot loops on it.
+    const uint8_t* cpuNv12() const {
+        std::lock_guard<std::mutex> lock(m_mapLock);
+        if (nv12) return nv12;
+        if (!sample) return nullptr;
+        GstBuffer* buf = gst_sample_get_buffer(sample);
+        if (!buf || !gst_buffer_map(buf, &map, GST_MAP_READ)) return nullptr;
+        mapped = true;
+        nv12 = map.data;
+        return nv12;
     }
 
     // Maps a point from inference space to full-res space.
@@ -70,6 +106,9 @@ struct Frame {
         *ox = x;
         *oy = y;
     }
+
+private:
+    mutable std::mutex m_mapLock;
 };
 
 using FramePtr = std::shared_ptr<Frame>;

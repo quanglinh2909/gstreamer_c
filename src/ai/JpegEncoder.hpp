@@ -18,8 +18,10 @@
 #include <vector>
 
 #include <gst/gst.h>
+#include <gst/allocators/gstdmabuf.h>
 #include <gst/app/gstappsink.h>
 #include <gst/app/gstappsrc.h>
+#include <gst/video/video.h>
 
 class JpegEncoder {
 public:
@@ -30,10 +32,18 @@ public:
     JpegEncoder& operator=(const JpegEncoder&) = delete;
 
     // Encodes a packed NV12 image to JPEG. Returns false on failure.
+    //
+    // `fd >= 0`: the pixels live in a dmabuf and are handed to the encoder BY
+    // FD (GstDmaBufAllocator). This is the safe path — mppjpegenc imports the
+    // dmabuf instead of get_user_pages'ing a mapped pointer, which on this
+    // BSP faults the jpege-core IOMMU and hard-freezes the board. `data` is
+    // ignored when `fd >= 0`.
+    // `fd < 0`: legacy/synthetic path, wraps the CPU `data` pointer (safe
+    // only for anonymous memory, never for a dmabuf mmap).
     bool encodeNv12(const uint8_t* data, int width, int height,
-                    std::vector<uint8_t>& outJpeg) {
+                    std::vector<uint8_t>& outJpeg, int fd = -1) {
         outJpeg.clear();
-        if (!data || width <= 0 || height <= 0) return false;
+        if ((!data && fd < 0) || width <= 0 || height <= 0) return false;
 
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_pipeline && !build()) return false;
@@ -53,12 +63,27 @@ public:
             m_capH = height;
         }
 
-        // Wrap the caller's buffer without copying — push and pull are strictly
-        // serialised below, so `data` stays valid until the encode completes.
         const gsize size = static_cast<gsize>(width) * height * 3 / 2;
-        GstBuffer* buf = gst_buffer_new_wrapped_full(
-            GST_MEMORY_FLAG_READONLY, const_cast<uint8_t*>(data), size, 0, size,
-            nullptr, nullptr);
+        GstBuffer* buf;
+        if (fd >= 0 && m_hwMode) {
+            // Import the existing dmabuf by fd. DONT_CLOSE: the fd is owned by
+            // the caller's DmaHeapBuffer and reused next frame, so GStreamer
+            // must not close it when this buffer is freed.
+            if (!m_dmabufAlloc) m_dmabufAlloc = gst_dmabuf_allocator_new();
+            GstMemory* mem = gst_dmabuf_allocator_alloc_with_flags(
+                m_dmabufAlloc, fd, size, GST_FD_MEMORY_FLAG_DONT_CLOSE);
+            buf = gst_buffer_new();
+            gst_buffer_append_memory(buf, mem);
+            // mppjpegenc needs the plane layout for packed NV12 (stride==w).
+            gst_buffer_add_video_meta(buf, GST_VIDEO_FRAME_FLAG_NONE,
+                                      GST_VIDEO_FORMAT_NV12, width, height);
+        } else {
+            // Wrap the caller's CPU buffer without copying — push and pull are
+            // strictly serialised below, so `data` stays valid until done.
+            buf = gst_buffer_new_wrapped_full(
+                GST_MEMORY_FLAG_READONLY, const_cast<uint8_t*>(data), size, 0,
+                size, nullptr, nullptr);
+        }
         GST_BUFFER_PTS(buf) = m_pts;
         GST_BUFFER_DURATION(buf) = GST_SECOND / 30;
         m_pts += GST_SECOND / 30;
@@ -71,6 +96,14 @@ public:
             GST_APP_SINK(m_sink), 2 * GST_SECOND);
         if (!sample) {
             std::fprintf(stderr, "jpeg: no output within timeout\n");
+            // The pushed frame is still queued inside the encoder. If the
+            // pipeline were kept, the NEXT pull would return THIS frame's
+            // late output — every later JPEG would belong to the previous
+            // call — and with max-buffers=2 drop=false the backlog wedges
+            // the pipeline into a 2s-timeout-per-frame crawl (observed in
+            // production as "1 processed/s" after one timeout). Tear it
+            // down; the next encode builds a fresh, in-sync pipeline.
+            close();
             return false;
         }
 
@@ -87,13 +120,34 @@ public:
     }
 
 private:
+    // The Rockchip hardware JPEG encoder (mppjpegenc) faults the jpege-core
+    // IOMMU on this BSP under repeated multi-stream load and hard-freezes the
+    // board — observed both with CPU-pointer and dmabuf-fd inputs. So the
+    // DEFAULT is the software encoder (libjpeg, pure CPU, no codec IOMMU).
+    // Opt back into hardware with AI_JPEG_HW=1 once a kernel/driver fix lands.
+    static bool hwEnabled() {
+        static const bool on = [] {
+            const char* v = std::getenv("AI_JPEG_HW");
+            return v && v[0] == '1';
+        }();
+        return on;
+    }
+
     bool build() {
         GError* err = nullptr;
-        m_pipeline = gst_parse_launch(
-            "appsrc name=src is-live=false format=time ! "
-            "mppjpegenc ! "
-            "appsink name=sink sync=false max-buffers=2 drop=false",
-            &err);
+        m_hwMode = hwEnabled();
+        const char* desc = m_hwMode
+            ? "appsrc name=src is-live=false format=time ! "
+              "mppjpegenc ! "
+              "appsink name=sink sync=false max-buffers=2 drop=false"
+            // jpegenc takes NV12 natively — no videoconvert needed (it would
+            // just burn CPU doing NV12->I420 that jpegenc does internally).
+            // libjpeg.so here is libjpeg-turbo (NEON SIMD), so this is already
+            // the fast software path.
+            : "appsrc name=src is-live=false format=time ! "
+              "jpegenc quality=85 ! "
+              "appsink name=sink sync=false max-buffers=2 drop=false";
+        m_pipeline = gst_parse_launch(desc, &err);
         if (!m_pipeline) {
             std::fprintf(stderr, "jpeg: pipeline build failed: %s\n",
                          err ? err->message : "unknown");
@@ -131,6 +185,10 @@ private:
             gst_object_unref(m_sink);
             m_sink = nullptr;
         }
+        if (m_dmabufAlloc) {
+            gst_object_unref(m_dmabufAlloc);
+            m_dmabufAlloc = nullptr;
+        }
         m_capW = 0;
         m_capH = 0;
     }
@@ -139,6 +197,8 @@ private:
     GstElement* m_pipeline = nullptr;
     GstElement* m_src = nullptr;
     GstElement* m_sink = nullptr;
+    GstAllocator* m_dmabufAlloc = nullptr;
+    bool m_hwMode = false;
     int m_capW = 0;
     int m_capH = 0;
     GstClockTime m_pts = 0;

@@ -3,6 +3,11 @@
 
 int read_data_from_file(const char *path, char **out_data)
 {
+    /* Always leave *out_data in a defined state: callers test it against
+     * NULL, and several pass an uninitialised stack pointer — on any early
+     * failure they would otherwise rknn_init() and free() garbage. */
+    *out_data = NULL;
+
     FILE *fp = fopen(path, "rb");
     if (fp == NULL) {
         printf("fopen %s fail!\n", path);

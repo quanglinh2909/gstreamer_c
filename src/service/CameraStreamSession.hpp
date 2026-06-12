@@ -129,7 +129,8 @@ public:
             // while a client is connected, so it is free when nobody watches.
             const auto motionDebugLaunch = recording::motionDebugLaunchStringForCamera(
                 m_config, m_camera, probe.codec,
-                CameraRecordingSession::resolveMotionDecoder(m_camera, probe.codec));
+                CameraRecordingSession::resolveMotionDecoder(m_camera, probe.codec),
+                CameraRecordingSession::resolveDebugH264Encoder());
             if (!motionDebugLaunch.empty()) {
                 auto* motionFactory = gst_rtsp_media_factory_new();
                 gst_rtsp_media_factory_set_launch(motionFactory, motionDebugLaunch.c_str());

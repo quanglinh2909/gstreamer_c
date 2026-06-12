@@ -127,6 +127,15 @@ private:
                 if (m_running.load()) std::perror("ResultPublisher accept");
                 break;
             }
+            // publish() holds m_mutex while sending, so a consumer that
+            // stops reading would otherwise block EVERY AI job worker
+            // indefinitely once the socket buffer fills. Bound the damage:
+            // after 2s of no progress the consumer is treated as dead and
+            // disconnected (it reconnects on its own).
+            timeval tv;
+            tv.tv_sec = 2;
+            tv.tv_usec = 0;
+            ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
             std::lock_guard<std::mutex> lock(m_mutex);
             m_clients.push_back(fd);
             std::fprintf(stderr, "ResultPublisher: consumer connected (fd=%d)\n", fd);
@@ -195,15 +204,14 @@ private:
 
     static std::vector<uint8_t> serialize(const AiResult& res) {
         const std::string json = buildJson(res);
-
-        std::vector<uint8_t> body;
-        appendU32(body, static_cast<uint32_t>(json.size()));
-        body.insert(body.end(), json.begin(), json.end());
-        body.insert(body.end(), res.fullJpeg.begin(), res.fullJpeg.end());
+        const size_t bodyLen = 4 + json.size() + res.fullJpeg.size();
 
         std::vector<uint8_t> msg;
-        appendU32(msg, static_cast<uint32_t>(body.size()));
-        msg.insert(msg.end(), body.begin(), body.end());
+        msg.reserve(4 + bodyLen);
+        appendU32(msg, static_cast<uint32_t>(bodyLen));
+        appendU32(msg, static_cast<uint32_t>(json.size()));
+        msg.insert(msg.end(), json.begin(), json.end());
+        msg.insert(msg.end(), res.fullJpeg.begin(), res.fullJpeg.end());
         return msg;
     }
 

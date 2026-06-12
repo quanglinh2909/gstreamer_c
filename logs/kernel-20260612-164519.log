@@ -1,0 +1,1332 @@
+2026-06-12T16:30:08,774552+07:00 Booting Linux on physical CPU 0x0000000000 [0x412fd050]
+2026-06-12T16:30:08,774576+07:00 Linux version 5.10.160-rockchip-rk3588 (root@orangepi5) (aarch64-linux-gnu-gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0, GNU ld (GNU Binutils for Ubuntu) 2.38) #1.2.0 SMP Mon Jun 3 16:18:20 CST 2024
+2026-06-12T16:30:08,785675+07:00 Machine model: Orange Pi 5
+2026-06-12T16:30:08,785862+07:00 efi: UEFI not found.
+2026-06-12T16:30:08,789618+07:00 OF: fdt: Reserved memory: failed to reserve memory for node 'drm-logo@00000000': base 0x0000000000000000, size 0 MiB
+2026-06-12T16:30:08,789637+07:00 OF: fdt: Reserved memory: failed to reserve memory for node 'drm-cubic-lut@00000000': base 0x0000000000000000, size 0 MiB
+2026-06-12T16:30:08,789701+07:00 Reserved memory: bypass cma node, using cmdline CMA params instead
+2026-06-12T16:30:08,789710+07:00 OF: reserved mem: node cma compatible matching fail
+2026-06-12T16:30:09,058359+07:00 Zone ranges:
+2026-06-12T16:30:09,058367+07:00   DMA      [mem 0x0000000000200000-0x00000000ffffffff]
+2026-06-12T16:30:09,058378+07:00   DMA32    empty
+2026-06-12T16:30:09,058385+07:00   Normal   [mem 0x0000000100000000-0x00000003ffefffff]
+2026-06-12T16:30:09,058392+07:00 Movable zone start for each node
+2026-06-12T16:30:09,058395+07:00 Early memory node ranges
+2026-06-12T16:30:09,058400+07:00   node   0: [mem 0x0000000000200000-0x00000000efffffff]
+2026-06-12T16:30:09,058409+07:00   node   0: [mem 0x0000000100000000-0x00000003fbffffff]
+2026-06-12T16:30:09,058418+07:00   node   0: [mem 0x00000003fc500000-0x00000003ffefffff]
+2026-06-12T16:30:09,058424+07:00 Initmem setup node 0 [mem 0x0000000000200000-0x00000003ffefffff]
+2026-06-12T16:30:09,058430+07:00 On node 0 totalpages: 4126720
+2026-06-12T16:30:09,058436+07:00   DMA zone: 15352 pages used for memmap
+2026-06-12T16:30:09,058440+07:00   DMA zone: 0 pages reserved
+2026-06-12T16:30:09,058445+07:00   DMA zone: 982528 pages, LIFO batch:63
+2026-06-12T16:30:09,058450+07:00   Normal zone: 49148 pages used for memmap
+2026-06-12T16:30:09,058454+07:00   Normal zone: 3144192 pages, LIFO batch:63
+2026-06-12T16:30:09,153563+07:00 On node 0, zone Normal: 256 pages in unavailable ranges
+2026-06-12T16:30:09,153592+07:00 cma: Reserved 128 MiB at 0x00000000e8000000
+2026-06-12T16:30:09,153810+07:00 psci: probing for conduit method from DT.
+2026-06-12T16:30:09,153822+07:00 psci: PSCIv1.1 detected in firmware.
+2026-06-12T16:30:09,153826+07:00 psci: Using standard PSCI v0.2 function IDs
+2026-06-12T16:30:09,153832+07:00 psci: MIGRATE_INFO_TYPE not supported.
+2026-06-12T16:30:09,153838+07:00 psci: SMC Calling Convention v1.2
+2026-06-12T16:30:09,154251+07:00 percpu: Embedded 32 pages/cpu s93544 r8192 d29336 u131072
+2026-06-12T16:30:09,154294+07:00 pcpu-alloc: s93544 r8192 d29336 u131072 alloc=32*4096
+2026-06-12T16:30:09,154302+07:00 pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3 [0] 4 [0] 5 [0] 6 [0] 7 
+2026-06-12T16:30:09,154444+07:00 Detected VIPT I-cache on CPU0
+2026-06-12T16:30:09,154494+07:00 CPU features: detected: GIC system register CPU interface
+2026-06-12T16:30:09,154500+07:00 CPU features: detected: Virtualization Host Extensions
+2026-06-12T16:30:09,154510+07:00 CPU features: detected: ARM errata 1165522, 1319367, or 1530923
+2026-06-12T16:30:09,154524+07:00 alternatives: patching kernel code
+2026-06-12T16:30:09,154903+07:00 Built 1 zonelists, mobility grouping on.  Total pages: 4062220
+2026-06-12T16:30:09,154914+07:00 Kernel command line: root=UUID=8f7a9f65-5f2c-44f1-b80a-ea0e74eb523b rootwait rootfstype=ext4 splash plymouth.ignore-serial-consoles console=ttyS2,1500000 console=tty1 consoleblank=0 loglevel=1 ubootpart= usb-storage.quirks= cma=128M  cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1
+2026-06-12T16:30:09,156952+07:00 Dentry cache hash table entries: 2097152 (order: 12, 16777216 bytes, linear)
+2026-06-12T16:30:09,157719+07:00 Inode-cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)
+2026-06-12T16:30:09,157726+07:00 mem auto-init: stack:off, heap alloc:off, heap free:off
+2026-06-12T16:30:09,163975+07:00 software IO TLB: mapped [mem 0x00000000e4000000-0x00000000e8000000] (64MB)
+2026-06-12T16:30:09,317850+07:00 Memory: 15935308K/16506880K available (16512K kernel code, 3504K rwdata, 6444K rodata, 6912K init, 631K bss, 440500K reserved, 131072K cma-reserved)
+2026-06-12T16:30:09,317996+07:00 SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=8, Nodes=1
+2026-06-12T16:30:09,318031+07:00 ftrace: allocating 63789 entries in 250 pages
+2026-06-12T16:30:09,423128+07:00 ftrace: allocated 250 pages with 6 groups
+2026-06-12T16:30:09,423432+07:00 rcu: Hierarchical RCU implementation.
+2026-06-12T16:30:09,423438+07:00 rcu: 	RCU event tracing is enabled.
+2026-06-12T16:30:09,423443+07:00 	Rude variant of Tasks RCU enabled.
+2026-06-12T16:30:09,423447+07:00 	Tracing variant of Tasks RCU enabled.
+2026-06-12T16:30:09,423452+07:00 rcu: RCU calculated value of scheduler-enlistment delay is 30 jiffies.
+2026-06-12T16:30:09,429065+07:00 NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+2026-06-12T16:30:09,432118+07:00 GICv3: GIC: Using split EOI/Deactivate mode
+2026-06-12T16:30:09,432125+07:00 GICv3: 480 SPIs implemented
+2026-06-12T16:30:09,432129+07:00 GICv3: 0 Extended SPIs implemented
+2026-06-12T16:30:09,432161+07:00 GICv3: Distributor has no Range Selector support
+2026-06-12T16:30:09,432171+07:00 GICv3: 16 PPIs implemented
+2026-06-12T16:30:09,432216+07:00 GICv3: CPU0: found redistributor 0 region 0:0x00000000fe680000
+2026-06-12T16:30:09,432349+07:00 ITS [mem 0xfe640000-0xfe65ffff]
+2026-06-12T16:30:09,432408+07:00 ITS@0x00000000fe640000: allocated 8192 Devices @1001e0000 (indirect, esz 8, psz 64K, shr 0)
+2026-06-12T16:30:09,432438+07:00 ITS@0x00000000fe640000: allocated 32768 Interrupt Collections @1001f0000 (flat, esz 2, psz 64K, shr 0)
+2026-06-12T16:30:09,432449+07:00 ITS: using cache flushing for cmd queue
+2026-06-12T16:30:09,432491+07:00 ITS [mem 0xfe660000-0xfe67ffff]
+2026-06-12T16:30:09,432544+07:00 ITS@0x00000000fe660000: allocated 8192 Devices @100210000 (indirect, esz 8, psz 64K, shr 0)
+2026-06-12T16:30:09,432573+07:00 ITS@0x00000000fe660000: allocated 32768 Interrupt Collections @100220000 (flat, esz 2, psz 64K, shr 0)
+2026-06-12T16:30:09,432584+07:00 ITS: using cache flushing for cmd queue
+2026-06-12T16:30:09,432811+07:00 GICv3: using LPI property table @0x0000000100230000
+2026-06-12T16:30:09,432946+07:00 GIC: using cache flushing for LPI property table
+2026-06-12T16:30:09,432957+07:00 GICv3: CPU0: using allocated LPI pending table @0x0000000100240000
+2026-06-12T16:30:09,563541+07:00 arch_timer: cp15 timer(s) running at 24.00MHz (phys).
+2026-06-12T16:30:09,563551+07:00 clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+2026-06-12T16:30:09,563561+07:00 sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+2026-06-12T16:30:09,564970+07:00 Console: colour dummy device 80x25
+2026-06-12T16:30:09,565013+07:00 printk: console [tty1] enabled
+2026-06-12T16:30:09,565043+07:00 Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=80000)
+2026-06-12T16:30:09,565054+07:00 pid_max: default: 32768 minimum: 301
+2026-06-12T16:30:09,565159+07:00 LSM: Security Framework initializing
+2026-06-12T16:30:09,565247+07:00 Mount-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+2026-06-12T16:30:09,565281+07:00 Mountpoint-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+2026-06-12T16:30:09,567410+07:00 rcu: Hierarchical SRCU implementation.
+2026-06-12T16:30:09,568322+07:00 Platform MSI: msi-controller@fe640000 domain created
+2026-06-12T16:30:09,568344+07:00 Platform MSI: msi-controller@fe660000 domain created
+2026-06-12T16:30:09,568741+07:00 PCI/MSI: /interrupt-controller@fe600000/msi-controller@fe640000 domain created
+2026-06-12T16:30:09,568766+07:00 PCI/MSI: /interrupt-controller@fe600000/msi-controller@fe660000 domain created
+2026-06-12T16:30:09,568954+07:00 EFI services will not be available.
+2026-06-12T16:30:09,569374+07:00 smp: Bringing up secondary CPUs ...
+2026-06-12T16:30:09,570069+07:00 Detected VIPT I-cache on CPU1
+2026-06-12T16:30:09,570105+07:00 GICv3: CPU1: found redistributor 100 region 0:0x00000000fe6a0000
+2026-06-12T16:30:09,570126+07:00 GICv3: CPU1: using allocated LPI pending table @0x0000000100250000
+2026-06-12T16:30:09,570169+07:00 CPU1: Booted secondary processor 0x0000000100 [0x412fd050]
+2026-06-12T16:30:09,570906+07:00 Detected VIPT I-cache on CPU2
+2026-06-12T16:30:09,570937+07:00 GICv3: CPU2: found redistributor 200 region 0:0x00000000fe6c0000
+2026-06-12T16:30:09,570958+07:00 GICv3: CPU2: using allocated LPI pending table @0x0000000100260000
+2026-06-12T16:30:09,570998+07:00 CPU2: Booted secondary processor 0x0000000200 [0x412fd050]
+2026-06-12T16:30:09,571700+07:00 Detected VIPT I-cache on CPU3
+2026-06-12T16:30:09,571728+07:00 GICv3: CPU3: found redistributor 300 region 0:0x00000000fe6e0000
+2026-06-12T16:30:09,571748+07:00 GICv3: CPU3: using allocated LPI pending table @0x0000000100270000
+2026-06-12T16:30:09,571785+07:00 CPU3: Booted secondary processor 0x0000000300 [0x412fd050]
+2026-06-12T16:30:09,572487+07:00 CPU features: detected: Spectre-v4
+2026-06-12T16:30:09,572491+07:00 CPU features: detected: Spectre-BHB
+2026-06-12T16:30:09,572493+07:00 Detected PIPT I-cache on CPU4
+2026-06-12T16:30:09,572508+07:00 GICv3: CPU4: found redistributor 400 region 0:0x00000000fe700000
+2026-06-12T16:30:09,572519+07:00 GICv3: CPU4: using allocated LPI pending table @0x0000000100280000
+2026-06-12T16:30:09,572543+07:00 CPU4: Booted secondary processor 0x0000000400 [0x414fd0b0]
+2026-06-12T16:30:09,573190+07:00 Detected PIPT I-cache on CPU5
+2026-06-12T16:30:09,573206+07:00 GICv3: CPU5: found redistributor 500 region 0:0x00000000fe720000
+2026-06-12T16:30:09,573217+07:00 GICv3: CPU5: using allocated LPI pending table @0x0000000100290000
+2026-06-12T16:30:09,573242+07:00 CPU5: Booted secondary processor 0x0000000500 [0x414fd0b0]
+2026-06-12T16:30:09,573910+07:00 Detected PIPT I-cache on CPU6
+2026-06-12T16:30:09,573925+07:00 GICv3: CPU6: found redistributor 600 region 0:0x00000000fe740000
+2026-06-12T16:30:09,573937+07:00 GICv3: CPU6: using allocated LPI pending table @0x00000001002a0000
+2026-06-12T16:30:09,573961+07:00 CPU6: Booted secondary processor 0x0000000600 [0x414fd0b0]
+2026-06-12T16:30:09,574613+07:00 Detected PIPT I-cache on CPU7
+2026-06-12T16:30:09,574628+07:00 GICv3: CPU7: found redistributor 700 region 0:0x00000000fe760000
+2026-06-12T16:30:09,574640+07:00 GICv3: CPU7: using allocated LPI pending table @0x00000001002b0000
+2026-06-12T16:30:09,574665+07:00 CPU7: Booted secondary processor 0x0000000700 [0x414fd0b0]
+2026-06-12T16:30:09,574739+07:00 smp: Brought up 1 node, 8 CPUs
+2026-06-12T16:30:09,574758+07:00 SMP: Total of 8 processors activated.
+2026-06-12T16:30:09,574764+07:00 CPU features: detected: Privileged Access Never
+2026-06-12T16:30:09,574768+07:00 CPU features: detected: User Access Override
+2026-06-12T16:30:09,574773+07:00 CPU features: detected: 32-bit EL0 Support
+2026-06-12T16:30:09,574778+07:00 CPU features: detected: Common not Private translations
+2026-06-12T16:30:09,574782+07:00 CPU features: detected: RAS Extension Support
+2026-06-12T16:30:09,574787+07:00 CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+2026-06-12T16:30:09,574791+07:00 CPU features: detected: CRC32 instructions
+2026-06-12T16:30:09,574795+07:00 CPU features: detected: Speculative Store Bypassing Safe (SSBS)
+2026-06-12T16:30:09,574802+07:00 CPU features: detected: RCpc load-acquire (LDAPR)
+2026-06-12T16:30:09,574884+07:00 CPU: All CPU(s) started at EL2
+2026-06-12T16:30:09,580331+07:00 devtmpfs: initialized
+2026-06-12T16:30:09,594973+07:00 Registered cp15_barrier emulation handler
+2026-06-12T16:30:09,594981+07:00 Registered setend emulation handler
+2026-06-12T16:30:09,594985+07:00 KASLR disabled due to lack of seed
+2026-06-12T16:30:09,595066+07:00 clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 6370867519511994 ns
+2026-06-12T16:30:09,595073+07:00 futex hash table entries: 2048 (order: 5, 131072 bytes, linear)
+2026-06-12T16:30:09,596467+07:00 pinctrl core: initialized pinctrl subsystem
+2026-06-12T16:30:09,596581+07:00 regulator-dummy: no parameters, enabled
+2026-06-12T16:30:09,596690+07:00 DMI not present or invalid.
+2026-06-12T16:30:09,596893+07:00 NET: Registered protocol family 16
+2026-06-12T16:30:09,597889+07:00 DMA: preallocated 2048 KiB GFP_KERNEL pool for atomic allocations
+2026-06-12T16:30:09,598066+07:00 DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+2026-06-12T16:30:09,598086+07:00 audit: initializing netlink subsys (disabled)
+2026-06-12T16:30:09,598167+07:00 audit: type=2000 audit(0.033:1): state=initialized audit_enabled=0 res=1
+2026-06-12T16:30:09,598701+07:00 Registered FIQ tty driver
+2026-06-12T16:30:09,598841+07:00 thermal_sys: Registered thermal governor 'fair_share'
+2026-06-12T16:30:09,598843+07:00 thermal_sys: Registered thermal governor 'step_wise'
+2026-06-12T16:30:09,598845+07:00 thermal_sys: Registered thermal governor 'user_space'
+2026-06-12T16:30:09,598847+07:00 thermal_sys: Registered thermal governor 'power_allocator'
+2026-06-12T16:30:09,599002+07:00 thermal thermal_zone1: power_allocator: sustainable_power will be estimated
+2026-06-12T16:30:09,599033+07:00 thermal thermal_zone2: power_allocator: sustainable_power will be estimated
+2026-06-12T16:30:09,599063+07:00 thermal thermal_zone3: power_allocator: sustainable_power will be estimated
+2026-06-12T16:30:09,599093+07:00 thermal thermal_zone4: power_allocator: sustainable_power will be estimated
+2026-06-12T16:30:09,599123+07:00 thermal thermal_zone5: power_allocator: sustainable_power will be estimated
+2026-06-12T16:30:09,599153+07:00 thermal thermal_zone6: power_allocator: sustainable_power will be estimated
+2026-06-12T16:30:09,599173+07:00 cpuidle: using governor menu
+2026-06-12T16:30:09,599400+07:00 hw-breakpoint: found 6 breakpoint and 4 watchpoint registers.
+2026-06-12T16:30:09,599525+07:00 ASID allocator initialised with 65536 entries
+2026-06-12T16:30:09,600905+07:00 ramoops: dmesg-0	0x20000@0x0000000000110000
+2026-06-12T16:30:09,600920+07:00 ramoops: console	0x80000@0x0000000000130000
+2026-06-12T16:30:09,600930+07:00 ramoops: pmsg	0x50000@0x00000000001b0000
+2026-06-12T16:30:09,600977+07:00 printk: console [ramoops-1] enabled
+2026-06-12T16:30:09,600979+07:00 pstore: Registered ramoops as persistent store backend
+2026-06-12T16:30:09,600982+07:00 ramoops: using 0xf0000@0x110000, ecc: 0
+2026-06-12T16:30:09,652166+07:00 rockchip-gpio fd8a0000.gpio: probed /pinctrl/gpio@fd8a0000
+2026-06-12T16:30:09,652426+07:00 rockchip-gpio fec20000.gpio: probed /pinctrl/gpio@fec20000
+2026-06-12T16:30:09,652637+07:00 rockchip-gpio fec30000.gpio: probed /pinctrl/gpio@fec30000
+2026-06-12T16:30:09,652889+07:00 rockchip-gpio fec40000.gpio: probed /pinctrl/gpio@fec40000
+2026-06-12T16:30:09,653137+07:00 rockchip-gpio fec50000.gpio: probed /pinctrl/gpio@fec50000
+2026-06-12T16:30:09,653183+07:00 rockchip-pinctrl pinctrl: probed pinctrl
+2026-06-12T16:30:09,661065+07:00 HugeTLB registered 1.00 GiB page size, pre-allocated 0 pages
+2026-06-12T16:30:09,661069+07:00 HugeTLB registered 32.0 MiB page size, pre-allocated 0 pages
+2026-06-12T16:30:09,661072+07:00 HugeTLB registered 2.00 MiB page size, pre-allocated 0 pages
+2026-06-12T16:30:09,661075+07:00 HugeTLB registered 64.0 KiB page size, pre-allocated 0 pages
+2026-06-12T16:30:09,720140+07:00 raid6: neonx8   gen()  5668 MB/s
+2026-06-12T16:30:09,776894+07:00 raid6: neonx8   xor()  4403 MB/s
+2026-06-12T16:30:09,833653+07:00 raid6: neonx4   gen()  5814 MB/s
+2026-06-12T16:30:09,890408+07:00 raid6: neonx4   xor()  4416 MB/s
+2026-06-12T16:30:09,947166+07:00 raid6: neonx2   gen()  5332 MB/s
+2026-06-12T16:30:10,003923+07:00 raid6: neonx2   xor()  4165 MB/s
+2026-06-12T16:30:10,060679+07:00 raid6: neonx1   gen()  4451 MB/s
+2026-06-12T16:30:10,117434+07:00 raid6: neonx1   xor()  3434 MB/s
+2026-06-12T16:30:10,174204+07:00 raid6: int64x8  gen()  1386 MB/s
+2026-06-12T16:30:10,230951+07:00 raid6: int64x8  xor()   904 MB/s
+2026-06-12T16:30:10,287709+07:00 raid6: int64x4  gen()  1647 MB/s
+2026-06-12T16:30:10,344465+07:00 raid6: int64x4  xor()   926 MB/s
+2026-06-12T16:30:10,401222+07:00 raid6: int64x2  gen()  2500 MB/s
+2026-06-12T16:30:10,457974+07:00 raid6: int64x2  xor()  1374 MB/s
+2026-06-12T16:30:10,514737+07:00 raid6: int64x1  gen()  2079 MB/s
+2026-06-12T16:30:10,571495+07:00 raid6: int64x1  xor()  1015 MB/s
+2026-06-12T16:30:10,571497+07:00 raid6: using algorithm neonx4 gen() 5814 MB/s
+2026-06-12T16:30:10,571499+07:00 raid6: .... xor() 4416 MB/s, rmw enabled
+2026-06-12T16:30:10,571502+07:00 raid6: using neon recovery algorithm
+2026-06-12T16:30:10,572114+07:00 fiq_debugger fiq_debugger.0: IRQ fiq not found
+2026-06-12T16:30:10,572121+07:00 fiq_debugger fiq_debugger.0: IRQ wakeup not found
+2026-06-12T16:30:10,572125+07:00 fiq_debugger_probe: could not install nmi irq handler
+2026-06-12T16:30:10,572206+07:00 printk: console [ttyFIQ0] enabled
+2026-06-12T16:30:10,572302+07:00 Registered fiq debugger ttyFIQ0
+2026-06-12T16:30:10,572531+07:00 vcc12v_dcin: 12000 mV, enabled
+2026-06-12T16:30:10,572607+07:00 reg-fixed-voltage vcc12v-dcin: vcc12v_dcin supplying 12000000uV
+2026-06-12T16:30:10,572653+07:00 reg-fixed-voltage vcc5v0-sys: Looking up vin-supply from device tree
+2026-06-12T16:30:10,572657+07:00 vcc5v0_sys: supplied by vcc12v_dcin
+2026-06-12T16:30:10,572662+07:00 vcc12v_dcin: could not add device link regulator.2: -ENOENT
+2026-06-12T16:30:10,572676+07:00 vcc5v0_sys: 5000 mV, enabled
+2026-06-12T16:30:10,572736+07:00 reg-fixed-voltage vcc5v0-sys: vcc5v0_sys supplying 5000000uV
+2026-06-12T16:30:10,572781+07:00 reg-fixed-voltage vcc5v0-usbdcin: Looking up vin-supply from device tree
+2026-06-12T16:30:10,572784+07:00 vcc5v0_usbdcin: supplied by vcc12v_dcin
+2026-06-12T16:30:10,572788+07:00 vcc12v_dcin: could not add device link regulator.3: -ENOENT
+2026-06-12T16:30:10,572801+07:00 vcc5v0_usbdcin: 5000 mV, enabled
+2026-06-12T16:30:10,572861+07:00 reg-fixed-voltage vcc5v0-usbdcin: vcc5v0_usbdcin supplying 5000000uV
+2026-06-12T16:30:10,572904+07:00 reg-fixed-voltage vcc5v0-usb: Looking up vin-supply from device tree
+2026-06-12T16:30:10,572907+07:00 vcc5v0_usb: supplied by vcc5v0_usbdcin
+2026-06-12T16:30:10,572910+07:00 vcc5v0_usbdcin: could not add device link regulator.4: -ENOENT
+2026-06-12T16:30:10,572924+07:00 vcc5v0_usb: 5000 mV, enabled
+2026-06-12T16:30:10,572977+07:00 reg-fixed-voltage vcc5v0-usb: vcc5v0_usb supplying 5000000uV
+2026-06-12T16:30:10,573079+07:00 vbus5v0_typec: 5000 mV, disabled
+2026-06-12T16:30:10,573126+07:00 reg-fixed-voltage vbus5v0-typec: Looking up vin-supply from device tree
+2026-06-12T16:30:10,573130+07:00 vbus5v0_typec: supplied by vcc5v0_usb
+2026-06-12T16:30:10,573161+07:00 reg-fixed-voltage vbus5v0-typec: vbus5v0_typec supplying 5000000uV
+2026-06-12T16:30:10,573209+07:00 reg-fixed-voltage vcc-1v1-nldo-s3: Looking up vin-supply from device tree
+2026-06-12T16:30:10,573212+07:00 vcc_1v1_nldo_s3: supplied by vcc5v0_sys
+2026-06-12T16:30:10,573215+07:00 vcc5v0_sys: could not add device link regulator.6: -ENOENT
+2026-06-12T16:30:10,573231+07:00 vcc_1v1_nldo_s3: 1100 mV, enabled
+2026-06-12T16:30:10,573290+07:00 reg-fixed-voltage vcc-1v1-nldo-s3: vcc_1v1_nldo_s3 supplying 1100000uV
+2026-06-12T16:30:10,573341+07:00 reg-fixed-voltage vcc3v3-pcie2x1l2: Looking up vin-supply from device tree
+2026-06-12T16:30:10,573345+07:00 vcc3v3_pcie2x1l2: supplied by vcc5v0_sys
+2026-06-12T16:30:10,573349+07:00 vcc5v0_sys: could not add device link regulator.7: -ENOENT
+2026-06-12T16:30:10,628650+07:00 vcc3v3_pcie2x1l2: 1800 mV, enabled
+2026-06-12T16:30:10,628714+07:00 reg-fixed-voltage vcc3v3-pcie2x1l2: vcc3v3_pcie2x1l2 supplying 1800000uV
+2026-06-12T16:30:10,629013+07:00 iommu: Default domain type: Translated 
+2026-06-12T16:30:10,629428+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up vdpu-supply from device tree
+2026-06-12T16:30:10,629446+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up vdpu-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,629703+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up rga30-supply from device tree
+2026-06-12T16:30:10,629720+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up rga30-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,629887+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up rga31-supply from device tree
+2026-06-12T16:30:10,629903+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up rga31-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,631130+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up venc0-supply from device tree
+2026-06-12T16:30:10,631147+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up venc0-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,631290+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up vcodec-supply from device tree
+2026-06-12T16:30:10,631306+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up vcodec-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,631402+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up venc1-supply from device tree
+2026-06-12T16:30:10,631418+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up venc1-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,631677+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up rkvdec0-supply from device tree
+2026-06-12T16:30:10,631694+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up rkvdec0-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,631965+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up rkvdec1-supply from device tree
+2026-06-12T16:30:10,631988+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up rkvdec1-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,632197+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up vi-supply from device tree
+2026-06-12T16:30:10,632214+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up vi-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,632435+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up isp1-supply from device tree
+2026-06-12T16:30:10,632451+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up isp1-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:10,633128+07:00 SCSI subsystem initialized
+2026-06-12T16:30:10,633143+07:00 libata version 3.00 loaded.
+2026-06-12T16:30:10,633214+07:00 usbcore: registered new interface driver usbfs
+2026-06-12T16:30:10,633229+07:00 usbcore: registered new interface driver hub
+2026-06-12T16:30:10,633243+07:00 usbcore: registered new device driver usb
+2026-06-12T16:30:10,633277+07:00 mc: Linux media interface: v0.10
+2026-06-12T16:30:10,633287+07:00 videodev: Linux video capture interface: v2.00
+2026-06-12T16:30:10,633316+07:00 pps_core: LinuxPPS API ver. 1 registered
+2026-06-12T16:30:10,633318+07:00 pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+2026-06-12T16:30:10,633323+07:00 PTP clock support registered
+2026-06-12T16:30:10,633593+07:00 arm-scmi firmware:scmi: SCMI Notifications - Core Enabled.
+2026-06-12T16:30:10,633625+07:00 arm-scmi firmware:scmi: SCMI Protocol v2.0 'rockchip:' Firmware version 0x0
+2026-06-12T16:30:10,634824+07:00 Advanced Linux Sound Architecture Driver Initialized.
+2026-06-12T16:30:10,635034+07:00 NetLabel: Initializing
+2026-06-12T16:30:10,635036+07:00 NetLabel:  domain hash size = 128
+2026-06-12T16:30:10,635038+07:00 NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+2026-06-12T16:30:10,635063+07:00 NetLabel:  unlabeled traffic allowed by default
+2026-06-12T16:30:10,636379+07:00 rockchip-cpuinfo cpuinfo: SoC		: 35881000
+2026-06-12T16:30:10,636383+07:00 rockchip-cpuinfo cpuinfo: Serial		: b98f40701483789a
+2026-06-12T16:30:10,636810+07:00 clocksource: Switched to clocksource arch_sys_counter
+2026-06-12T16:30:11,079528+07:00 VFS: Disk quotas dquot_6.6.0
+2026-06-12T16:30:11,079554+07:00 VFS: Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+2026-06-12T16:30:11,084630+07:00 NET: Registered protocol family 2
+2026-06-12T16:30:11,084806+07:00 IP idents hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+2026-06-12T16:30:11,088484+07:00 tcp_listen_portaddr_hash hash table entries: 8192 (order: 6, 327680 bytes, linear)
+2026-06-12T16:30:11,088645+07:00 TCP established hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+2026-06-12T16:30:11,089291+07:00 TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)
+2026-06-12T16:30:11,090046+07:00 TCP: Hash tables configured (established 131072 bind 65536)
+2026-06-12T16:30:11,090198+07:00 MPTCP token hash table entries: 16384 (order: 7, 786432 bytes, linear)
+2026-06-12T16:30:11,090381+07:00 UDP hash table entries: 8192 (order: 7, 786432 bytes, linear)
+2026-06-12T16:30:11,090668+07:00 UDP-Lite hash table entries: 8192 (order: 7, 786432 bytes, linear)
+2026-06-12T16:30:11,091011+07:00 NET: Registered protocol family 1
+2026-06-12T16:30:11,091355+07:00 RPC: Registered named UNIX socket transport module.
+2026-06-12T16:30:11,091358+07:00 RPC: Registered udp transport module.
+2026-06-12T16:30:11,091359+07:00 RPC: Registered tcp transport module.
+2026-06-12T16:30:11,091361+07:00 RPC: Registered tcp NFSv4.1 backchannel transport module.
+2026-06-12T16:30:11,091754+07:00 PCI: CLS 0 bytes, default 64
+2026-06-12T16:30:11,092011+07:00 Trying to unpack rootfs image as initramfs...
+2026-06-12T16:30:11,685151+07:00 Freeing initrd memory: 22960K
+2026-06-12T16:30:11,685866+07:00 rockchip-thermal fec00000.tsadc: Missing rockchip,grf property
+2026-06-12T16:30:11,686546+07:00 rockchip-thermal fec00000.tsadc: tsadc is probed successfully!
+2026-06-12T16:30:11,687481+07:00 hw perfevents: enabled with armv8_pmuv3 PMU driver, 7 counters available
+2026-06-12T16:30:11,688091+07:00 kvm [1]: IPA Size Limit: 40 bits
+2026-06-12T16:30:11,688100+07:00 kvm [1]: GICv3: no GICV resource entry
+2026-06-12T16:30:11,688103+07:00 kvm [1]: disabling GICv2 emulation
+2026-06-12T16:30:11,688105+07:00 kvm [1]: GIC system register CPU interface enabled
+2026-06-12T16:30:11,688250+07:00 kvm [1]: vgic interrupt IRQ9
+2026-06-12T16:30:11,688420+07:00 kvm [1]: VHE mode initialized successfully
+2026-06-12T16:30:11,691360+07:00 Initialise system trusted keyrings
+2026-06-12T16:30:11,691473+07:00 workingset: timestamp_bits=46 max_order=22 bucket_order=0
+2026-06-12T16:30:11,694349+07:00 NFS: Registering the id_resolver key type
+2026-06-12T16:30:11,694368+07:00 Key type id_resolver registered
+2026-06-12T16:30:11,694370+07:00 Key type id_legacy registered
+2026-06-12T16:30:11,694403+07:00 nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+2026-06-12T16:30:11,694406+07:00 nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
+2026-06-12T16:30:11,694408+07:00 Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+2026-06-12T16:30:11,694656+07:00 ntfs: driver 2.1.32 [Flags: R/W].
+2026-06-12T16:30:11,715585+07:00 NET: Registered protocol family 38
+2026-06-12T16:30:11,715590+07:00 xor: measuring software checksum speed
+2026-06-12T16:30:11,717129+07:00    8regs           :  6460 MB/sec
+2026-06-12T16:30:11,718275+07:00    32regs          :  8595 MB/sec
+2026-06-12T16:30:11,719203+07:00    arm64_neon      : 10628 MB/sec
+2026-06-12T16:30:11,719205+07:00 xor: using function: arm64_neon (10628 MB/sec)
+2026-06-12T16:30:11,719216+07:00 Key type asymmetric registered
+2026-06-12T16:30:11,719219+07:00 Asymmetric key parser 'x509' registered
+2026-06-12T16:30:11,719236+07:00 Block layer SCSI generic (bsg) driver version 0.4 loaded (major 242)
+2026-06-12T16:30:11,719341+07:00 io scheduler mq-deadline registered
+2026-06-12T16:30:11,719346+07:00 io scheduler kyber registered
+2026-06-12T16:30:11,720007+07:00 rockchip-csi2-dphy-hw fedc0000.csi2-dphy0-hw: csi2 dphy hw probe successfully!
+2026-06-12T16:30:11,720088+07:00 rockchip-csi2-dphy-hw fedc8000.csi2-dphy1-hw: csi2 dphy hw probe successfully!
+2026-06-12T16:30:11,721485+07:00 phy phy-fd5d0000.syscon:usb2-phy@0.0: Looking up phy-supply from device tree
+2026-06-12T16:30:11,721493+07:00 phy phy-fd5d0000.syscon:usb2-phy@0.0: Looking up phy-supply property in node /syscon@fd5d0000/usb2-phy@0/otg-port failed
+2026-06-12T16:30:11,721537+07:00 phy phy-fd5d0000.syscon:usb2-phy@0.0: Looking up vbus-supply from device tree
+2026-06-12T16:30:11,721543+07:00 phy phy-fd5d0000.syscon:usb2-phy@0.0: Looking up vbus-supply property in node /syscon@fd5d0000/usb2-phy@0/otg-port failed
+2026-06-12T16:30:11,722801+07:00 phy phy-fd5d8000.syscon:usb2-phy@8000.1: Looking up phy-supply from device tree
+2026-06-12T16:30:11,722809+07:00 phy phy-fd5d8000.syscon:usb2-phy@8000.1: Looking up phy-supply property in node /syscon@fd5d8000/usb2-phy@8000/host-port failed
+2026-06-12T16:30:11,723919+07:00 phy phy-fd5dc000.syscon:usb2-phy@c000.2: Looking up phy-supply from device tree
+2026-06-12T16:30:11,723927+07:00 phy phy-fd5dc000.syscon:usb2-phy@c000.2: Looking up phy-supply property in node /syscon@fd5dc000/usb2-phy@c000/host-port failed
+2026-06-12T16:30:11,725683+07:00 phy phy-fee00000.phy.3: Looking up phy-supply from device tree
+2026-06-12T16:30:11,725688+07:00 phy phy-fee00000.phy.3: Looking up phy-supply property in node /phy@fee00000 failed
+2026-06-12T16:30:11,725824+07:00 phy phy-fee20000.phy.4: Looking up phy-supply from device tree
+2026-06-12T16:30:11,725829+07:00 phy phy-fee20000.phy.4: Looking up phy-supply property in node /phy@fee20000 failed
+2026-06-12T16:30:11,726303+07:00 phy phy-feda0000.phy.5: Looking up phy-supply from device tree
+2026-06-12T16:30:11,726309+07:00 phy phy-feda0000.phy.5: Looking up phy-supply property in node /phy@feda0000 failed
+2026-06-12T16:30:11,726430+07:00 phy phy-fedb0000.phy.6: Looking up phy-supply from device tree
+2026-06-12T16:30:11,726435+07:00 phy phy-fedb0000.phy.6: Looking up phy-supply property in node /phy@fedb0000 failed
+2026-06-12T16:30:11,726796+07:00 phy phy-fed60000.hdmiphy.7: Looking up phy-supply from device tree
+2026-06-12T16:30:11,726802+07:00 phy phy-fed60000.hdmiphy.7: Looking up phy-supply property in node /hdmiphy@fed60000 failed
+2026-06-12T16:30:11,727520+07:00 rockchip-hdptx-phy-hdmi fed60000.hdmiphy: hdptx phy init success
+2026-06-12T16:30:11,728392+07:00 phy phy-fed80000.phy.8: Looking up phy-supply from device tree
+2026-06-12T16:30:11,728398+07:00 phy phy-fed80000.phy.8: Looking up phy-supply property in node /phy@fed80000/dp-port failed
+2026-06-12T16:30:11,728432+07:00 phy phy-fed80000.phy.9: Looking up phy-supply from device tree
+2026-06-12T16:30:11,728437+07:00 phy phy-fed80000.phy.9: Looking up phy-supply property in node /phy@fed80000/u3-port failed
+2026-06-12T16:30:11,730079+07:00 rk-pcie fe190000.pcie: invalid prsnt-gpios property in node
+2026-06-12T16:30:11,730090+07:00 rk-pcie fe190000.pcie: Looking up vpcie3v3-supply from device tree
+2026-06-12T16:30:11,730300+07:00 pwm-backlight backlight: Looking up power-supply from device tree
+2026-06-12T16:30:11,730306+07:00 pwm-backlight backlight: Looking up power-supply property in node /backlight failed
+2026-06-12T16:30:11,730311+07:00 pwm-backlight backlight: supply power not found, using dummy regulator
+2026-06-12T16:30:11,730578+07:00 pwm-backlight backlight_1: Looking up power-supply from device tree
+2026-06-12T16:30:11,730584+07:00 pwm-backlight backlight_1: Looking up power-supply property in node /backlight_1 failed
+2026-06-12T16:30:11,730588+07:00 pwm-backlight backlight_1: supply power not found, using dummy regulator
+2026-06-12T16:30:11,730844+07:00 iep: Module initialized.
+2026-06-12T16:30:11,730879+07:00 mpp_service mpp-srv: 38b0a66a10c6 author: baiywt 2024-01-19 Merge linux-5.10-gen-rkr6
+2026-06-12T16:30:11,730882+07:00 mpp_service mpp-srv: probe start
+2026-06-12T16:30:11,730890+07:00 rk-pcie fe190000.pcie: IRQ msi not found
+2026-06-12T16:30:11,730897+07:00 rk-pcie fe190000.pcie: use outband MSI support
+2026-06-12T16:30:11,730903+07:00 rk-pcie fe190000.pcie: Missing *config* reg space
+2026-06-12T16:30:11,730918+07:00 rk-pcie fe190000.pcie: host bridge /pcie@fe190000 ranges:
+2026-06-12T16:30:11,730943+07:00 rk-pcie fe190000.pcie:      err 0x00f4000000..0x00f40fffff -> 0x00f4000000
+2026-06-12T16:30:11,730960+07:00 rk-pcie fe190000.pcie:       IO 0x00f4100000..0x00f41fffff -> 0x00f4100000
+2026-06-12T16:30:11,730978+07:00 rk-pcie fe190000.pcie:      MEM 0x00f4200000..0x00f4ffffff -> 0x00f4200000
+2026-06-12T16:30:11,730990+07:00 rk-pcie fe190000.pcie:      MEM 0x0a00000000..0x0a3fffffff -> 0x0a00000000
+2026-06-12T16:30:11,731021+07:00 rk-pcie fe190000.pcie: Missing *config* reg space
+2026-06-12T16:30:11,731052+07:00 rk-pcie fe190000.pcie: invalid resource
+2026-06-12T16:30:11,732800+07:00 mpp_vdpu2 fdb50400.vdpu: Adding to iommu group 1
+2026-06-12T16:30:11,733018+07:00 mpp_vdpu2 fdb50400.vdpu: probe device
+2026-06-12T16:30:11,733127+07:00 mpp_vdpu2 fdb50400.vdpu: reset_group->rw_sem_on=0
+2026-06-12T16:30:11,733133+07:00 mpp_vdpu2 fdb50400.vdpu: reset_group->rw_sem_on=0
+2026-06-12T16:30:11,733283+07:00 mpp_vdpu2 fdb50400.vdpu: probing finish
+2026-06-12T16:30:11,733507+07:00 mpp_vepu2 jpege-ccu: probing start
+2026-06-12T16:30:11,733510+07:00 mpp_vepu2 jpege-ccu: probing finish
+2026-06-12T16:30:11,733616+07:00 mpp_vepu2 fdb50000.vepu: Adding to iommu group 1
+2026-06-12T16:30:11,733696+07:00 mpp_vepu2 fdb50000.vepu: probing start
+2026-06-12T16:30:11,733785+07:00 mpp_vepu2 fdb50000.vepu: reset_group->rw_sem_on=0
+2026-06-12T16:30:11,733789+07:00 mpp_vepu2 fdb50000.vepu: reset_group->rw_sem_on=0
+2026-06-12T16:30:11,733925+07:00 mpp_vepu2 fdb50000.vepu: probing finish
+2026-06-12T16:30:11,734040+07:00 mpp_vepu2 fdba0000.jpege-core: Adding to iommu group 5
+2026-06-12T16:30:11,734174+07:00 mpp_vepu2 fdba0000.jpege-core: probing start
+2026-06-12T16:30:11,734279+07:00 mpp_vepu2 fdba0000.jpege-core: attach ccu success
+2026-06-12T16:30:11,734410+07:00 mpp_vepu2 fdba0000.jpege-core: probing finish
+2026-06-12T16:30:11,734514+07:00 mpp_vepu2 fdba4000.jpege-core: Adding to iommu group 6
+2026-06-12T16:30:11,734647+07:00 mpp_vepu2 fdba4000.jpege-core: probing start
+2026-06-12T16:30:11,734748+07:00 mpp_vepu2 fdba4000.jpege-core: attach ccu success
+2026-06-12T16:30:11,734875+07:00 mpp_vepu2 fdba4000.jpege-core: probing finish
+2026-06-12T16:30:11,734980+07:00 mpp_vepu2 fdba8000.jpege-core: Adding to iommu group 7
+2026-06-12T16:30:11,735111+07:00 mpp_vepu2 fdba8000.jpege-core: probing start
+2026-06-12T16:30:11,735212+07:00 mpp_vepu2 fdba8000.jpege-core: attach ccu success
+2026-06-12T16:30:11,735344+07:00 mpp_vepu2 fdba8000.jpege-core: probing finish
+2026-06-12T16:30:11,735437+07:00 mpp_vepu2 fdbac000.jpege-core: Adding to iommu group 8
+2026-06-12T16:30:11,735568+07:00 mpp_vepu2 fdbac000.jpege-core: probing start
+2026-06-12T16:30:11,735664+07:00 mpp_vepu2 fdbac000.jpege-core: attach ccu success
+2026-06-12T16:30:11,735790+07:00 mpp_vepu2 fdbac000.jpege-core: probing finish
+2026-06-12T16:30:11,736060+07:00 mpp-iep2 fdbb0000.iep: Adding to iommu group 9
+2026-06-12T16:30:11,736195+07:00 mpp-iep2 fdbb0000.iep: probe device
+2026-06-12T16:30:11,736315+07:00 mpp-iep2 fdbb0000.iep: allocate roi buffer failed
+2026-06-12T16:30:11,736433+07:00 mpp-iep2 fdbb0000.iep: probing finish
+2026-06-12T16:30:11,736653+07:00 mpp_jpgdec fdb90000.jpegd: Adding to iommu group 4
+2026-06-12T16:30:11,736863+07:00 mpp_jpgdec fdb90000.jpegd: probe device
+2026-06-12T16:30:11,737103+07:00 mpp_jpgdec fdb90000.jpegd: probing finish
+2026-06-12T16:30:11,737457+07:00 mpp_rkvdec2 fdc30000.rkvdec-ccu: rkvdec-ccu, probing start
+2026-06-12T16:30:11,737514+07:00 mpp_rkvdec2 fdc30000.rkvdec-ccu: ccu-mode: 1
+2026-06-12T16:30:11,737516+07:00 mpp_rkvdec2 fdc30000.rkvdec-ccu: probing finish
+2026-06-12T16:30:11,737610+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: Adding to iommu group 12
+2026-06-12T16:30:11,737861+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: rkvdec-core, probing start
+2026-06-12T16:30:11,737975+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: shared_niu_a is not found!
+2026-06-12T16:30:11,737978+07:00 rkvdec2_init:1022: No niu aclk reset resource define
+2026-06-12T16:30:11,737981+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: shared_niu_h is not found!
+2026-06-12T16:30:11,737983+07:00 rkvdec2_init:1025: No niu hclk reset resource define
+2026-06-12T16:30:11,737999+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: Looking up vdec-supply from device tree
+2026-06-12T16:30:11,738004+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: Looking up vdec-supply property in node /rkvdec-core@fdc38000 failed
+2026-06-12T16:30:11,738010+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: no regulator, devfreq is disabled
+2026-06-12T16:30:11,738066+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: core_mask=00010001
+2026-06-12T16:30:11,738069+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: attach ccu as core 0
+2026-06-12T16:30:11,738212+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: sram_start 0x00000000ff001000
+2026-06-12T16:30:11,738215+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: rcb_iova 0x00000000fff00000
+2026-06-12T16:30:11,738217+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: sram_size 491520
+2026-06-12T16:30:11,738220+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: rcb_size 1048576
+2026-06-12T16:30:11,738223+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: min_width 512
+2026-06-12T16:30:11,738228+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: rcb_info_count 20
+2026-06-12T16:30:11,738230+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [136, 24576]
+2026-06-12T16:30:11,738233+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [137, 49152]
+2026-06-12T16:30:11,738235+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [141, 90112]
+2026-06-12T16:30:11,738238+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [140, 49152]
+2026-06-12T16:30:11,738240+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [139, 180224]
+2026-06-12T16:30:11,738243+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [133, 49152]
+2026-06-12T16:30:11,738245+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [134, 8192]
+2026-06-12T16:30:11,738248+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [135, 4352]
+2026-06-12T16:30:11,738250+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [138, 13056]
+2026-06-12T16:30:11,738253+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: [142, 291584]
+2026-06-12T16:30:11,738281+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: probing finish
+2026-06-12T16:30:11,738371+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: Adding to iommu group 13
+2026-06-12T16:30:11,738590+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: rkvdec-core, probing start
+2026-06-12T16:30:11,738704+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: shared_niu_a is not found!
+2026-06-12T16:30:11,738706+07:00 rkvdec2_init:1022: No niu aclk reset resource define
+2026-06-12T16:30:11,738709+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: shared_niu_h is not found!
+2026-06-12T16:30:11,738711+07:00 rkvdec2_init:1025: No niu hclk reset resource define
+2026-06-12T16:30:11,738725+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: Looking up vdec-supply from device tree
+2026-06-12T16:30:11,738730+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: Looking up vdec-supply property in node /rkvdec-core@fdc48000 failed
+2026-06-12T16:30:11,738736+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: no regulator, devfreq is disabled
+2026-06-12T16:30:11,738777+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: core_mask=00020002
+2026-06-12T16:30:11,738794+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: attach ccu as core 1
+2026-06-12T16:30:11,738968+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: sram_start 0x00000000ff079000
+2026-06-12T16:30:11,738971+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: rcb_iova 0x00000000ffe00000
+2026-06-12T16:30:11,738973+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: sram_size 487424
+2026-06-12T16:30:11,738975+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: rcb_size 1048576
+2026-06-12T16:30:11,738979+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: min_width 512
+2026-06-12T16:30:11,738983+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: rcb_info_count 20
+2026-06-12T16:30:11,738986+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [136, 24576]
+2026-06-12T16:30:11,738988+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [137, 49152]
+2026-06-12T16:30:11,738991+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [141, 90112]
+2026-06-12T16:30:11,738993+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [140, 49152]
+2026-06-12T16:30:11,738995+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [139, 180224]
+2026-06-12T16:30:11,738998+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [133, 49152]
+2026-06-12T16:30:11,739001+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [134, 8192]
+2026-06-12T16:30:11,739003+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [135, 4352]
+2026-06-12T16:30:11,739005+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [138, 13056]
+2026-06-12T16:30:11,739008+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: [142, 291584]
+2026-06-12T16:30:11,739037+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: probing finish
+2026-06-12T16:30:11,739224+07:00 mpp_rkvenc2 rkvenc-ccu: probing start
+2026-06-12T16:30:11,739227+07:00 mpp_rkvenc2 rkvenc-ccu: probing finish
+2026-06-12T16:30:11,739338+07:00 mpp_rkvenc2 fdbd0000.rkvenc-core: Adding to iommu group 10
+2026-06-12T16:30:11,739502+07:00 mpp_rkvenc2 fdbd0000.rkvenc-core: probing start
+2026-06-12T16:30:11,739645+07:00 mpp_rkvenc2 fdbd0000.rkvenc-core: Looking up venc-supply from device tree
+2026-06-12T16:30:11,739651+07:00 mpp_rkvenc2 fdbd0000.rkvenc-core: Looking up venc-supply property in node /rkvenc-core@fdbd0000 failed
+2026-06-12T16:30:11,739657+07:00 mpp_rkvenc2 fdbd0000.rkvenc-core: dev_pm_opp_set_regulators: no regulator (venc) found: -19
+2026-06-12T16:30:11,739673+07:00 rkvenc_init:1859: failed to add venc devfreq
+2026-06-12T16:30:11,739700+07:00 mpp_rkvenc2 fdbd0000.rkvenc-core: attach ccu as core 0
+2026-06-12T16:30:11,739854+07:00 mpp_rkvenc2 fdbd0000.rkvenc-core: probing finish
+2026-06-12T16:30:11,739922+07:00 mpp_rkvenc2 fdbe0000.rkvenc-core: Adding to iommu group 11
+2026-06-12T16:30:11,740089+07:00 mpp_rkvenc2 fdbe0000.rkvenc-core: probing start
+2026-06-12T16:30:11,740230+07:00 mpp_rkvenc2 fdbe0000.rkvenc-core: Looking up venc-supply from device tree
+2026-06-12T16:30:11,740236+07:00 mpp_rkvenc2 fdbe0000.rkvenc-core: Looking up venc-supply property in node /rkvenc-core@fdbe0000 failed
+2026-06-12T16:30:11,740241+07:00 mpp_rkvenc2 fdbe0000.rkvenc-core: dev_pm_opp_set_regulators: no regulator (venc) found: -19
+2026-06-12T16:30:11,740253+07:00 rkvenc_init:1859: failed to add venc devfreq
+2026-06-12T16:30:11,740300+07:00 mpp_rkvenc2 fdbe0000.rkvenc-core: attach ccu as core 1
+2026-06-12T16:30:11,740433+07:00 mpp_rkvenc2 fdbe0000.rkvenc-core: probing finish
+2026-06-12T16:30:11,740674+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up av1-supply from device tree
+2026-06-12T16:30:11,740692+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up av1-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:11,740980+07:00 mpp_av1dec: Adding child /av1d@fdc70000
+2026-06-12T16:30:11,741051+07:00 mpp_av1dec: register device av1d-master
+2026-06-12T16:30:11,741081+07:00 mpp_av1dec av1d-master: av1_iommu_of_xlate,784
+2026-06-12T16:30:11,741099+07:00 av1_iommu_probe_device,736, consumer : av1d-master, supplier : fdca0000.iommu
+2026-06-12T16:30:11,741130+07:00 mpp_av1dec av1d-master: Adding to iommu group 18
+2026-06-12T16:30:11,741358+07:00 mpp_av1dec av1d-master: probing start
+2026-06-12T16:30:11,741605+07:00 mpp_av1dec av1d-master: probing finish
+2026-06-12T16:30:11,741641+07:00 mpp_service mpp-srv: probe success
+2026-06-12T16:30:11,752964+07:00 dma-pl330 fea10000.dma-controller: Loaded driver for PL330 DMAC-241330
+2026-06-12T16:30:11,752970+07:00 dma-pl330 fea10000.dma-controller: 	DBUFF-128x8bytes Num_Chans-8 Num_Peri-32 Num_Events-16
+2026-06-12T16:30:11,753957+07:00 dma-pl330 fea30000.dma-controller: Loaded driver for PL330 DMAC-241330
+2026-06-12T16:30:11,753962+07:00 dma-pl330 fea30000.dma-controller: 	DBUFF-128x8bytes Num_Chans-8 Num_Peri-32 Num_Events-16
+2026-06-12T16:30:11,754920+07:00 dma-pl330 fed10000.dma-controller: Loaded driver for PL330 DMAC-241330
+2026-06-12T16:30:11,754926+07:00 dma-pl330 fed10000.dma-controller: 	DBUFF-128x8bytes Num_Chans-8 Num_Peri-32 Num_Events-16
+2026-06-12T16:30:11,755431+07:00 rockchip-pvtm fda40000.pvtm: pvtm@0 probed
+2026-06-12T16:30:11,755491+07:00 rockchip-pvtm fda50000.pvtm: pvtm@1 probed
+2026-06-12T16:30:11,755545+07:00 rockchip-pvtm fda60000.pvtm: pvtm@2 probed
+2026-06-12T16:30:11,755600+07:00 rockchip-pvtm fdaf0000.pvtm: pvtm@3 probed
+2026-06-12T16:30:11,755654+07:00 rockchip-pvtm fdb30000.pvtm: pvtm@4 probed
+2026-06-12T16:30:11,756266+07:00 rockchip-system-monitor rockchip-system-monitor: system monitor probe
+2026-06-12T16:30:11,757104+07:00 Serial: 8250/16550 driver, 10 ports, IRQ sharing disabled
+2026-06-12T16:30:11,757669+07:00 febc0000.serial: ttyS9 at MMIO 0xfebc0000 (irq = 113, base_baud = 1500000) is a 16550A
+2026-06-12T16:30:11,758956+07:00 random: crng init done
+2026-06-12T16:30:11,759859+07:00 rockchip-vop2 fdd90000.vop: Adding to iommu group 17
+2026-06-12T16:30:11,768012+07:00 rockchip-vop2 fdd90000.vop: [drm:vop2_bind] vp0 assign plane mask: 0x5, primary plane phy id: 0
+2026-06-12T16:30:11,768019+07:00 rockchip-vop2 fdd90000.vop: [drm:vop2_bind] vp1 assign plane mask: 0xa, primary plane phy id: 1
+2026-06-12T16:30:11,768024+07:00 rockchip-vop2 fdd90000.vop: [drm:vop2_bind] vp2 assign plane mask: 0x140, primary plane phy id: 6
+2026-06-12T16:30:11,768028+07:00 rockchip-vop2 fdd90000.vop: [drm:vop2_bind] vp3 assign plane mask: 0x280, primary plane phy id: 7
+2026-06-12T16:30:11,768114+07:00 rockchip-vop2 fdd90000.vop: [drm:vop2_bind] Esmart0-win0 as cursor plane for vp0
+2026-06-12T16:30:11,768199+07:00 rockchip-vop2 fdd90000.vop: [drm:vop2_bind] Esmart1-win0 as cursor plane for vp1
+2026-06-12T16:30:11,768282+07:00 rockchip-vop2 fdd90000.vop: [drm:vop2_bind] Esmart2-win0 as cursor plane for vp2
+2026-06-12T16:30:11,768357+07:00 rockchip-vop2 fdd90000.vop: [drm:vop2_bind] Esmart3-win0 as cursor plane for vp3
+2026-06-12T16:30:11,768376+07:00 [drm] failed to init overlay plane Cluster0-win1
+2026-06-12T16:30:11,768378+07:00 [drm] failed to init overlay plane Cluster1-win1
+2026-06-12T16:30:11,768381+07:00 [drm] failed to init overlay plane Cluster2-win1
+2026-06-12T16:30:11,768383+07:00 [drm] failed to init overlay plane Cluster3-win1
+2026-06-12T16:30:11,779010+07:00 rockchip-drm display-subsystem: bound fdd90000.vop (ops 0xffffffc0091683a0)
+2026-06-12T16:30:11,779567+07:00 dwhdmi-rockchip fde80000.hdmi: registered ddc I2C bus driver
+2026-06-12T16:30:11,780158+07:00 rockchip-drm display-subsystem: bound fde80000.hdmi (ops 0xffffffc009176628)
+2026-06-12T16:30:11,780233+07:00 rockchip-drm display-subsystem: bound fde50000.dp (ops 0xffffffc0091790f8)
+2026-06-12T16:30:11,780812+07:00 rockchip-drm display-subsystem: failed to parse loader memory
+2026-06-12T16:30:11,780883+07:00 rockchip-drm display-subsystem: [drm] Cannot find any crtc or sizes
+2026-06-12T16:30:11,780941+07:00 rockchip-drm display-subsystem: [drm] Cannot find any crtc or sizes
+2026-06-12T16:30:11,780966+07:00 rockchip-drm display-subsystem: [drm] Cannot find any crtc or sizes
+2026-06-12T16:30:11,781526+07:00 [drm] Initialized rockchip 3.0.0 20140818 for display-subsystem on minor 0
+2026-06-12T16:30:11,785552+07:00 dw-hdmi-qp-hdcp dw-hdmi-qp-hdcp.3.auto: dw_hdcp_qp_hdcp_probe success
+2026-06-12T16:30:11,788402+07:00 brd: module loaded
+2026-06-12T16:30:11,791970+07:00 loop: module loaded
+2026-06-12T16:30:11,792206+07:00 zram: Added device: zram0
+2026-06-12T16:30:11,792344+07:00 lkdtm: No crash points registered, enable through debugfs
+2026-06-12T16:30:11,792483+07:00 system_heap: orders[0] = 6
+2026-06-12T16:30:11,792486+07:00 system_heap: orders[1] = 4
+2026-06-12T16:30:11,792488+07:00 system_heap: orders[2] = 0
+2026-06-12T16:30:11,794802+07:00 rockchip-spi feb20000.spi: no high_speed pinctrl state
+2026-06-12T16:30:11,796431+07:00 rk806 spi2.0: chip id: RK806,ver:0x2, 0x1
+2026-06-12T16:30:11,796574+07:00 rk806 spi2.0: ON: 0x40 OFF:0x10
+2026-06-12T16:30:11,798632+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc1-supply from device tree
+2026-06-12T16:30:11,798641+07:00 vdd_gpu_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:11,798646+07:00 vcc5v0_sys: could not add device link regulator.8: -ENOENT
+2026-06-12T16:30:11,799393+07:00 vdd_gpu_s0: 550 <--> 950 mV at 750 mV, enabled
+2026-06-12T16:30:11,799782+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc2-supply from device tree
+2026-06-12T16:30:11,799787+07:00 vdd_cpu_lit_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:11,799792+07:00 vcc5v0_sys: could not add device link regulator.9: -ENOENT
+2026-06-12T16:30:11,800045+07:00 vdd_cpu_lit_s0: 550 <--> 950 mV at 750 mV, enabled
+2026-06-12T16:30:11,800567+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc3-supply from device tree
+2026-06-12T16:30:11,800573+07:00 vdd_log_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:11,800578+07:00 vcc5v0_sys: could not add device link regulator.10: -ENOENT
+2026-06-12T16:30:11,800833+07:00 vdd_log_s0: 675 <--> 750 mV at 750 mV, enabled
+2026-06-12T16:30:11,801296+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc4-supply from device tree
+2026-06-12T16:30:11,801301+07:00 vdd_vdenc_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:11,801306+07:00 vcc5v0_sys: could not add device link regulator.11: -ENOENT
+2026-06-12T16:30:11,801561+07:00 vdd_vdenc_s0: 550 <--> 950 mV at 750 mV, enabled
+2026-06-12T16:30:11,802087+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc5-supply from device tree
+2026-06-12T16:30:11,802092+07:00 vdd_ddr_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:11,802096+07:00 vcc5v0_sys: could not add device link regulator.12: -ENOENT
+2026-06-12T16:30:11,802350+07:00 vdd_ddr_s0: 675 <--> 900 mV at 850 mV, enabled
+2026-06-12T16:30:11,802549+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc6-supply from device tree
+2026-06-12T16:30:11,802555+07:00 vdd2_ddr_s3: supplied by vcc5v0_sys
+2026-06-12T16:30:11,802559+07:00 vcc5v0_sys: could not add device link regulator.13: -ENOENT
+2026-06-12T16:30:11,802831+07:00 vdd2_ddr_s3: at 500 mV, enabled
+2026-06-12T16:30:11,803173+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc7-supply from device tree
+2026-06-12T16:30:11,803178+07:00 vdd_2v0_pldo_s3: supplied by vcc5v0_sys
+2026-06-12T16:30:11,803182+07:00 vcc5v0_sys: could not add device link regulator.14: -ENOENT
+2026-06-12T16:30:11,803398+07:00 vdd_2v0_pldo_s3: 2000 mV, enabled
+2026-06-12T16:30:11,803778+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc8-supply from device tree
+2026-06-12T16:30:11,803784+07:00 vcc_3v3_s3: supplied by vcc5v0_sys
+2026-06-12T16:30:11,803789+07:00 vcc5v0_sys: could not add device link regulator.15: -ENOENT
+2026-06-12T16:30:11,804012+07:00 vcc_3v3_s3: 3300 mV, enabled
+2026-06-12T16:30:11,804333+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc9-supply from device tree
+2026-06-12T16:30:11,804338+07:00 vddq_ddr_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:11,804343+07:00 vcc5v0_sys: could not add device link regulator.16: -ENOENT
+2026-06-12T16:30:11,804632+07:00 vddq_ddr_s0: at 500 mV, enabled
+2026-06-12T16:30:11,804981+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc10-supply from device tree
+2026-06-12T16:30:11,804986+07:00 vcc_1v8_s3: supplied by vcc5v0_sys
+2026-06-12T16:30:11,804990+07:00 vcc5v0_sys: could not add device link regulator.17: -ENOENT
+2026-06-12T16:30:11,805218+07:00 vcc_1v8_s3: 1800 mV, enabled
+2026-06-12T16:30:11,805569+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc13-supply from device tree
+2026-06-12T16:30:11,805576+07:00 vdd_0v75_s3: supplied by vcc_1v1_nldo_s3
+2026-06-12T16:30:11,805581+07:00 vcc_1v1_nldo_s3: could not add device link regulator.18: -ENOENT
+2026-06-12T16:30:11,805804+07:00 vdd_0v75_s3: 750 mV, enabled
+2026-06-12T16:30:11,806221+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc13-supply from device tree
+2026-06-12T16:30:11,806227+07:00 vdd_ddr_pll_s0: supplied by vcc_1v1_nldo_s3
+2026-06-12T16:30:11,806232+07:00 vcc_1v1_nldo_s3: could not add device link regulator.19: -ENOENT
+2026-06-12T16:30:11,806453+07:00 vdd_ddr_pll_s0: 850 mV, enabled
+2026-06-12T16:30:11,806723+07:00 avdd_0v75_s0: Bringing 750000uV into 837500-837500uV
+2026-06-12T16:30:11,806854+07:00 avdd_0v75_s0: ramp_delay not set
+2026-06-12T16:30:11,806924+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc13-supply from device tree
+2026-06-12T16:30:11,806930+07:00 avdd_0v75_s0: supplied by vcc_1v1_nldo_s3
+2026-06-12T16:30:11,806936+07:00 vcc_1v1_nldo_s3: could not add device link regulator.20: -ENOENT
+2026-06-12T16:30:11,807158+07:00 avdd_0v75_s0: 837 mV, enabled
+2026-06-12T16:30:11,807508+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc14-supply from device tree
+2026-06-12T16:30:11,807514+07:00 vdd_0v85_s0: supplied by vcc_1v1_nldo_s3
+2026-06-12T16:30:11,807518+07:00 vcc_1v1_nldo_s3: could not add device link regulator.21: -ENOENT
+2026-06-12T16:30:11,807739+07:00 vdd_0v85_s0: 850 mV, enabled
+2026-06-12T16:30:11,808079+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc14-supply from device tree
+2026-06-12T16:30:11,808085+07:00 vdd_0v75_s0: supplied by vcc_1v1_nldo_s3
+2026-06-12T16:30:11,808092+07:00 vcc_1v1_nldo_s3: could not add device link regulator.22: -ENOENT
+2026-06-12T16:30:11,808319+07:00 vdd_0v75_s0: 750 mV, enabled
+2026-06-12T16:30:11,808725+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc11-supply from device tree
+2026-06-12T16:30:11,808733+07:00 avcc_1v8_s0: supplied by vdd_2v0_pldo_s3
+2026-06-12T16:30:11,808737+07:00 vdd_2v0_pldo_s3: could not add device link regulator.23: -ENOENT
+2026-06-12T16:30:11,809030+07:00 avcc_1v8_s0: 1800 mV, enabled
+2026-06-12T16:30:11,809444+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc11-supply from device tree
+2026-06-12T16:30:11,809451+07:00 vcc_1v8_s0: supplied by vdd_2v0_pldo_s3
+2026-06-12T16:30:11,809455+07:00 vdd_2v0_pldo_s3: could not add device link regulator.24: -ENOENT
+2026-06-12T16:30:11,809744+07:00 vcc_1v8_s0: 1800 mV, enabled
+2026-06-12T16:30:11,810082+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc11-supply from device tree
+2026-06-12T16:30:11,810089+07:00 avdd_1v2_s0: supplied by vdd_2v0_pldo_s3
+2026-06-12T16:30:11,810094+07:00 vdd_2v0_pldo_s3: could not add device link regulator.25: -ENOENT
+2026-06-12T16:30:11,810386+07:00 avdd_1v2_s0: 1200 mV, enabled
+2026-06-12T16:30:11,810717+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc12-supply from device tree
+2026-06-12T16:30:11,810722+07:00 vcc_3v3_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:11,810726+07:00 vcc5v0_sys: could not add device link regulator.26: -ENOENT
+2026-06-12T16:30:11,810945+07:00 vcc_3v3_s0: 3300 mV, enabled
+2026-06-12T16:30:11,811277+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcc12-supply from device tree
+2026-06-12T16:30:11,811282+07:00 vccio_sd_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:11,811287+07:00 vcc5v0_sys: could not add device link regulator.27: -ENOENT
+2026-06-12T16:30:11,811538+07:00 vccio_sd_s0: 1800 <--> 3300 mV at 3300 mV, enabled
+2026-06-12T16:30:11,811894+07:00 rk806-regulator rk806-regulator.7.auto: Looking up vcca-supply from device tree
+2026-06-12T16:30:11,811900+07:00 pldo6_s3: supplied by vcc5v0_sys
+2026-06-12T16:30:11,811904+07:00 vcc5v0_sys: could not add device link regulator.28: -ENOENT
+2026-06-12T16:30:11,812117+07:00 pldo6_s3: 1800 mV, enabled
+2026-06-12T16:30:11,812639+07:00 rk806 spi2.0: no sleep-setting state
+2026-06-12T16:30:11,812643+07:00 rk806 spi2.0: no reset-setting pinctrl state
+2026-06-12T16:30:11,812646+07:00 rk806 spi2.0: no dvs-setting pinctrl state
+2026-06-12T16:30:11,814135+07:00 rockchip-spi feb20000.spi: register misc device rkspi-dev2
+2026-06-12T16:30:11,814140+07:00 rockchip-spi feb20000.spi: probed, poll=0, rsd=0, cs-inactive=0, ready=0
+2026-06-12T16:30:11,815818+07:00 spi-nor spi5.0: XM25QU128C (16384 Kbytes) read_data x4
+2026-06-12T16:30:11,815834+07:00 1 fixed-partitions partitions found on MTD device sfc_nor
+2026-06-12T16:30:11,815836+07:00 Creating 1 MTD partitions on "sfc_nor":
+2026-06-12T16:30:11,815841+07:00 0x000000000000-0x000001000000 : "loader"
+2026-06-12T16:30:11,817848+07:00 rk_gmac-dwmac fe1c0000.ethernet: IRQ eth_lpi not found
+2026-06-12T16:30:11,817985+07:00 rk_gmac-dwmac fe1c0000.ethernet: Looking up phy-supply from device tree
+2026-06-12T16:30:11,817997+07:00 rk_gmac-dwmac fe1c0000.ethernet: Looking up phy-supply property in node /ethernet@fe1c0000 failed
+2026-06-12T16:30:11,818011+07:00 rk_gmac-dwmac fe1c0000.ethernet: no regulator found
+2026-06-12T16:30:11,818015+07:00 rk_gmac-dwmac fe1c0000.ethernet: clock input or output? (output).
+2026-06-12T16:30:11,818019+07:00 rk_gmac-dwmac fe1c0000.ethernet: TX delay(0x42).
+2026-06-12T16:30:11,818023+07:00 rk_gmac-dwmac fe1c0000.ethernet: Can not read property: rx_delay.
+2026-06-12T16:30:11,818026+07:00 rk_gmac-dwmac fe1c0000.ethernet: set rx_delay to 0xffffffff
+2026-06-12T16:30:11,818040+07:00 rk_gmac-dwmac fe1c0000.ethernet: integrated PHY? (no).
+2026-06-12T16:30:11,818045+07:00 rk_gmac-dwmac fe1c0000.ethernet: cannot get clock mac_clk_rx
+2026-06-12T16:30:11,818049+07:00 rk_gmac-dwmac fe1c0000.ethernet: cannot get clock mac_clk_tx
+2026-06-12T16:30:11,818062+07:00 rk_gmac-dwmac fe1c0000.ethernet: cannot get clock clk_mac_speed
+2026-06-12T16:30:11,818282+07:00 rk_gmac-dwmac fe1c0000.ethernet: init for RGMII_RXID
+2026-06-12T16:30:11,818368+07:00 rk_gmac-dwmac fe1c0000.ethernet: User ID: 0x30, Synopsys ID: 0x51
+2026-06-12T16:30:11,818373+07:00 rk_gmac-dwmac fe1c0000.ethernet: 	DWMAC4/5
+2026-06-12T16:30:11,818377+07:00 rk_gmac-dwmac fe1c0000.ethernet: DMA HW capability register supported
+2026-06-12T16:30:11,818381+07:00 rk_gmac-dwmac fe1c0000.ethernet: RX Checksum Offload Engine supported
+2026-06-12T16:30:11,818384+07:00 rk_gmac-dwmac fe1c0000.ethernet: TX Checksum insertion supported
+2026-06-12T16:30:11,818387+07:00 rk_gmac-dwmac fe1c0000.ethernet: Wake-Up On Lan supported
+2026-06-12T16:30:11,818420+07:00 rk_gmac-dwmac fe1c0000.ethernet: TSO supported
+2026-06-12T16:30:11,818423+07:00 rk_gmac-dwmac fe1c0000.ethernet: Enable RX Mitigation via HW Watchdog Timer
+2026-06-12T16:30:11,818427+07:00 rk_gmac-dwmac fe1c0000.ethernet: Enabled Flow TC (entries=2)
+2026-06-12T16:30:11,818430+07:00 rk_gmac-dwmac fe1c0000.ethernet: TSO feature enabled
+2026-06-12T16:30:11,818433+07:00 rk_gmac-dwmac fe1c0000.ethernet: Using 32 bits DMA width
+2026-06-12T16:30:11,937985+07:00 rk-pcie fe190000.pcie: PCIe Linking... LTSSM is 0x3
+2026-06-12T16:30:11,959347+07:00 usbcore: registered new interface driver rndis_wlan
+2026-06-12T16:30:11,959365+07:00 usbcore: registered new interface driver asix
+2026-06-12T16:30:11,959384+07:00 usbcore: registered new interface driver cdc_ether
+2026-06-12T16:30:11,959398+07:00 usbcore: registered new interface driver rndis_host
+2026-06-12T16:30:11,959422+07:00 usbcore: registered new interface driver cdc_ncm
+2026-06-12T16:30:11,964029+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up usb-supply from device tree
+2026-06-12T16:30:11,964059+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up usb-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:11,966018+07:00 ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+2026-06-12T16:30:11,966026+07:00 ehci-pci: EHCI PCI platform driver
+2026-06-12T16:30:11,966055+07:00 ehci-platform: EHCI generic platform driver
+2026-06-12T16:30:11,968043+07:00 ehci-platform fc800000.usb: EHCI Host Controller
+2026-06-12T16:30:11,968056+07:00 ehci-platform fc800000.usb: new USB bus registered, assigned bus number 1
+2026-06-12T16:30:11,968121+07:00 ehci-platform fc800000.usb: irq 20, io mem 0xfc800000
+2026-06-12T16:30:11,980157+07:00 ehci-platform fc800000.usb: USB 2.0 started, EHCI 1.00
+2026-06-12T16:30:11,980268+07:00 usb usb1: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 5.10
+2026-06-12T16:30:11,980273+07:00 usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+2026-06-12T16:30:11,980276+07:00 usb usb1: Product: EHCI Host Controller
+2026-06-12T16:30:11,980280+07:00 usb usb1: Manufacturer: Linux 5.10.160-rockchip-rk3588 ehci_hcd
+2026-06-12T16:30:11,980282+07:00 usb usb1: SerialNumber: fc800000.usb
+2026-06-12T16:30:11,980538+07:00 hub 1-0:1.0: USB hub found
+2026-06-12T16:30:11,980555+07:00 hub 1-0:1.0: 1 port detected
+2026-06-12T16:30:11,982952+07:00 ehci-platform fc880000.usb: EHCI Host Controller
+2026-06-12T16:30:11,982963+07:00 ehci-platform fc880000.usb: new USB bus registered, assigned bus number 2
+2026-06-12T16:30:11,983019+07:00 ehci-platform fc880000.usb: irq 22, io mem 0xfc880000
+2026-06-12T16:30:11,993489+07:00 ehci-platform fc880000.usb: USB 2.0 started, EHCI 1.00
+2026-06-12T16:30:11,993580+07:00 usb usb2: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 5.10
+2026-06-12T16:30:11,993584+07:00 usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+2026-06-12T16:30:11,993587+07:00 usb usb2: Product: EHCI Host Controller
+2026-06-12T16:30:11,993590+07:00 usb usb2: Manufacturer: Linux 5.10.160-rockchip-rk3588 ehci_hcd
+2026-06-12T16:30:11,993594+07:00 usb usb2: SerialNumber: fc880000.usb
+2026-06-12T16:30:11,993795+07:00 hub 2-0:1.0: USB hub found
+2026-06-12T16:30:11,993811+07:00 hub 2-0:1.0: 1 port detected
+2026-06-12T16:30:11,994217+07:00 ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+2026-06-12T16:30:11,994227+07:00 ohci-platform: OHCI generic platform driver
+2026-06-12T16:30:11,994386+07:00 ohci-platform fc840000.usb: Generic Platform OHCI controller
+2026-06-12T16:30:11,994402+07:00 ohci-platform fc840000.usb: new USB bus registered, assigned bus number 3
+2026-06-12T16:30:11,994449+07:00 ohci-platform fc840000.usb: irq 21, io mem 0xfc840000
+2026-06-12T16:30:12,020180+07:00 rk-pcie fe190000.pcie: PCIe Link up, LTSSM is 0x30011
+2026-06-12T16:30:12,020354+07:00 rk-pcie fe190000.pcie: PCI host bridge to bus 0004:40
+2026-06-12T16:30:12,020367+07:00 pci_bus 0004:40: root bus resource [bus 40-4f]
+2026-06-12T16:30:12,020377+07:00 pci_bus 0004:40: root bus resource [??? 0xf4000000-0xf40fffff flags 0x0]
+2026-06-12T16:30:12,020388+07:00 pci_bus 0004:40: root bus resource [io  0x0000-0xfffff] (bus address [0xf4100000-0xf41fffff])
+2026-06-12T16:30:12,020397+07:00 pci_bus 0004:40: root bus resource [mem 0xf4200000-0xf4ffffff]
+2026-06-12T16:30:12,020406+07:00 pci_bus 0004:40: root bus resource [mem 0xa00000000-0xa3fffffff pref]
+2026-06-12T16:30:12,020450+07:00 pci 0004:40:00.0: [1d87:3588] type 01 class 0x060400
+2026-06-12T16:30:12,020481+07:00 pci 0004:40:00.0: reg 0x38: [mem 0x00000000-0x0000ffff pref]
+2026-06-12T16:30:12,020558+07:00 pci 0004:40:00.0: supports D1 D2
+2026-06-12T16:30:12,020567+07:00 pci 0004:40:00.0: PME# supported from D0 D1 D3hot
+2026-06-12T16:30:12,034056+07:00 pci 0004:40:00.0: bridge configuration invalid ([bus 00-00]), reconfiguring
+2026-06-12T16:30:12,034354+07:00 pci 0004:41:00.0: [1c5c:1327] type 00 class 0x010802
+2026-06-12T16:30:12,034460+07:00 pci 0004:41:00.0: reg 0x10: [mem 0x00000000-0x00003fff 64bit]
+2026-06-12T16:30:12,035097+07:00 pci 0004:41:00.0: supports D1
+2026-06-12T16:30:12,035106+07:00 pci 0004:41:00.0: PME# supported from D0 D1 D3hot
+2026-06-12T16:30:12,035285+07:00 pci 0004:41:00.0: 2.000 Gb/s available PCIe bandwidth, limited by 2.5 GT/s PCIe x1 link at 0004:40:00.0 (capable of 31.504 Gb/s with 8.0 GT/s PCIe x4 link)
+2026-06-12T16:30:12,054243+07:00 usb usb3: New USB device found, idVendor=1d6b, idProduct=0001, bcdDevice= 5.10
+2026-06-12T16:30:12,054248+07:00 usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+2026-06-12T16:30:12,054251+07:00 usb usb3: Product: Generic Platform OHCI controller
+2026-06-12T16:30:12,054254+07:00 usb usb3: Manufacturer: Linux 5.10.160-rockchip-rk3588 ohci_hcd
+2026-06-12T16:30:12,054257+07:00 usb usb3: SerialNumber: fc840000.usb
+2026-06-12T16:30:12,056397+07:00 pci_bus 0004:41: busn_res: [bus 41-4f] end is updated to 41
+2026-06-12T16:30:12,056403+07:00 hub 3-0:1.0: USB hub found
+2026-06-12T16:30:12,056419+07:00 hub 3-0:1.0: 1 port detected
+2026-06-12T16:30:12,056433+07:00 pci 0004:40:00.0: BAR 8: assigned [mem 0xf4200000-0xf42fffff]
+2026-06-12T16:30:12,056446+07:00 pci 0004:40:00.0: BAR 6: assigned [mem 0xf4300000-0xf430ffff pref]
+2026-06-12T16:30:12,056461+07:00 pci 0004:41:00.0: BAR 0: assigned [mem 0xf4200000-0xf4203fff 64bit]
+2026-06-12T16:30:12,056504+07:00 pci 0004:40:00.0: PCI bridge to [bus 41]
+2026-06-12T16:30:12,056515+07:00 pci 0004:40:00.0:   bridge window [mem 0xf4200000-0xf42fffff]
+2026-06-12T16:30:12,056754+07:00 ohci-platform fc8c0000.usb: Generic Platform OHCI controller
+2026-06-12T16:30:12,056762+07:00 ohci-platform fc8c0000.usb: new USB bus registered, assigned bus number 4
+2026-06-12T16:30:12,056821+07:00 ohci-platform fc8c0000.usb: irq 23, io mem 0xfc8c0000
+2026-06-12T16:30:12,059780+07:00 pcieport 0004:40:00.0: PME: Signaling with IRQ 144
+2026-06-12T16:30:12,060317+07:00 nvme nvme0: pci function 0004:41:00.0
+2026-06-12T16:30:12,060408+07:00 nvme 0004:41:00.0: enabling device (0000 -> 0002)
+2026-06-12T16:30:12,067819+07:00 nvme nvme0: 8/0/0 default/read/poll queues
+2026-06-12T16:30:12,117579+07:00 usb usb4: New USB device found, idVendor=1d6b, idProduct=0001, bcdDevice= 5.10
+2026-06-12T16:30:12,117584+07:00 usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+2026-06-12T16:30:12,117587+07:00 usb usb4: Product: Generic Platform OHCI controller
+2026-06-12T16:30:12,117591+07:00 usb usb4: Manufacturer: Linux 5.10.160-rockchip-rk3588 ohci_hcd
+2026-06-12T16:30:12,117594+07:00 usb usb4: SerialNumber: fc8c0000.usb
+2026-06-12T16:30:12,117863+07:00 hub 4-0:1.0: USB hub found
+2026-06-12T16:30:12,117879+07:00 hub 4-0:1.0: 1 port detected
+2026-06-12T16:30:12,118630+07:00 xhci-hcd xhci-hcd.8.auto: xHCI Host Controller
+2026-06-12T16:30:12,118641+07:00 xhci-hcd xhci-hcd.8.auto: new USB bus registered, assigned bus number 5
+2026-06-12T16:30:12,118724+07:00 xhci-hcd xhci-hcd.8.auto: hcc params 0x0220fe64 hci version 0x110 quirks 0x0000200002010010
+2026-06-12T16:30:12,118749+07:00 xhci-hcd xhci-hcd.8.auto: irq 134, io mem 0xfcd00000
+2026-06-12T16:30:12,118898+07:00 usb usb5: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 5.10
+2026-06-12T16:30:12,118903+07:00 usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+2026-06-12T16:30:12,118906+07:00 usb usb5: Product: xHCI Host Controller
+2026-06-12T16:30:12,118909+07:00 usb usb5: Manufacturer: Linux 5.10.160-rockchip-rk3588 xhci-hcd
+2026-06-12T16:30:12,118912+07:00 usb usb5: SerialNumber: xhci-hcd.8.auto
+2026-06-12T16:30:12,119162+07:00 hub 5-0:1.0: USB hub found
+2026-06-12T16:30:12,119179+07:00 hub 5-0:1.0: 1 port detected
+2026-06-12T16:30:12,119326+07:00 xhci-hcd xhci-hcd.8.auto: xHCI Host Controller
+2026-06-12T16:30:12,119332+07:00 xhci-hcd xhci-hcd.8.auto: new USB bus registered, assigned bus number 6
+2026-06-12T16:30:12,119339+07:00 xhci-hcd xhci-hcd.8.auto: Host supports USB 3.0 SuperSpeed
+2026-06-12T16:30:12,119371+07:00 usb usb6: We don't know the algorithms for LPM for this host, disabling LPM.
+2026-06-12T16:30:12,119426+07:00 usb usb6: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 5.10
+2026-06-12T16:30:12,119430+07:00 usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+2026-06-12T16:30:12,119433+07:00 usb usb6: Product: xHCI Host Controller
+2026-06-12T16:30:12,119436+07:00 usb usb6: Manufacturer: Linux 5.10.160-rockchip-rk3588 xhci-hcd
+2026-06-12T16:30:12,119440+07:00 usb usb6: SerialNumber: xhci-hcd.8.auto
+2026-06-12T16:30:12,119671+07:00 hub 6-0:1.0: USB hub found
+2026-06-12T16:30:12,119685+07:00 hub 6-0:1.0: 1 port detected
+2026-06-12T16:30:12,119891+07:00 usbcore: registered new interface driver cdc_acm
+2026-06-12T16:30:12,119895+07:00 cdc_acm: USB Abstract Control Model driver for USB modems and ISDN adapters
+2026-06-12T16:30:12,120001+07:00 usbcore: registered new interface driver uas
+2026-06-12T16:30:12,120055+07:00 usbcore: registered new interface driver usb-storage
+2026-06-12T16:30:12,120670+07:00 usbcore: registered new interface driver xpad
+2026-06-12T16:30:12,120747+07:00 usbcore: registered new interface driver usbtouchscreen
+2026-06-12T16:30:12,121784+07:00 input: rk805 pwrkey as /devices/platform/feb20000.spi/spi_master/spi2/spi2.0/rk805-pwrkey.6.auto/input/input0
+2026-06-12T16:30:12,122039+07:00 i2c /dev entries driver
+2026-06-12T16:30:12,125695+07:00 rk860-regulator 0-0042: Looking up vin-supply from device tree
+2026-06-12T16:30:12,125704+07:00 vdd_cpu_big0_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:12,125710+07:00 vcc5v0_sys: could not add device link regulator.29: -ENOENT
+2026-06-12T16:30:12,129789+07:00 vdd_cpu_big0_s0: 550 <--> 1050 mV at 800 mV, enabled
+2026-06-12T16:30:12,134338+07:00 rk860-regulator 0-0043: Looking up vin-supply from device tree
+2026-06-12T16:30:12,134345+07:00 vdd_cpu_big1_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:12,134350+07:00 vcc5v0_sys: could not add device link regulator.30: -ENOENT
+2026-06-12T16:30:12,138437+07:00 vdd_cpu_big1_s0: 550 <--> 1050 mV at 800 mV, enabled
+2026-06-12T16:30:12,140679+07:00 Goodix-TS 2-0014: Looking up AVDD28-supply from device tree
+2026-06-12T16:30:12,140687+07:00 Goodix-TS 2-0014: Looking up AVDD28-supply property in node /i2c@feaa0000/touchscreen@14 failed
+2026-06-12T16:30:12,140698+07:00 Goodix-TS 2-0014: supply AVDD28 not found, using dummy regulator
+2026-06-12T16:30:12,140756+07:00 Goodix-TS 2-0014: Looking up VDDIO-supply from device tree
+2026-06-12T16:30:12,140763+07:00 Goodix-TS 2-0014: Looking up VDDIO-supply property in node /i2c@feaa0000/touchscreen@14 failed
+2026-06-12T16:30:12,140771+07:00 Goodix-TS 2-0014: supply VDDIO not found, using dummy regulator
+2026-06-12T16:30:12,233629+07:00 Goodix-TS 2-0014: i2c test failed attempt 1: -6
+2026-06-12T16:30:12,260290+07:00 Goodix-TS 2-0014: i2c test failed attempt 2: -6
+2026-06-12T16:30:12,286814+07:00 Goodix-TS 2-0014: I2C communication failure: -6
+2026-06-12T16:30:12,289932+07:00 rk860-regulator 2-0042: Looking up vin-supply from device tree
+2026-06-12T16:30:12,289938+07:00 vdd_npu_s0: supplied by vcc5v0_sys
+2026-06-12T16:30:12,289943+07:00 vcc5v0_sys: could not add device link regulator.31: -ENOENT
+2026-06-12T16:30:12,294006+07:00 vdd_npu_s0: 550 <--> 950 mV at 800 mV, enabled
+2026-06-12T16:30:12,296829+07:00 typec_fusb302 6-0022: Looking up vbus-supply from device tree
+2026-06-12T16:30:12,324132+07:00 rtc-hym8563 6-0051: rtc information is valid
+2026-06-12T16:30:12,329432+07:00 rtc-hym8563 6-0051: registered as rtc0
+2026-06-12T16:30:12,330437+07:00 rtc-hym8563 6-0051: setting system clock to 2026-06-12T09:30:10 UTC (1781256610)
+2026-06-12T16:30:12,332967+07:00 Goodix-TS 7-0014: Looking up AVDD28-supply from device tree
+2026-06-12T16:30:12,332975+07:00 Goodix-TS 7-0014: Looking up AVDD28-supply property in node /i2c@fec90000/touchscreen@14 failed
+2026-06-12T16:30:12,332988+07:00 Goodix-TS 7-0014: supply AVDD28 not found, using dummy regulator
+2026-06-12T16:30:12,333038+07:00 Goodix-TS 7-0014: Looking up VDDIO-supply from device tree
+2026-06-12T16:30:12,333045+07:00 Goodix-TS 7-0014: Looking up VDDIO-supply property in node /i2c@fec90000/touchscreen@14 failed
+2026-06-12T16:30:12,333053+07:00 Goodix-TS 7-0014: supply VDDIO not found, using dummy regulator
+2026-06-12T16:30:12,423636+07:00 Goodix-TS 7-0014: i2c test failed attempt 1: -6
+2026-06-12T16:30:12,450295+07:00 Goodix-TS 7-0014: i2c test failed attempt 2: -6
+2026-06-12T16:30:12,476814+07:00 Goodix-TS 7-0014: I2C communication failure: -6
+2026-06-12T16:30:12,477808+07:00 rkcifhw fdce0000.rkcif: Adding to iommu group 16
+2026-06-12T16:30:12,478716+07:00 rkcifhw fdce0000.rkcif: No reserved memory region assign to CIF
+2026-06-12T16:30:12,479539+07:00 rockchip-mipi-csi2-hw fdd10000.mipi0-csi2-hw: enter mipi csi2 hw probe!
+2026-06-12T16:30:12,479609+07:00 rockchip-mipi-csi2-hw fdd10000.mipi0-csi2-hw: probe success, v4l2_dev:mipi0-csi2-hw!
+2026-06-12T16:30:12,479644+07:00 rockchip-mipi-csi2-hw fdd20000.mipi1-csi2-hw: enter mipi csi2 hw probe!
+2026-06-12T16:30:12,479701+07:00 rockchip-mipi-csi2-hw fdd20000.mipi1-csi2-hw: probe success, v4l2_dev:mipi1-csi2-hw!
+2026-06-12T16:30:12,479733+07:00 rockchip-mipi-csi2-hw fdd30000.mipi2-csi2-hw: enter mipi csi2 hw probe!
+2026-06-12T16:30:12,479790+07:00 rockchip-mipi-csi2-hw fdd30000.mipi2-csi2-hw: probe success, v4l2_dev:mipi2-csi2-hw!
+2026-06-12T16:30:12,479821+07:00 rockchip-mipi-csi2-hw fdd40000.mipi3-csi2-hw: enter mipi csi2 hw probe!
+2026-06-12T16:30:12,479873+07:00 rockchip-mipi-csi2-hw fdd40000.mipi3-csi2-hw: probe success, v4l2_dev:mipi3-csi2-hw!
+2026-06-12T16:30:12,479903+07:00 rockchip-mipi-csi2-hw fdd50000.mipi4-csi2-hw: enter mipi csi2 hw probe!
+2026-06-12T16:30:12,479957+07:00 rockchip-mipi-csi2-hw fdd50000.mipi4-csi2-hw: probe success, v4l2_dev:mipi4-csi2-hw!
+2026-06-12T16:30:12,479988+07:00 rockchip-mipi-csi2-hw fdd60000.mipi5-csi2-hw: enter mipi csi2 hw probe!
+2026-06-12T16:30:12,480040+07:00 rockchip-mipi-csi2-hw fdd60000.mipi5-csi2-hw: probe success, v4l2_dev:mipi5-csi2-hw!
+2026-06-12T16:30:12,480923+07:00 rkisp_hw fdcb0000.rkisp: Adding to iommu group 14
+2026-06-12T16:30:12,481030+07:00 rkisp_hw fdcb0000.rkisp: is_thunderboot: 0
+2026-06-12T16:30:12,481034+07:00 rkisp_hw fdcb0000.rkisp: Missing rockchip,grf property
+2026-06-12T16:30:12,481048+07:00 rkisp_hw fdcb0000.rkisp: max input:0x0@0fps
+2026-06-12T16:30:12,481126+07:00 rkisp_hw fdcb0000.rkisp: no find phandle sram
+2026-06-12T16:30:12,481191+07:00 rkisp_hw fdcc0000.rkisp: Adding to iommu group 15
+2026-06-12T16:30:12,481335+07:00 rkisp_hw fdcc0000.rkisp: is_thunderboot: 0
+2026-06-12T16:30:12,481338+07:00 rkisp_hw fdcc0000.rkisp: Missing rockchip,grf property
+2026-06-12T16:30:12,481350+07:00 rkisp_hw fdcc0000.rkisp: max input:0x0@0fps
+2026-06-12T16:30:12,481423+07:00 rkisp_hw fdcc0000.rkisp: no find phandle sram
+2026-06-12T16:30:12,482328+07:00 usbcore: registered new interface driver uvcvideo
+2026-06-12T16:30:12,482330+07:00 USB Video Class driver (1.1.1)
+2026-06-12T16:30:12,483580+07:00 cpu cpu0: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,484096+07:00 cpu cpu0: bin=0
+2026-06-12T16:30:12,484270+07:00 cpu cpu0: leakage=9
+2026-06-12T16:30:12,484296+07:00 cpu cpu0: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,485728+07:00 cpu cpu0: pvtm=1437
+2026-06-12T16:30:12,485885+07:00 cpu cpu0: pvtm-volt-sel=2
+2026-06-12T16:30:12,485919+07:00 cpu cpu0: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,486040+07:00 cpu cpu0: Looking up mem-supply from device tree
+2026-06-12T16:30:12,486216+07:00 cpu cpu4: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,487924+07:00 cpu cpu4: bin=0
+2026-06-12T16:30:12,488095+07:00 cpu cpu4: leakage=7
+2026-06-12T16:30:12,488116+07:00 cpu cpu4: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,494595+07:00 cpu cpu4: pvtm=1680
+2026-06-12T16:30:12,498547+07:00 cpu cpu4: pvtm-volt-sel=4
+2026-06-12T16:30:12,498578+07:00 cpu cpu4: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,499079+07:00 cpu cpu4: Looking up mem-supply from device tree
+2026-06-12T16:30:12,499625+07:00 cpu cpu6: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,501333+07:00 cpu cpu6: bin=0
+2026-06-12T16:30:12,501502+07:00 cpu cpu6: leakage=8
+2026-06-12T16:30:12,501523+07:00 cpu cpu6: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,508034+07:00 cpu cpu6: pvtm=1693
+2026-06-12T16:30:12,512012+07:00 cpu cpu6: pvtm-volt-sel=4
+2026-06-12T16:30:12,512042+07:00 cpu cpu6: Looking up cpu-supply from device tree
+2026-06-12T16:30:12,512539+07:00 cpu cpu6: Looking up mem-supply from device tree
+2026-06-12T16:30:12,514030+07:00 cpu cpu0: avs=0
+2026-06-12T16:30:12,515487+07:00 cpu cpu4: avs=0
+2026-06-12T16:30:12,516760+07:00 cpu cpu6: avs=0
+2026-06-12T16:30:12,516930+07:00 cpu cpu0: EM: OPP:816000 is inefficient
+2026-06-12T16:30:12,516933+07:00 cpu cpu0: EM: OPP:600000 is inefficient
+2026-06-12T16:30:12,517023+07:00 cpu cpu0: EM: created perf domain
+2026-06-12T16:30:12,517064+07:00 cpu cpu0: l=10000 h=85000 hyst=5000 l_limit=0 h_limit=1608000000 h_table=0
+2026-06-12T16:30:12,517701+07:00 cpu cpu4: EM: OPP:2304000 is inefficient
+2026-06-12T16:30:12,517705+07:00 cpu cpu4: EM: OPP:816000 is inefficient
+2026-06-12T16:30:12,517708+07:00 cpu cpu4: EM: OPP:600000 is inefficient
+2026-06-12T16:30:12,517847+07:00 cpu cpu4: EM: created perf domain
+2026-06-12T16:30:12,517878+07:00 cpu cpu4: l=10000 h=85000 hyst=5000 l_limit=0 h_limit=2208000000 h_table=0
+2026-06-12T16:30:12,526411+07:00 cpu cpu6: EM: OPP:2304000 is inefficient
+2026-06-12T16:30:12,526416+07:00 cpu cpu6: EM: OPP:816000 is inefficient
+2026-06-12T16:30:12,526420+07:00 cpu cpu6: EM: OPP:600000 is inefficient
+2026-06-12T16:30:12,526607+07:00 cpu cpu6: EM: created perf domain
+2026-06-12T16:30:12,527188+07:00 cpu cpu6: l=10000 h=85000 hyst=5000 l_limit=0 h_limit=2208000000 h_table=0
+2026-06-12T16:30:12,544042+07:00 sdhci: Secure Digital Host Controller Interface driver
+2026-06-12T16:30:12,544049+07:00 sdhci: Copyright(c) Pierre Ossman
+2026-06-12T16:30:12,544054+07:00 Synopsys Designware Multimedia Card Interface Driver
+2026-06-12T16:30:12,545026+07:00 sdhci-pltfm: SDHCI platform and OF driver helper
+2026-06-12T16:30:12,548240+07:00 ledtrig-cpu: registered to indicate activity on CPUs
+2026-06-12T16:30:12,548288+07:00 arm-scmi firmware:scmi: Failed. SCMI protocol 17 not active.
+2026-06-12T16:30:12,548350+07:00 SMCCC: SOC_ID: ARCH_SOC_ID not implemented, skipping ....
+2026-06-12T16:30:12,549659+07:00 cryptodev: driver 1.12 loaded.
+2026-06-12T16:30:12,549712+07:00 hid: raw HID events driver (C) Jiri Kosina
+2026-06-12T16:30:12,549943+07:00 usbcore: registered new interface driver usbhid
+2026-06-12T16:30:12,549949+07:00 usbhid: USB HID core driver
+2026-06-12T16:30:12,550165+07:00 ashmem: initialized
+2026-06-12T16:30:12,554340+07:00 rockchip-saradc fec10000.saradc: Looking up vref-supply from device tree
+2026-06-12T16:30:12,556280+07:00 optee: probing for conduit method.
+2026-06-12T16:30:12,556290+07:00 optee: api uid mismatch
+2026-06-12T16:30:12,556306+07:00 optee: probe of firmware:optee failed with error -22
+2026-06-12T16:30:12,557516+07:00 usbcore: registered new interface driver snd-usb-audio
+2026-06-12T16:30:12,565019+07:00 rockchip-i2s-tdm fddf0000.i2s: CLK-ALWAYS-ON: mclk: 12288000, bclk: 3072000, fsync: 48000
+2026-06-12T16:30:12,565729+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up audio-supply from device tree
+2026-06-12T16:30:12,565771+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up audio-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:12,570034+07:00 debugfs: File 'Capture' in directory 'dapm' already present!
+2026-06-12T16:30:12,571610+07:00 input: rockchip-dp0 rockchip-dp0 as /devices/platform/dp0-sound/sound/card0/input1
+2026-06-12T16:30:12,573736+07:00 input: rockchip-hdmi0 rockchip-hdmi0 as /devices/platform/hdmi0-sound/sound/card1/input2
+2026-06-12T16:30:12,575272+07:00 input: headset-keys as /devices/platform/es8388-sound/input/input3
+2026-06-12T16:30:12,588942+07:00 ES8323 6-0010: ASoC: error at soc_component_write_no_lock on ES8323.6-0010: -5
+2026-06-12T16:30:12,643780+07:00 input: rockchip-es8388 Headset as /devices/platform/es8388-sound/sound/card2/input4
+2026-06-12T16:30:12,644724+07:00 Initializing XFRM netlink socket
+2026-06-12T16:30:12,644737+07:00 NET: Registered protocol family 17
+2026-06-12T16:30:12,645162+07:00 [BT_RFKILL]: Enter rfkill_rk_init
+2026-06-12T16:30:12,645165+07:00 [WLAN_RFKILL]: Enter rfkill_wlan_init
+2026-06-12T16:30:12,645581+07:00 Key type dns_resolver registered
+2026-06-12T16:30:12,646975+07:00 registered taskstats version 1
+2026-06-12T16:30:12,646982+07:00 Loading compiled-in X.509 certificates
+2026-06-12T16:30:12,647663+07:00 Btrfs loaded, crc32c=crc32c-generic
+2026-06-12T16:30:12,647797+07:00 pstore: Using crash dump compression: deflate
+2026-06-12T16:30:12,648040+07:00 rga3_core0 fdb60000.rga: Adding to iommu group 2
+2026-06-12T16:30:12,648227+07:00 rga: rga3_core0, irq = 35, match scheduler
+2026-06-12T16:30:12,648844+07:00 rga: rga3_core0 hardware loaded successfully, hw_version:3.0.76831.
+2026-06-12T16:30:12,648891+07:00 rga: rga3_core0 probe successfully
+2026-06-12T16:30:12,649215+07:00 rga3_core1 fdb70000.rga: Adding to iommu group 3
+2026-06-12T16:30:12,649391+07:00 rga: rga3_core1, irq = 36, match scheduler
+2026-06-12T16:30:12,649951+07:00 rga: rga3_core1 hardware loaded successfully, hw_version:3.0.76831.
+2026-06-12T16:30:12,650000+07:00 rga: rga3_core1 probe successfully
+2026-06-12T16:30:12,650374+07:00 rga: rga2, irq = 37, match scheduler
+2026-06-12T16:30:12,650972+07:00 rga: rga2 hardware loaded successfully, hw_version:3.2.63318.
+2026-06-12T16:30:12,650981+07:00 rga: rga2 probe successfully
+2026-06-12T16:30:12,651192+07:00 rga_iommu: IOMMU binding successfully, default mapping core[0x1]
+2026-06-12T16:30:12,651320+07:00 rga: Module initialized. v1.3.0
+
+2026-06-12T16:30:12,651328+07:00 ********************************************************************
+2026-06-12T16:30:12,651330+07:00 **     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE           **
+2026-06-12T16:30:12,651333+07:00 **                                                                **
+2026-06-12T16:30:12,651335+07:00 **  WRITEABLE clk DebugFS SUPPORT HAS BEEN ENABLED IN THIS KERNEL **
+2026-06-12T16:30:12,651338+07:00 **                                                                **
+2026-06-12T16:30:12,651340+07:00 ** This means that this kernel is built to expose clk operations  **
+2026-06-12T16:30:12,651342+07:00 ** such as parent or rate setting, enabling, disabling, etc.      **
+2026-06-12T16:30:12,651345+07:00 ** to userspace, which may compromise security on your system.    **
+2026-06-12T16:30:12,651347+07:00 **                                                                **
+2026-06-12T16:30:12,651349+07:00 ** If you see this message and you are not debugging the          **
+2026-06-12T16:30:12,651351+07:00 ** kernel, report this immediately to your vendor!                **
+2026-06-12T16:30:12,651354+07:00 **                                                                **
+2026-06-12T16:30:12,651356+07:00 **     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE           **
+2026-06-12T16:30:12,651358+07:00 ********************************************************************
+2026-06-12T16:30:12,699681+07:00 reg-fixed-voltage combophy-avdd0v85: Looking up vin-supply from device tree
+2026-06-12T16:30:12,699780+07:00 combophy_avdd0v85: supplied by vdd_0v85_s0
+2026-06-12T16:30:12,699794+07:00 vdd_0v85_s0: could not add device link regulator.32: -ENOENT
+2026-06-12T16:30:12,699995+07:00 combophy_avdd0v85: 850 mV, enabled
+2026-06-12T16:30:12,700283+07:00 reg-fixed-voltage combophy-avdd0v85: combophy_avdd0v85 supplying 850000uV
+2026-06-12T16:30:12,700470+07:00 reg-fixed-voltage combophy-avdd1v8: Looking up vin-supply from device tree
+2026-06-12T16:30:12,700546+07:00 combophy_avdd1v8: supplied by avcc_1v8_s0
+2026-06-12T16:30:12,700558+07:00 avcc_1v8_s0: could not add device link regulator.33: -ENOENT
+2026-06-12T16:30:12,700990+07:00 combophy_avdd1v8: 1800 mV, enabled
+2026-06-12T16:30:12,701110+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up gpu-supply from device tree
+2026-06-12T16:30:12,701152+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up gpu-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:12,701290+07:00 reg-fixed-voltage combophy-avdd1v8: combophy_avdd1v8 supplying 1800000uV
+2026-06-12T16:30:12,701339+07:00 mali fb000000.gpu: Kernel DDK version g18p0-01eac0
+2026-06-12T16:30:12,701402+07:00 mali fb000000.gpu: Looking up mali-supply from device tree
+2026-06-12T16:30:12,701618+07:00 mali fb000000.gpu: Looking up mem-supply from device tree
+2026-06-12T16:30:12,701713+07:00 vcc_3v3_sd_s0: 3300 mV, disabled
+2026-06-12T16:30:12,701776+07:00 mali fb000000.gpu: Looking up mali-supply from device tree
+2026-06-12T16:30:12,701794+07:00 vdd_gpu_s0: could not add device link fb000000.gpu: -EEXIST
+2026-06-12T16:30:12,701798+07:00 vdd_gpu_s0: Failed to create debugfs directory
+2026-06-12T16:30:12,701804+07:00 mali fb000000.gpu: Looking up mem-supply from device tree
+2026-06-12T16:30:12,701818+07:00 vdd_gpu_s0: could not add device link fb000000.gpu: -EEXIST
+2026-06-12T16:30:12,701822+07:00 vdd_gpu_s0: Failed to create debugfs directory
+2026-06-12T16:30:12,701920+07:00 reg-fixed-voltage vcc-3v3-sd-s0: Looking up vin-supply from device tree
+2026-06-12T16:30:12,701932+07:00 mali fb000000.gpu: Looking up mali-supply from device tree
+2026-06-12T16:30:12,701938+07:00 vcc_3v3_sd_s0: supplied by vcc_3v3_s3
+2026-06-12T16:30:12,701952+07:00 vdd_gpu_s0: could not add device link fb000000.gpu: -EEXIST
+2026-06-12T16:30:12,701956+07:00 vdd_gpu_s0: Failed to create debugfs directory
+2026-06-12T16:30:12,702254+07:00 mali fb000000.gpu: bin=0
+2026-06-12T16:30:12,702434+07:00 mali fb000000.gpu: leakage=15
+2026-06-12T16:30:12,702486+07:00 reg-fixed-voltage vcc-3v3-sd-s0: vcc_3v3_sd_s0 supplying 3300000uV
+2026-06-12T16:30:12,702490+07:00 mali fb000000.gpu: Looking up mali-supply from device tree
+2026-06-12T16:30:12,702515+07:00 debugfs: Directory 'fb000000.gpu-mali' with parent 'vdd_gpu_s0' already present!
+2026-06-12T16:30:12,703399+07:00 dwmmc_rockchip fe2c0000.mmc: No normal pinctrl state
+2026-06-12T16:30:12,703405+07:00 dwmmc_rockchip fe2c0000.mmc: No idle pinctrl state
+2026-06-12T16:30:12,703527+07:00 dwmmc_rockchip fe2c0000.mmc: IDMAC supports 32-bit address mode.
+2026-06-12T16:30:12,703547+07:00 dwmmc_rockchip fe2c0000.mmc: Using internal DMA controller.
+2026-06-12T16:30:12,703555+07:00 dwmmc_rockchip fe2c0000.mmc: Version ID is 270a
+2026-06-12T16:30:12,703585+07:00 dwmmc_rockchip fe2c0000.mmc: DW MMC controller at irq 102,32 bit host data width,256 deep fifo
+2026-06-12T16:30:12,703647+07:00 dwmmc_rockchip fe2c0000.mmc: Looking up vmmc-supply from device tree
+2026-06-12T16:30:12,703839+07:00 dwmmc_rockchip fe2c0000.mmc: Looking up vqmmc-supply from device tree
+2026-06-12T16:30:12,703968+07:00 rockchip-dmc dmc: Looking up center-supply from device tree
+2026-06-12T16:30:12,704103+07:00 mali fb000000.gpu: pvtm=903
+2026-06-12T16:30:12,705030+07:00 rockchip-dmc dmc: Looking up mem-supply from device tree
+2026-06-12T16:30:12,705651+07:00 mali fb000000.gpu: pvtm-volt-sel=4
+2026-06-12T16:30:12,706103+07:00 rockchip-dmc dmc: Looking up center-supply from device tree
+2026-06-12T16:30:12,706143+07:00 vdd_ddr_s0: could not add device link dmc: -EEXIST
+2026-06-12T16:30:12,706150+07:00 vdd_ddr_s0: Failed to create debugfs directory
+2026-06-12T16:30:12,706295+07:00 rockchip-dmc dmc: Looking up mem-supply from device tree
+2026-06-12T16:30:12,706321+07:00 vdd_log_s0: could not add device link dmc: -EEXIST
+2026-06-12T16:30:12,706327+07:00 vdd_log_s0: Failed to create debugfs directory
+2026-06-12T16:30:12,707016+07:00 mali fb000000.gpu: avs=0
+2026-06-12T16:30:12,707185+07:00 rockchip-dmc dmc: bin=0
+2026-06-12T16:30:12,707375+07:00 rockchip-dmc dmc: leakage=33
+2026-06-12T16:30:12,707394+07:00 rockchip-dmc dmc: leakage-volt-sel=1
+2026-06-12T16:30:12,707419+07:00 rockchip-dmc dmc: soc version=0, speed=1
+2026-06-12T16:30:12,708573+07:00 rockchip-dmc dmc: avs=0
+2026-06-12T16:30:12,708598+07:00 rockchip-dmc dmc: current ATF version 0x100
+2026-06-12T16:30:12,708770+07:00 rockchip-dmc dmc: normal_rate = 1560000000
+2026-06-12T16:30:12,708779+07:00 rockchip-dmc dmc: reboot_rate = 2112000000
+2026-06-12T16:30:12,708788+07:00 rockchip-dmc dmc: suspend_rate = 528000000
+2026-06-12T16:30:12,708799+07:00 W : [File] : drivers/gpu/arm/bifrost/platform/rk/mali_kbase_config_rk.c; [Line] : 143; [Func] : kbase_platform_rk_init(); power-off-delay-ms not available.
+2026-06-12T16:30:12,708803+07:00 rockchip-dmc dmc: video_4k_rate = 1560000000
+2026-06-12T16:30:12,708811+07:00 rockchip-dmc dmc: video_4k_10b_rate = 1560000000
+2026-06-12T16:30:12,708820+07:00 rockchip-dmc dmc: video_svep_rate = 1560000000
+2026-06-12T16:30:12,708828+07:00 rockchip-dmc dmc: boost_rate = 2112000000
+2026-06-12T16:30:12,708837+07:00 rockchip-dmc dmc: fixed_rate(isp|cif0|cif1|dualview) = 2112000000
+2026-06-12T16:30:12,708846+07:00 rockchip-dmc dmc: performance_rate = 2112000000
+2026-06-12T16:30:12,708870+07:00 rockchip-dmc dmc: hdmirx_rate = 2112000000
+2026-06-12T16:30:12,708884+07:00 rockchip-dmc dmc: failed to get vop bandwidth to dmc rate
+2026-06-12T16:30:12,708892+07:00 rockchip-dmc dmc: failed to get vop pn to msch rl
+2026-06-12T16:30:12,709113+07:00 rockchip-dmc dmc: l=10000 h=2147483647 hyst=5000 l_limit=0 h_limit=0 h_table=0
+2026-06-12T16:30:12,709192+07:00 rockchip-dmc dmc: could not find power_model node
+2026-06-12T16:30:12,710349+07:00 mali fb000000.gpu: r0p0 status 5 not found in HW issues table;
+2026-06-12T16:30:12,710359+07:00 mali fb000000.gpu: falling back to closest match: r0p0 status 0
+2026-06-12T16:30:12,710364+07:00 mali fb000000.gpu: Execution proceeding normally with fallback match
+2026-06-12T16:30:12,710371+07:00 mali fb000000.gpu: GPU identified as 0x7 arch 10.8.6 r0p0 status 0
+2026-06-12T16:30:12,710445+07:00 mali fb000000.gpu: No priority control manager is configured
+2026-06-12T16:30:12,710996+07:00 mali fb000000.gpu: No memory group manager is configured
+2026-06-12T16:30:12,711045+07:00 mali fb000000.gpu: Protected memory allocator not available
+2026-06-12T16:30:12,712089+07:00 mali fb000000.gpu: Capping CSF_FIRMWARE_TIMEOUT to CSF_FIRMWARE_PING_TIMEOUT
+2026-06-12T16:30:12,713014+07:00 mali fb000000.gpu: l=10000 h=85000 hyst=5000 l_limit=0 h_limit=800000000 h_table=0
+2026-06-12T16:30:12,714122+07:00 input: adc-keys as /devices/platform/adc-keys/input/input5
+2026-06-12T16:30:12,714555+07:00 mali fb000000.gpu: Probed as mali0
+2026-06-12T16:30:12,718218+07:00 mmc_host mmc0: Bus speed (slot 0) = 400000Hz (slot req 400000Hz, actual 400000HZ div = 0)
+2026-06-12T16:30:12,732500+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up sdio-supply from device tree
+2026-06-12T16:30:12,732559+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up sdio-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:12,732631+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up pcie-supply from device tree
+2026-06-12T16:30:12,732666+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up pcie-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:12,732722+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up npu-supply from device tree
+2026-06-12T16:30:12,732757+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up npu-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:12,736240+07:00 RKNPU fdab0000.npu: Adding to iommu group 0
+2026-06-12T16:30:12,736461+07:00 RKNPU fdab0000.npu: RKNPU: rknpu iommu is enabled, using iommu mode
+2026-06-12T16:30:12,736622+07:00 RKNPU fdab0000.npu: Looking up rknpu-supply from device tree
+2026-06-12T16:30:12,737636+07:00 RKNPU fdab0000.npu: Looking up mem-supply from device tree
+2026-06-12T16:30:12,738658+07:00 RKNPU fdab0000.npu: can't request region for resource [mem 0xfdab0000-0xfdabffff]
+2026-06-12T16:30:12,738691+07:00 RKNPU fdab0000.npu: can't request region for resource [mem 0xfdac0000-0xfdacffff]
+2026-06-12T16:30:12,738706+07:00 RKNPU fdab0000.npu: can't request region for resource [mem 0xfdad0000-0xfdadffff]
+2026-06-12T16:30:12,739807+07:00 [drm] Initialized rknpu 0.9.2 20231018 for fdab0000.npu on minor 1
+2026-06-12T16:30:12,740451+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up nputop-supply from device tree
+2026-06-12T16:30:12,740491+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up nputop-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:12,740582+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up npu1-supply from device tree
+2026-06-12T16:30:12,740608+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up npu1-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:12,740674+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up npu2-supply from device tree
+2026-06-12T16:30:12,740701+07:00 rockchip-pm-domain fd8d8000.power-management:power-controller: Looking up npu2-supply property in node /power-management@fd8d8000/power-controller failed
+2026-06-12T16:30:12,740911+07:00 RKNPU fdab0000.npu: Looking up rknpu-supply from device tree
+2026-06-12T16:30:12,740940+07:00 vdd_npu_s0: could not add device link fdab0000.npu: -EEXIST
+2026-06-12T16:30:12,740944+07:00 vdd_npu_s0: Failed to create debugfs directory
+2026-06-12T16:30:12,741668+07:00 RKNPU fdab0000.npu: Looking up mem-supply from device tree
+2026-06-12T16:30:12,741731+07:00 vdd_npu_s0: could not add device link fdab0000.npu: -EEXIST
+2026-06-12T16:30:12,741736+07:00 vdd_npu_s0: Failed to create debugfs directory
+2026-06-12T16:30:12,742759+07:00 RKNPU fdab0000.npu: Looking up rknpu-supply from device tree
+2026-06-12T16:30:12,742812+07:00 vdd_npu_s0: could not add device link fdab0000.npu: -EEXIST
+2026-06-12T16:30:12,742816+07:00 vdd_npu_s0: Failed to create debugfs directory
+2026-06-12T16:30:12,745494+07:00 RKNPU fdab0000.npu: RKNPU: bin=0
+2026-06-12T16:30:12,745676+07:00 RKNPU fdab0000.npu: leakage=8
+2026-06-12T16:30:12,745735+07:00 RKNPU fdab0000.npu: Looking up rknpu-supply from device tree
+2026-06-12T16:30:12,745781+07:00 debugfs: Directory 'fdab0000.npu-rknpu' with parent 'vdd_npu_s0' already present!
+2026-06-12T16:30:12,753417+07:00 RKNPU fdab0000.npu: pvtm=910
+2026-06-12T16:30:12,759940+07:00 RKNPU fdab0000.npu: pvtm-volt-sel=4
+2026-06-12T16:30:12,761743+07:00 RKNPU fdab0000.npu: avs=0
+2026-06-12T16:30:12,762029+07:00 RKNPU fdab0000.npu: l=10000 h=85000 hyst=5000 l_limit=0 h_limit=800000000 h_table=0
+2026-06-12T16:30:12,770273+07:00 RKNPU fdab0000.npu: failed to find power_model node
+2026-06-12T16:30:12,770281+07:00 RKNPU fdab0000.npu: RKNPU: failed to initialize power model
+2026-06-12T16:30:12,770287+07:00 RKNPU fdab0000.npu: RKNPU: failed to get dynamic-coefficient
+2026-06-12T16:30:12,778715+07:00 cfg80211: Loading compiled-in X.509 certificates for regulatory database
+2026-06-12T16:30:12,795757+07:00 cfg80211: Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+2026-06-12T16:30:12,797899+07:00 rockchip-pm rockchip-suspend: not set pwm-regulator-config
+2026-06-12T16:30:12,798784+07:00 rockchip-suspend not set sleep-mode-config for mem-lite
+2026-06-12T16:30:12,798790+07:00 rockchip-suspend not set wakeup-config for mem-lite
+2026-06-12T16:30:12,798798+07:00 rockchip-suspend not set sleep-mode-config for mem-ultra
+2026-06-12T16:30:12,798802+07:00 rockchip-suspend not set wakeup-config for mem-ultra
+2026-06-12T16:30:12,800606+07:00 I : [File] : drivers/gpu/arm/mali400/mali/linux/mali_kernel_linux.c; [Line] : 406; [Func] : mali_module_init(); svn_rev_string_from_arm of this mali_ko is '', rk_ko_ver is '5', built at '15:39:39', on 'May  9 2024'.
+2026-06-12T16:30:12,804843+07:00 Mali: 
+2026-06-12T16:30:12,804851+07:00 Mali device driver loaded
+2026-06-12T16:30:12,804866+07:00 ALSA device list:
+2026-06-12T16:30:12,804876+07:00   #0: rockchip-dp0
+2026-06-12T16:30:12,804883+07:00   #1: rockchip-hdmi0
+2026-06-12T16:30:12,804892+07:00   #2: rockchip-es8388
+2026-06-12T16:30:13,488150+07:00  nvme0n1: p1 p2
+2026-06-12T16:30:13,496939+07:00 Freeing unused kernel memory: 6912K
+2026-06-12T16:30:13,503713+07:00 Run /init as init process
+2026-06-12T16:30:13,503720+07:00   with arguments:
+2026-06-12T16:30:13,503725+07:00     /init
+2026-06-12T16:30:13,503729+07:00     splash
+2026-06-12T16:30:13,503733+07:00   with environment:
+2026-06-12T16:30:13,503738+07:00     HOME=/
+2026-06-12T16:30:13,503742+07:00     TERM=linux
+2026-06-12T16:30:13,503747+07:00     ubootpart=
+2026-06-12T16:30:13,503751+07:00     cgroup_enable=memory
+2026-06-12T16:30:13,503755+07:00     cgroup_memory=1
+2026-06-12T16:30:15,445671+07:00 EXT4-fs (nvme0n1p2): mounted filesystem with writeback data mode. Opts: (null)
+2026-06-12T16:30:15,738458+07:00 NET: Registered protocol family 10
+2026-06-12T16:30:15,739879+07:00 Segment Routing with IPv6
+2026-06-12T16:30:15,743586+07:00 vendor storage:20190527 ret = -1
+2026-06-12T16:30:15,757304+07:00 systemd[1]: systemd 249.11-0ubuntu3.21 running in system mode (+PAM +AUDIT +SELINUX +APPARMOR +IMA +SMACK +SECCOMP +GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN +IPTC +KMOD +LIBCRYPTSETUP +LIBFDISK +PCRE2 -PWQUALITY -P11KIT -QRENCODE +BZIP2 +LZ4 +XZ +ZLIB +ZSTD -XKBCOMMON +UTMP +SYSVINIT default-hierarchy=unified)
+2026-06-12T16:30:15,759105+07:00 systemd[1]: Detected architecture arm64.
+2026-06-12T16:30:15,763207+07:00 systemd[1]: Hostname set to <orangepi5>.
+2026-06-12T16:30:15,977801+07:00 systemd[1]: Configuration file /run/systemd/system/netplan-ovs-cleanup.service is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+2026-06-12T16:30:15,989481+07:00 systemd[1]: /etc/systemd/system/x11vnc.service:1: Assignment outside of section. Ignoring.
+2026-06-12T16:30:15,989502+07:00 systemd[1]: /etc/systemd/system/x11vnc.service:2: Assignment outside of section. Ignoring.
+2026-06-12T16:30:15,989517+07:00 systemd[1]: /etc/systemd/system/x11vnc.service:3: Assignment outside of section. Ignoring.
+2026-06-12T16:30:16,073676+07:00 systemd[1]: /etc/systemd/system/anydesk.service:9: PIDFile= references a path below legacy directory /var/run/, updating /var/run/anydesk.pid → /run/anydesk.pid; please update the unit file accordingly.
+2026-06-12T16:30:16,094832+07:00 systemd[1]: Configuration file /lib/systemd/system/rkaiq_3A.service is marked world-writable. Please remove world writability permission bits. Proceeding anyway.
+2026-06-12T16:30:16,108382+07:00 systemd[1]: Queued start job for default target Graphical Interface.
+2026-06-12T16:30:16,110105+07:00 systemd[1]: Created slice Slice /system/modprobe.
+2026-06-12T16:30:16,110834+07:00 systemd[1]: Created slice Slice /system/serial-getty.
+2026-06-12T16:30:16,111443+07:00 systemd[1]: Created slice Slice /system/systemd-fsck.
+2026-06-12T16:30:16,111903+07:00 systemd[1]: Created slice User and Session Slice.
+2026-06-12T16:30:16,112069+07:00 systemd[1]: Started Forward Password Requests to Wall Directory Watch.
+2026-06-12T16:30:16,112467+07:00 systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.
+2026-06-12T16:30:16,112614+07:00 systemd[1]: Reached target User and Group Name Lookups.
+2026-06-12T16:30:16,112661+07:00 systemd[1]: Reached target Remote File Systems.
+2026-06-12T16:30:16,112698+07:00 systemd[1]: Reached target Slice Units.
+2026-06-12T16:30:16,112742+07:00 systemd[1]: Reached target Swaps.
+2026-06-12T16:30:16,112790+07:00 systemd[1]: Reached target System Time Set.
+2026-06-12T16:30:16,112892+07:00 systemd[1]: Reached target Local Verity Protected Volumes.
+2026-06-12T16:30:16,113330+07:00 systemd[1]: Listening on Syslog Socket.
+2026-06-12T16:30:16,113538+07:00 systemd[1]: Listening on fsck to fsckd communication Socket.
+2026-06-12T16:30:16,113654+07:00 systemd[1]: Listening on initctl Compatibility Named Pipe.
+2026-06-12T16:30:16,113981+07:00 systemd[1]: Listening on Journal Audit Socket.
+2026-06-12T16:30:16,114163+07:00 systemd[1]: Listening on Journal Socket (/dev/log).
+2026-06-12T16:30:16,114363+07:00 systemd[1]: Listening on Journal Socket.
+2026-06-12T16:30:16,114755+07:00 systemd[1]: Listening on udev Control Socket.
+2026-06-12T16:30:16,114940+07:00 systemd[1]: Listening on udev Kernel Socket.
+2026-06-12T16:30:16,116588+07:00 systemd[1]: Mounting Huge Pages File System...
+2026-06-12T16:30:16,118347+07:00 systemd[1]: Mounting POSIX Message Queue File System...
+2026-06-12T16:30:16,120041+07:00 systemd[1]: Mounting Kernel Debug File System...
+2026-06-12T16:30:16,121498+07:00 systemd[1]: Mounting Kernel Trace File System...
+2026-06-12T16:30:16,123805+07:00 systemd[1]: Starting Restore / save the current clock...
+2026-06-12T16:30:16,125524+07:00 systemd[1]: Starting Set the console keyboard layout...
+2026-06-12T16:30:16,127316+07:00 systemd[1]: Starting Create List of Static Device Nodes...
+2026-06-12T16:30:16,128916+07:00 systemd[1]: Starting Load Kernel Module configfs...
+2026-06-12T16:30:16,130575+07:00 systemd[1]: Starting Load Kernel Module drm...
+2026-06-12T16:30:16,132303+07:00 systemd[1]: Starting Load Kernel Module efi_pstore...
+2026-06-12T16:30:16,134368+07:00 systemd[1]: Starting Load Kernel Module fuse...
+2026-06-12T16:30:16,136402+07:00 systemd[1]: Started Nameserver information manager.
+2026-06-12T16:30:16,136834+07:00 systemd[1]: Reached target Preparation for Network.
+2026-06-12T16:30:16,138764+07:00 systemd[1]: Starting Enable Rockchip camera engine rkaiq...
+2026-06-12T16:30:16,139050+07:00 systemd[1]: Condition check resulted in File System Check on Root Device being skipped.
+2026-06-12T16:30:16,142070+07:00 systemd[1]: Starting Load Kernel Modules...
+2026-06-12T16:30:16,143873+07:00 systemd[1]: Starting Remount Root and Kernel File Systems...
+2026-06-12T16:30:16,145709+07:00 systemd[1]: Starting Coldplug All udev Devices...
+2026-06-12T16:30:16,146948+07:00 fuse: init (API version 7.32)
+2026-06-12T16:30:16,148555+07:00 systemd[1]: Mounted Huge Pages File System.
+2026-06-12T16:30:16,148871+07:00 systemd[1]: Mounted POSIX Message Queue File System.
+2026-06-12T16:30:16,149058+07:00 systemd[1]: Mounted Kernel Debug File System.
+2026-06-12T16:30:16,149241+07:00 systemd[1]: Mounted Kernel Trace File System.
+2026-06-12T16:30:16,149945+07:00 systemd[1]: Finished Restore / save the current clock.
+2026-06-12T16:30:16,150818+07:00 systemd[1]: Finished Create List of Static Device Nodes.
+2026-06-12T16:30:16,151466+07:00 systemd[1]: modprobe@configfs.service: Deactivated successfully.
+2026-06-12T16:30:16,151860+07:00 systemd[1]: Finished Load Kernel Module configfs.
+2026-06-12T16:30:16,152368+07:00 systemd[1]: modprobe@drm.service: Deactivated successfully.
+2026-06-12T16:30:16,152694+07:00 systemd[1]: Finished Load Kernel Module drm.
+2026-06-12T16:30:16,153103+07:00 systemd[1]: modprobe@efi_pstore.service: Deactivated successfully.
+2026-06-12T16:30:16,153383+07:00 systemd[1]: Finished Load Kernel Module efi_pstore.
+2026-06-12T16:30:16,153913+07:00 systemd[1]: modprobe@fuse.service: Deactivated successfully.
+2026-06-12T16:30:16,154200+07:00 systemd[1]: Finished Load Kernel Module fuse.
+2026-06-12T16:30:16,155034+07:00 systemd[1]: Started Enable Rockchip camera engine rkaiq.
+2026-06-12T16:30:16,157267+07:00 systemd[1]: Mounting FUSE Control File System...
+2026-06-12T16:30:16,158973+07:00 systemd[1]: Mounting Kernel Configuration File System...
+2026-06-12T16:30:16,159843+07:00 systemd[1]: Finished Load Kernel Modules.
+2026-06-12T16:30:16,160955+07:00 EXT4-fs (nvme0n1p2): re-mounted. Opts: commit=600,errors=remount-ro
+2026-06-12T16:30:16,161916+07:00 systemd[1]: Starting Apply Kernel Variables...
+2026-06-12T16:30:16,164089+07:00 systemd[1]: Finished Remount Root and Kernel File Systems.
+2026-06-12T16:30:16,164450+07:00 systemd[1]: Mounted FUSE Control File System.
+2026-06-12T16:30:16,164627+07:00 systemd[1]: Mounted Kernel Configuration File System.
+2026-06-12T16:30:16,164785+07:00 systemd[1]: Condition check resulted in Platform Persistent Storage Archival being skipped.
+2026-06-12T16:30:16,166540+07:00 systemd[1]: Starting Load/Save Random Seed...
+2026-06-12T16:30:16,168609+07:00 systemd[1]: Starting Create System Users...
+2026-06-12T16:30:16,181539+07:00 systemd[1]: Finished Create System Users.
+2026-06-12T16:30:16,183650+07:00 systemd[1]: Starting Create Static Device Nodes in /dev...
+2026-06-12T16:30:16,186719+07:00 systemd[1]: Finished Apply Kernel Variables.
+2026-06-12T16:30:16,190771+07:00 systemd[1]: Finished Load/Save Random Seed.
+2026-06-12T16:30:16,191196+07:00 systemd[1]: Condition check resulted in First Boot Complete being skipped.
+2026-06-12T16:30:16,204051+07:00 systemd[1]: rkaiq_3A.service: Deactivated successfully.
+2026-06-12T16:30:16,208178+07:00 systemd[1]: Finished Set the console keyboard layout.
+2026-06-12T16:30:16,213762+07:00 systemd[1]: Finished Create Static Device Nodes in /dev.
+2026-06-12T16:30:16,214152+07:00 systemd[1]: Reached target Preparation for Local File Systems.
+2026-06-12T16:30:16,215971+07:00 systemd[1]: Mounting /tmp...
+2026-06-12T16:30:16,218200+07:00 systemd[1]: Starting Rule-based Manager for Device Events and Files...
+2026-06-12T16:30:16,223094+07:00 systemd[1]: Mounted /tmp.
+2026-06-12T16:30:16,286027+07:00 systemd[1]: Started Rule-based Manager for Device Events and Files.
+2026-06-12T16:30:16,339531+07:00 systemd[1]: Finished Coldplug All udev Devices.
+2026-06-12T16:30:16,342048+07:00 systemd[1]: Starting Helper to synchronize boot up for ifupdown...
+2026-06-12T16:30:16,343416+07:00 systemd[1]: Starting Show Plymouth Boot Screen...
+2026-06-12T16:30:16,346543+07:00 systemd[1]: Finished Helper to synchronize boot up for ifupdown.
+2026-06-12T16:30:16,366490+07:00 systemd[1]: Started Show Plymouth Boot Screen.
+2026-06-12T16:30:16,367229+07:00 systemd[1]: Condition check resulted in Dispatch Password Requests to Console Directory Watch when bootsplash is active being skipped.
+2026-06-12T16:30:16,367732+07:00 systemd[1]: Started Forward Password Requests to Plymouth Directory Watch.
+2026-06-12T16:30:16,367902+07:00 systemd[1]: Reached target Local Encrypted Volumes.
+2026-06-12T16:30:16,377703+07:00 systemd[1]: Created slice Slice /system/systemd-backlight.
+2026-06-12T16:30:16,379065+07:00 systemd[1]: Starting Load/Save Screen Backlight Brightness of backlight:backlight...
+2026-06-12T16:30:16,380588+07:00 systemd[1]: Starting Load/Save Screen Backlight Brightness of backlight:backlight_1...
+2026-06-12T16:30:16,386134+07:00 systemd[1]: Finished Load/Save Screen Backlight Brightness of backlight:backlight.
+2026-06-12T16:30:16,387509+07:00 systemd[1]: Finished Load/Save Screen Backlight Brightness of backlight:backlight_1.
+2026-06-12T16:30:16,467589+07:00 pwm-fan pwm-fan: Looking up fan-supply from device tree
+2026-06-12T16:30:16,467596+07:00 pwm-fan pwm-fan: Looking up fan-supply property in node /pwm-fan failed
+2026-06-12T16:30:16,479575+07:00 systemd[1]: Found device /dev/ttyFIQ0.
+2026-06-12T16:30:16,538542+07:00 systemd[1]: Found device BC501A NVMe SK hynix 128GB opi_boot.
+2026-06-12T16:30:16,563050+07:00 systemd[1]: Condition check resulted in Dispatch Password Requests to Console Directory Watch when bootsplash is active being skipped.
+2026-06-12T16:30:16,563104+07:00 systemd[1]: Reached target Hardware activated USB gadget.
+2026-06-12T16:30:16,563211+07:00 systemd[1]: Listening on Load/Save RF Kill Switch Status /dev/rfkill Watch.
+2026-06-12T16:30:16,564654+07:00 systemd[1]: Starting Load Kernel Module efi_pstore...
+2026-06-12T16:30:16,566070+07:00 systemd[1]: Starting Enable Rockchip camera engine rkaiq...
+2026-06-12T16:30:16,566181+07:00 systemd[1]: Condition check resulted in File System Check on Root Device being skipped.
+2026-06-12T16:30:16,567411+07:00 systemd[1]: Starting File System Check on /dev/disk/by-uuid/E8F3-807B...
+2026-06-12T16:30:16,570477+07:00 systemd[1]: modprobe@efi_pstore.service: Deactivated successfully.
+2026-06-12T16:30:16,570761+07:00 systemd[1]: Finished Load Kernel Module efi_pstore.
+2026-06-12T16:30:16,570973+07:00 systemd[1]: Condition check resulted in Platform Persistent Storage Archival being skipped.
+2026-06-12T16:30:16,572026+07:00 systemd[1]: Started Enable Rockchip camera engine rkaiq.
+2026-06-12T16:30:16,580371+07:00 systemd[1]: Started File System Check Daemon to report status.
+2026-06-12T16:30:16,588737+07:00 systemd[1]: rkaiq_3A.service: Deactivated successfully.
+2026-06-12T16:30:16,636978+07:00 systemd[1]: Finished File System Check on /dev/disk/by-uuid/E8F3-807B.
+2026-06-12T16:30:16,639906+07:00 systemd[1]: Mounting /boot...
+2026-06-12T16:30:16,645359+07:00 FAT-fs (nvme0n1p1): utf8 is not a recommended IO charset for FAT filesystems, filesystem will be case sensitive!
+2026-06-12T16:30:16,655125+07:00 systemd[1]: Mounted /boot.
+2026-06-12T16:30:16,659378+07:00 systemd[1]: Reached target Local File Systems.
+2026-06-12T16:30:16,662215+07:00 systemd[1]: Starting Set console font and keymap...
+2026-06-12T16:30:16,664796+07:00 systemd[1]: Starting Raise network interfaces...
+2026-06-12T16:30:16,667315+07:00 systemd[1]: Starting Orange Pi ZRAM config...
+2026-06-12T16:30:16,669719+07:00 systemd[1]: Starting Tell Plymouth To Write Out Runtime Data...
+2026-06-12T16:30:16,673100+07:00 systemd[1]: Starting Set Up Additional Binary Formats...
+2026-06-12T16:30:16,673310+07:00 systemd[1]: Condition check resulted in Store a System Token in an EFI Variable being skipped.
+2026-06-12T16:30:16,673415+07:00 systemd[1]: Condition check resulted in Commit a transient machine-id on disk being skipped.
+2026-06-12T16:30:16,675885+07:00 systemd[1]: Starting Manage USB device functions...
+2026-06-12T16:30:16,677957+07:00 systemd[1]: Finished Set console font and keymap.
+2026-06-12T16:30:16,680945+07:00 systemd[1]: proc-sys-fs-binfmt_misc.automount: Got automount request for /proc/sys/fs/binfmt_misc, triggered by 602 (systemd-binfmt)
+2026-06-12T16:30:16,682968+07:00 systemd[1]: Mounting Arbitrary Executable File Formats File System...
+2026-06-12T16:30:16,683335+07:00 systemd[1]: Received SIGRTMIN+20 from PID 331 (plymouthd).
+2026-06-12T16:30:16,686195+07:00 systemd[1]: Finished Tell Plymouth To Write Out Runtime Data.
+2026-06-12T16:30:16,695785+07:00 systemd[1]: Mounted Arbitrary Executable File Formats File System.
+2026-06-12T16:30:16,699350+07:00 systemd[1]: Finished Set Up Additional Binary Formats.
+2026-06-12T16:30:16,825596+07:00 zram0: detected capacity change from 0 to 8241283072
+2026-06-12T16:30:16,857025+07:00 Adding 8048124k swap on /dev/zram0.  Priority:5 extents:1 across:8048124k SS
+2026-06-12T16:30:16,862049+07:00 systemd[1]: Finished Raise network interfaces.
+2026-06-12T16:30:16,872263+07:00 zram: Added device: zram1
+2026-06-12T16:30:16,974541+07:00 zram1: detected capacity change from 0 to 209715200
+2026-06-12T16:30:16,984257+07:00 file system registered
+2026-06-12T16:30:17,014335+07:00 systemd[1]: Finished Orange Pi ZRAM config.
+2026-06-12T16:30:17,020635+07:00 systemd[1]: Starting Orange Pi memory supported logging...
+2026-06-12T16:30:17,036501+07:00 read descriptors
+2026-06-12T16:30:17,036519+07:00 read strings
+2026-06-12T16:30:17,067807+07:00 EXT4-fs (zram1): mounted filesystem without journal. Opts: discard
+2026-06-12T16:30:17,093593+07:00 systemd[1]: Started Manage USB device functions.
+2026-06-12T16:30:17,199122+07:00 android_work: did not send uevent (0 0 0000000000000000)
+2026-06-12T16:30:17,440130+07:00 systemd[1]: Condition check resulted in Dispatch Password Requests to Console Directory Watch when bootsplash is active being skipped.
+2026-06-12T16:30:17,447408+07:00 systemd[1]: Starting Load Kernel Module efi_pstore...
+2026-06-12T16:30:17,456092+07:00 systemd[1]: Starting Enable Rockchip camera engine rkaiq...
+2026-06-12T16:30:17,456871+07:00 systemd[1]: Condition check resulted in Store a System Token in an EFI Variable being skipped.
+2026-06-12T16:30:17,457401+07:00 systemd[1]: Condition check resulted in Commit a transient machine-id on disk being skipped.
+2026-06-12T16:30:17,468171+07:00 systemd[1]: modprobe@efi_pstore.service: Deactivated successfully.
+2026-06-12T16:30:17,470408+07:00 systemd[1]: Finished Load Kernel Module efi_pstore.
+2026-06-12T16:30:17,472533+07:00 systemd[1]: Started Enable Rockchip camera engine rkaiq.
+2026-06-12T16:30:17,473415+07:00 systemd[1]: Condition check resulted in Platform Persistent Storage Archival being skipped.
+2026-06-12T16:30:17,498279+07:00 systemd[1]: rkaiq_3A.service: Deactivated successfully.
+2026-06-12T16:30:19,240942+07:00 systemd[1]: Finished Orange Pi memory supported logging.
+2026-06-12T16:30:19,249741+07:00 systemd[1]: Starting Journal Service...
+2026-06-12T16:30:19,402212+07:00 systemd[1]: Started Journal Service.
+2026-06-12T16:30:19,419873+07:00 systemd-journald[923]: Received client request to flush runtime journal.
+2026-06-12T16:30:19,756842+07:00 dwc3 fc000000.usb: request ffffff8103339400 was not queued to ep0out
+2026-06-12T16:30:19,756882+07:00 android_work: did not send uevent (0 0 0000000000000000)
+2026-06-12T16:30:19,863758+07:00 xhci-hcd xhci-hcd.11.auto: xHCI Host Controller
+2026-06-12T16:30:19,863767+07:00 xhci-hcd xhci-hcd.11.auto: new USB bus registered, assigned bus number 7
+2026-06-12T16:30:19,863848+07:00 xhci-hcd xhci-hcd.11.auto: hcc params 0x0220fe64 hci version 0x110 quirks 0x0000202002010010
+2026-06-12T16:30:19,863864+07:00 xhci-hcd xhci-hcd.11.auto: irq 133, io mem 0xfc000000
+2026-06-12T16:30:19,863994+07:00 usb usb7: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 5.10
+2026-06-12T16:30:19,863996+07:00 usb usb7: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+2026-06-12T16:30:19,863999+07:00 usb usb7: Product: xHCI Host Controller
+2026-06-12T16:30:19,864000+07:00 usb usb7: Manufacturer: Linux 5.10.160-rockchip-rk3588 xhci-hcd
+2026-06-12T16:30:19,864002+07:00 usb usb7: SerialNumber: xhci-hcd.11.auto
+2026-06-12T16:30:19,864262+07:00 hub 7-0:1.0: USB hub found
+2026-06-12T16:30:19,864276+07:00 hub 7-0:1.0: 1 port detected
+2026-06-12T16:30:19,864385+07:00 xhci-hcd xhci-hcd.11.auto: xHCI Host Controller
+2026-06-12T16:30:19,864390+07:00 xhci-hcd xhci-hcd.11.auto: new USB bus registered, assigned bus number 8
+2026-06-12T16:30:19,864395+07:00 xhci-hcd xhci-hcd.11.auto: Host supports USB 3.0 SuperSpeed
+2026-06-12T16:30:19,864541+07:00 usb usb8: We don't know the algorithms for LPM for this host, disabling LPM.
+2026-06-12T16:30:19,864579+07:00 usb usb8: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 5.10
+2026-06-12T16:30:19,864581+07:00 usb usb8: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+2026-06-12T16:30:19,864583+07:00 usb usb8: Product: xHCI Host Controller
+2026-06-12T16:30:19,864584+07:00 usb usb8: Manufacturer: Linux 5.10.160-rockchip-rk3588 xhci-hcd
+2026-06-12T16:30:19,864586+07:00 usb usb8: SerialNumber: xhci-hcd.11.auto
+2026-06-12T16:30:19,864793+07:00 hub 8-0:1.0: USB hub found
+2026-06-12T16:30:19,864804+07:00 hub 8-0:1.0: 1 port detected
+2026-06-12T16:30:20,204181+07:00 rk_gmac-dwmac fe1c0000.ethernet eth0: PHY [stmmac-1:01] driver [YT8531 Gigabit Ethernet] (irq=POLL)
+2026-06-12T16:30:20,205707+07:00 dwmac4: Master AXI performs any burst length
+2026-06-12T16:30:20,205716+07:00 rk_gmac-dwmac fe1c0000.ethernet eth0: No Safety Features support found
+2026-06-12T16:30:20,205730+07:00 rk_gmac-dwmac fe1c0000.ethernet eth0: IEEE 1588-2008 Advanced Timestamp supported
+2026-06-12T16:30:20,205917+07:00 rk_gmac-dwmac fe1c0000.ethernet eth0: registered PTP clock
+2026-06-12T16:30:20,206165+07:00 rk_gmac-dwmac fe1c0000.ethernet eth0: configuring for phy/rgmii-rxid link mode
+2026-06-12T16:30:20,442202+07:00 mali fb000000.gpu: Loading Mali firmware 0x1010000
+2026-06-12T16:30:20,445246+07:00 mali fb000000.gpu: Mali firmware git_sha: ee476db42870778306fa8d559a605a73f13e455c 
+2026-06-12T16:30:21,825291+07:00 bridge: filtering via arp/ip/ip6tables is no longer available by default. Update your scripts to load br_netfilter if you need this.
+2026-06-12T16:30:22,232540+07:00 rk_gmac-dwmac fe1c0000.ethernet eth0: Link is Up - 100Mbps/Full - flow control rx/tx
+2026-06-12T16:30:22,232572+07:00 IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+2026-06-12T16:30:23,213559+07:00 br-923d0caa2caf: port 1(veth527c589) entered blocking state
+2026-06-12T16:30:23,213565+07:00 br-923d0caa2caf: port 1(veth527c589) entered disabled state
+2026-06-12T16:30:23,213697+07:00 device veth527c589 entered promiscuous mode
+2026-06-12T16:30:23,218214+07:00 br-923d0caa2caf: port 1(veth527c589) entered blocking state
+2026-06-12T16:30:23,218222+07:00 br-923d0caa2caf: port 1(veth527c589) entered forwarding state
+2026-06-12T16:30:23,218559+07:00 br-923d0caa2caf: port 1(veth527c589) entered disabled state
+2026-06-12T16:30:23,231589+07:00 br-2b821130f519: port 1(veth5f18e26) entered blocking state
+2026-06-12T16:30:23,231602+07:00 br-2b821130f519: port 1(veth5f18e26) entered disabled state
+2026-06-12T16:30:23,231786+07:00 device veth5f18e26 entered promiscuous mode
+2026-06-12T16:30:23,238610+07:00 br-2b821130f519: port 1(veth5f18e26) entered blocking state
+2026-06-12T16:30:23,238625+07:00 br-2b821130f519: port 1(veth5f18e26) entered forwarding state
+2026-06-12T16:30:23,238809+07:00 br-2b821130f519: port 1(veth5f18e26) entered disabled state
+2026-06-12T16:30:23,258135+07:00 eth0: renamed from veth2ff2ca7
+2026-06-12T16:30:23,282970+07:00 IPv6: ADDRCONF(NETDEV_CHANGE): veth527c589: link becomes ready
+2026-06-12T16:30:23,283119+07:00 br-923d0caa2caf: port 1(veth527c589) entered blocking state
+2026-06-12T16:30:23,283128+07:00 br-923d0caa2caf: port 1(veth527c589) entered forwarding state
+2026-06-12T16:30:23,283270+07:00 IPv6: ADDRCONF(NETDEV_CHANGE): br-923d0caa2caf: link becomes ready
+2026-06-12T16:30:23,299875+07:00 eth0: renamed from veth213e6f2
+2026-06-12T16:30:23,318792+07:00 IPv6: ADDRCONF(NETDEV_CHANGE): veth5f18e26: link becomes ready
+2026-06-12T16:30:23,318934+07:00 br-2b821130f519: port 1(veth5f18e26) entered blocking state
+2026-06-12T16:30:23,318945+07:00 br-2b821130f519: port 1(veth5f18e26) entered forwarding state
+2026-06-12T16:30:23,319082+07:00 IPv6: ADDRCONF(NETDEV_CHANGE): br-2b821130f519: link becomes ready
+2026-06-12T16:30:24,044131+07:00 ttyFIQ ttyFIQ0: tty_port_close_start: tty->count = 1 port count = 2
+2026-06-12T16:30:34,509879+07:00 ttyFIQ ttyFIQ0: tty_port_close_start: tty->count = 1 port count = 2
+2026-06-12T16:39:37,822619+07:00 systemd[1]: systemd 249.11-0ubuntu3.21 running in system mode (+PAM +AUDIT +SELINUX +APPARMOR +IMA +SMACK +SECCOMP +GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN +IPTC +KMOD +LIBCRYPTSETUP +LIBFDISK +PCRE2 -PWQUALITY -P11KIT -QRENCODE +BZIP2 +LZ4 +XZ +ZLIB +ZSTD -XKBCOMMON +UTMP +SYSVINIT default-hierarchy=unified)
+2026-06-12T16:39:37,823739+07:00 systemd[1]: Detected architecture arm64.
+2026-06-12T16:39:37,838336+07:00 systemd[1]: Using hardware watchdog 'Synopsys DesignWare Watchdog', version 0, device /dev/watchdog
+2026-06-12T16:39:37,838379+07:00 systemd[1]: Set hardware watchdog to 22s.
+2026-06-12T16:39:37,904976+07:00 systemd[1]: Configuration file /run/systemd/system/netplan-ovs-cleanup.service is marked world-inaccessible. This has no effect as configuration data is accessible via APIs without restrictions. Proceeding anyway.
+2026-06-12T16:39:37,908153+07:00 systemd[1]: /etc/systemd/system/x11vnc.service:1: Assignment outside of section. Ignoring.
+2026-06-12T16:39:37,908174+07:00 systemd[1]: /etc/systemd/system/x11vnc.service:2: Assignment outside of section. Ignoring.
+2026-06-12T16:39:37,908182+07:00 systemd[1]: /etc/systemd/system/x11vnc.service:3: Assignment outside of section. Ignoring.
+2026-06-12T16:39:37,928354+07:00 systemd[1]: /etc/systemd/system/anydesk.service:9: PIDFile= references a path below legacy directory /var/run/, updating /var/run/anydesk.pid → /run/anydesk.pid; please update the unit file accordingly.
+2026-06-12T16:39:37,941684+07:00 systemd[1]: Configuration file /lib/systemd/system/rkaiq_3A.service is marked world-writable. Please remove world writability permission bits. Proceeding anyway.
+2026-06-12T16:44:47,864470+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: resetting...
+2026-06-12T16:44:47,864641+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: reset done
+2026-06-12T16:44:47,864651+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: resetting...
+2026-06-12T16:44:47,864766+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: reset done
+2026-06-12T16:45:07,851647+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: resetting...
+2026-06-12T16:45:07,851807+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: reset done
+2026-06-12T16:45:07,851815+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: resetting...
+2026-06-12T16:45:07,851920+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: reset done
+2026-06-12T16:45:09,111457+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: resetting...
+2026-06-12T16:45:09,111592+07:00 mpp_rkvdec2 fdc48100.rkvdec-core: reset done
+2026-06-12T16:45:09,111599+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: resetting...
+2026-06-12T16:45:09,111698+07:00 mpp_rkvdec2 fdc38100.rkvdec-core: reset done
+2026-06-12T16:45:21,003560+07:00 rga_mm: [tgid:6917] Decrement the reference of handle[7] when the user exits
+2026-06-12T16:45:21,003589+07:00 rga_mm: [tgid:6917] Decrement the reference of handle[17] when the user exits

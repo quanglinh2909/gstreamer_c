@@ -188,6 +188,18 @@ public:
         return {};
     }
 
+    // H264 encoder for the motion-debug mount: the Rockchip MPP hardware
+    // encoder when installed, otherwise software x264enc. x264enc at 960px
+    // is one of the most CPU-expensive elements in the whole service.
+    static std::string resolveDebugH264Encoder() {
+        GstElementFactory* factory = gst_element_factory_find("mpph264enc");
+        if (factory) {
+            gst_object_unref(factory);
+            return "mpph264enc";
+        }
+        return "x264enc";
+    }
+
 private:
     using Clock = std::chrono::system_clock;
 

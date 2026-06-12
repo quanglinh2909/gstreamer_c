@@ -31,7 +31,11 @@ public:
         // which has no scale limit. yolov8 keeps the RGA context crop.
         if (ctx.tightCrop) {
             const Frame& fr = *ctx.frame;
-            return cropNv12ToRgbCpu(fr.nv12, fr.width, fr.height, fr.yStride,
+            // cpuNv12() maps the buffer on demand — on the dmabuf path the
+            // frame is otherwise never CPU-mapped at all.
+            const uint8_t* nv12 = fr.cpuNv12();
+            if (!nv12) return false;
+            return cropNv12ToRgbCpu(nv12, fr.width, fr.height, fr.yStride,
                                     fr.uvOffset, fr.uvStride, x, y, w, h,
                                     ctx.targetW, ctx.targetH, outRgb);
         }

@@ -20,11 +20,11 @@ static void dump_tensor_attr(rknn_tensor_attr* attr) {
 int init_face_recognition_model(const char* model_path, rknn_app_context_t* app_ctx) {
     int ret;
     int model_len = 0;
-    char* model;
+    char* model = NULL;
     rknn_context ctx = 0;
 
     model_len = read_data_from_file(model_path, &model);
-    if (model == NULL) {
+    if (model_len < 0 || model == NULL) {
         printf("load_model fail!\n");
         return -1;
     }

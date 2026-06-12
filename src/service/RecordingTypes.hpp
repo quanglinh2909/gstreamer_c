@@ -164,6 +164,12 @@ inline std::vector<std::string> motionDecoderCandidates(const std::string& hardw
     const std::string nv  = h264 ? "nvh264dec"   : "nvh265dec";
     const std::string v4l = h264 ? "v4l2h264dec" : "v4l2h265dec";
     const std::string sw  = h264 ? "avdec_h264"  : "avdec_h265";
+    // Rockchip MPP decoder is multi-codec; it takes the parsed H264/H265 the
+    // motion branch always provides (it taps the tee after h264parse /
+    // h265parse). On RK35xx boards it is typically the ONLY decoder
+    // installed — without it in the list the motion branch silently resolved
+    // to no decoder and motion-triggered recording never armed.
+    const std::string mpp = "mppvideodec";
 
     const auto mode = stream::toLower(hardware);
     if (mode == "software" || mode == "sw" || mode == "none" || mode == "off") {
@@ -178,7 +184,10 @@ inline std::vector<std::string> motionDecoderCandidates(const std::string& hardw
     if (mode == "v4l2") {
         return {v4l, sw};
     }
-    return {va, nv, v4l, sw};  // auto / empty / unknown
+    if (mode == "mpp" || mode == "rockchip") {
+        return {mpp, sw};
+    }
+    return {mpp, va, nv, v4l, sw};  // auto / empty / unknown
 }
 
 inline std::string recordingFilePattern(const stream::GStreamerConfig& config,
@@ -272,7 +281,8 @@ inline std::string recordingLaunchStringForCamera(const stream::GStreamerConfig&
 inline std::string motionDebugLaunchStringForCamera(const stream::GStreamerConfig& config,
                                                     const stream::CameraRuntimeConfig& camera,
                                                     stream::StreamCodec codec,
-                                                    const std::string& motionDecoder) {
+                                                    const std::string& motionDecoder,
+                                                    const std::string& h264Encoder = "x264enc") {
     const bool h264 = codec == stream::StreamCodec::H264;
     const bool h265 = codec == stream::StreamCodec::H265;
     if ((!h264 && !h265) || motionDecoder.empty()) return {};
@@ -303,10 +313,16 @@ inline std::string motionDebugLaunchStringForCamera(const stream::GStreamerConfi
         << " gap=" << camera.postMotionSeconds
         << " ! videoscale"
         << " ! video/x-raw,width=960,height=540"
-        << " ! videoconvert"
-        << " ! video/x-raw,format=I420"
-        << " ! x264enc tune=zerolatency speed-preset=ultrafast"
-        << " ! rtph264pay config-interval=1 name=pay0 pt=96 )";
+        << " ! videoconvert";
+    if (h264Encoder == "mpph264enc") {
+        // Hardware encode: feed the MPP encoder its native NV12.
+        launch << " ! video/x-raw,format=NV12"
+               << " ! mpph264enc";
+    } else {
+        launch << " ! video/x-raw,format=I420"
+               << " ! x264enc tune=zerolatency speed-preset=ultrafast";
+    }
+    launch << " ! rtph264pay config-interval=1 name=pay0 pt=96 )";
     return launch.str();
 }
 

@@ -110,6 +110,24 @@ public:
         return it->second.jpeg;  // copy
     }
 
+    // Keeps the live debug stream of one job (by id) armed for ttlMs. Driven
+    // by the Python MJPEG viewer over HTTP while a client watches; the flag
+    // auto-expires so it costs nothing once nobody is looking. Searches every
+    // camera group because the HTTP caller only knows the job id. No-op when
+    // the job isn't live.
+    void armJobDebug(const std::string& jobId, uint32_t ttlMs) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_started) return;
+        for (auto& entry : m_groups) {
+            for (auto& job : entry.second.jobs) {
+                if (job && job->jobId() == jobId) {
+                    job->armDebug(ttlMs);
+                    return;
+                }
+            }
+        }
+    }
+
     // Removes one job and rebuilds (or drops) its camera's pipeline.
     void removeJob(const std::string& cameraId, const std::string& jobId) {
         std::lock_guard<std::mutex> lock(m_mutex);

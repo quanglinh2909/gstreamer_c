@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <gst/gst.h>
+#include <gst/allocators/gstdmabuf.h>
 #include <gst/app/gstappsink.h>
 #include <gst/video/video.h>
 
@@ -80,8 +81,9 @@ private:
         m_pipeline = gst_parse_launch(
             "rtspsrc name=src latency=200 protocols=tcp drop-on-latency=true ! "
             "application/x-rtp,media=video ! "
-            "decodebin ! video/x-raw,format=NV12 ! "
-            "appsink name=sink sync=false max-buffers=2 drop=true",
+            "decodebin ! "
+            "appsink name=sink sync=false max-buffers=2 drop=true "
+            "enable-last-sample=false",
             &err);
         if (!m_pipeline) {
             std::fprintf(stderr, "[ai cam %s] pipeline build failed: %s\n",
@@ -99,6 +101,18 @@ private:
 
         GstElement* sink = gst_bin_get_by_name(GST_BIN(m_pipeline), "sink");
         if (sink) {
+            // Prefer dmabuf-backed NV12 so the decoder frame goes to RGA by
+            // fd (see RgaConverter.hpp for why the mapped-pointer route can
+            // oops the kernel). Plain NV12 stays as the fallback for
+            // software decoders and for AI_RGA_LEGACY=1.
+            GstCaps* caps = gst_caps_from_string(
+                !rga::legacyMode()
+                    ? "video/x-raw(memory:DMABuf),format=NV12; "
+                      "video/x-raw,format=NV12"
+                    : "video/x-raw,format=NV12");
+            gst_app_sink_set_caps(GST_APP_SINK(sink), caps);
+            gst_caps_unref(caps);
+
             GstAppSinkCallbacks cbs;
             std::memset(&cbs, 0, sizeof(cbs));
             cbs.new_sample = &AiCameraPipeline::onNewSampleThunk;
@@ -125,6 +139,15 @@ private:
 
     void teardown() {
         if (m_pipeline) {
+            // The bus watch added in buildAndStart() holds a ref on the bus
+            // and stays attached to the context until explicitly removed —
+            // without this, every reconnect leaked a watch (and a dead
+            // pipeline's bus could still dispatch into onBusThunk).
+            GstBus* bus = gst_element_get_bus(m_pipeline);
+            if (bus) {
+                gst_bus_remove_watch(bus);
+                gst_object_unref(bus);
+            }
             gst_element_set_state(m_pipeline, GST_STATE_NULL);
             gst_object_unref(m_pipeline);
             m_pipeline = nullptr;
@@ -144,7 +167,15 @@ private:
                                ? m_reconnectAttempts
                                : sizeof(delays_ms) / sizeof(delays_ms[0]) - 1;
         ++m_reconnectAttempts;
-        g_timeout_add(delays_ms[idx], &AiCameraPipeline::onReconnectThunk, this);
+        // g_timeout_add() would attach to the GLOBAL default context (the
+        // RTSP server's loop), so the reconnect — and the pipeline rebuild —
+        // would run on a foreign thread, racing this pipeline's own loop.
+        // Attach the source to our per-pipeline context instead.
+        GSource* src = g_timeout_source_new(delays_ms[idx]);
+        g_source_set_callback(src, &AiCameraPipeline::onReconnectThunk, this,
+                              nullptr);
+        g_source_attach(src, g_main_loop_get_context(m_loop));
+        g_source_unref(src);
     }
 
     static gboolean onReconnectThunk(gpointer user) {
@@ -227,11 +258,6 @@ private:
 
         auto frame = std::make_shared<Frame>();
         frame->sample = sample;  // ownership moves into Frame
-        if (!gst_buffer_map(buf, &frame->map, GST_MAP_READ)) {
-            return nullptr;  // Frame dtor unrefs the sample
-        }
-        frame->mapped = true;
-        frame->nv12 = frame->map.data;
         frame->width = GST_VIDEO_INFO_WIDTH(&vinfo);
         frame->height = GST_VIDEO_INFO_HEIGHT(&vinfo);
         frame->yStride = GST_VIDEO_INFO_PLANE_STRIDE(&vinfo, 0);
@@ -243,6 +269,23 @@ private:
             frame->yStride = static_cast<int>(meta->stride[0]);
             frame->uvStride = static_cast<int>(meta->stride[1]);
             frame->uvOffset = meta->offset[1];
+        }
+
+        // Zero-copy path: when the decoder hands us a dmabuf (mppvideodec
+        // does), import the fd into RGA once per frame. Every later blit
+        // (letterbox, stage-2 crops, JPEG pack) reads the decoder buffer
+        // directly — no map, no copy, no per-blit page pinning. Frames that
+        // are not dmabuf-backed (software decoder) fall back to a plain
+        // CPU mapping exactly as before.
+        if (gst_buffer_n_memory(buf) == 1) {
+            GstMemory* mem = gst_buffer_peek_memory(buf, 0);
+            if (mem && gst_is_dmabuf_memory(mem)) {
+                frame->dmaFd = gst_dmabuf_memory_get_fd(mem);
+            }
+        }
+        if (frame->dmaFd >= 0) rga::importFrameDmabuf(*frame);
+        if (!frame->rgaHandle && !frame->cpuNv12()) {
+            return nullptr;  // Frame dtor unrefs the sample
         }
 
         frame->inferW = m_inferW;
