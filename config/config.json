@@ -25,6 +25,6 @@
     "recordingDir": "recordings"
   },
   "ai": {
-    "weightsDir": "/home/orangepi/Documents/test/weights"
+    "weightsDir": "/home/orangepi/Documents/ai_gstreamer/weights"
   }
 }

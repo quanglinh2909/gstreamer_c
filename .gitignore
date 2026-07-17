@@ -10,7 +10,8 @@ vcpkg_installed/
 .idea/
 .vscode/
 *.user
-
+config/*
+config/config.json
 # OS
 .DS_Store
 Thumbs.db

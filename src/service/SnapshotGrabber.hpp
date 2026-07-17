@@ -43,9 +43,11 @@ inline GrabResult grabJpeg(const std::string& rtspUrl,
     std::string jpegEncoder = "jpegenc quality=" + std::to_string(jpegQuality);
     if (GstElementFactory* f = gst_element_factory_find("mppjpegenc")) {
         gst_object_unref(f);
-        // mppjpegenc's q-factor range is 1..99 (jpegenc allows up to 100).
-        const int qf = std::max(1, std::min(99, jpegQuality));
-        jpegEncoder = "mppjpegenc q-factor=" + std::to_string(qf);
+        // mppjpegenc spells quality as "quant" on a 0..10 scale (10 = best),
+        // not jpegenc's 0..100 "quality". Scale across, keeping at least 1.
+        const int quant =
+            std::max(1, std::min(10, (std::max(0, std::min(100, jpegQuality)) + 5) / 10));
+        jpegEncoder = "mppjpegenc quant=" + std::to_string(quant);
     }
 
     // The application/x-rtp,media=video filter drops the audio stream so
@@ -61,17 +63,19 @@ inline GrabResult grabJpeg(const std::string& rtspUrl,
         " ! " + jpegEncoder +
         " ! appsink name=sink max-buffers=1 drop=false sync=false";
 
+    // gst_parse_launch reports a recoverable failure (an unknown property, a
+    // link that could not be made) by returning a *partial* pipeline with err
+    // set — elements silently missing. Such a pipeline never produces a frame
+    // and never posts a bus error, so it can only fail as a timeout. Treat any
+    // err as fatal and surface it while it still says what went wrong.
     GError* err = nullptr;
     GstElement* pipeline = gst_parse_launch(launch.c_str(), &err);
-    if (!pipeline) {
+    if (!pipeline || err) {
         result.error = err && err->message ? err->message
                                             : "Failed to build snapshot pipeline";
         if (err) g_error_free(err);
+        if (pipeline) gst_object_unref(pipeline);
         return result;
-    }
-    if (err) {
-        g_error_free(err);
-        err = nullptr;
     }
 
     GstElement* src = gst_bin_get_by_name(GST_BIN(pipeline), "src");
