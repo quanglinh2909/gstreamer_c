@@ -1,3 +1,93 @@
+# Cài đặt thư viện (chạy `./build.sh` không lỗi)
+
+Môi trường đã kiểm chứng: **Ubuntu 22.04 (jammy), arm64, Rockchip RK3588**.
+
+### 1. Build tools + thư viện hệ thống
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential cmake ninja-build pkg-config \
+    bison flex autoconf automake libtool \
+    git curl zip unzip tar \
+    libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+    libgstrtspserver-1.0-dev \
+    gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad gstreamer1.0-libav \
+    libopencv-dev librga-dev
+```
+
+Trong đó:
+
+| Nhóm | Dùng cho |
+|---|---|
+| `build-essential`, `cmake`, `ninja-build`, `pkg-config` | biên dịch + `find_package` / `pkg_check_modules` |
+| `bison`, `flex`, `autoconf`, `automake`, `libtool`, `curl`, `zip`, `unzip`, `tar` | vcpkg build các port từ source (bắt buộc ở lần cài đầu) |
+| `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev`, `libgstrtspserver-1.0-dev` | `gstreamer-1.0`, `-app`, `-video`, `-allocators`, `-rtsp`, `-rtsp-server` |
+| `gstreamer1.0-plugins-*`, `gstreamer1.0-libav` | plugin lúc chạy (decode/encode, RTSP) |
+| `libopencv-dev` | `pkg_check_modules(OPENCV ... opencv4)` |
+| `librga-dev` | `librga.so` (RGA 2D — crop/convert) |
+
+Tăng tốc phần cứng Rockchip (khuyến nghị, cho `mppvideodec` / `mppjpegenc`):
+
+```bash
+sudo apt-get install -y gstreamer1.0-rockchip
+```
+
+> **Máy Rockchip đã có sẵn GStreamer của BSP:** nhiều image (Orange Pi, Radxa…)
+> ghim (`hold`) các gói GStreamer để giữ bản vá MPP, nên lệnh trên có thể báo
+> `pkgProblemResolver::Resolve generated breaks ... held packages`. Kiểm tra:
+>
+> ```bash
+> apt-mark showhold | grep -i gst      # xem gói nào bị ghim
+> pkg-config --modversion gstreamer-1.0 gstreamer-rtsp-server-1.0
+> ```
+>
+> Nếu `pkg-config` đã trả ra phiên bản thì **header có đủ rồi, bỏ qua bước cài
+> GStreamer** — đừng gỡ hold, vì làm vậy sẽ thay mất bản GStreamer có MPP và
+> hỏng tăng tốc phần cứng. Chỉ cài các gói GStreamer ở trên khi máy sạch /
+> chưa từng có GStreamer.
+
+### 2. Runtime NPU của Rockchip — `librknnrt.so`
+
+**Không có trên apt.** Thư viện này do vendor/BSP cung cấp, phải đặt tay:
+
+```bash
+# Lấy từ rknn-toolkit2 (chọn đúng bản aarch64) rồi:
+sudo cp librknnrt.so /usr/lib/
+sudo ldconfig
+# Kiểm tra:
+ls -l /usr/lib/librknnrt.so
+```
+
+> Header `rknn_api.h` và ONNX Runtime đã được vendor sẵn trong `third_party/`
+> nên **không cần cài thêm** — CMake tự lấy từ đó.
+
+### 3. vcpkg (cung cấp oatpp)
+
+`oatpp`, `oatpp-postgresql`, `oatpp-swagger`, `oatpp-websocket` được khai báo
+trong `vcpkg.json` và vcpkg tự build khi configure:
+
+```bash
+git clone https://github.com/microsoft/vcpkg ~/vcpkg
+~/vcpkg/bootstrap-vcpkg.sh
+export VCPKG_ROOT=~/vcpkg          # thêm vào ~/.bashrc cho lần sau
+```
+
+`build.sh` tự dò `~/vcpkg`, `~/.vcpkg`, `/opt/vcpkg`, `/usr/local/vcpkg`; đặt
+`VCPKG_ROOT` nếu bạn để chỗ khác.
+
+> Lần build đầu vcpkg biên dịch oatpp từ source nên **khá lâu** (có thể vài
+> chục phút trên RK3588). Các lần sau dùng cache, rất nhanh.
+
+### 4. Build
+
+```bash
+./build.sh
+```
+
+---
+
 # Build Commands
 
 | Lệnh | Tác dụng |
@@ -5,6 +95,9 @@
 | `./build.sh` | Configure (nếu chưa) + incremental build |
 | `./build.sh clean` | Xóa `build/` rồi reconfigure từ đầu |
 | `./build.sh run` | Build xong chạy luôn `./build/test_gstreamer` |
+
+Biến môi trường: `VCPKG_ROOT`, `BUILD_TYPE` (`Debug`/`Release`, mặc định
+`Debug`), `JOBS` (mặc định `nproc`).
 
 ---
 
