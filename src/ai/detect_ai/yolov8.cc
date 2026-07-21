@@ -21,6 +21,7 @@
 #include "common.h"
 #include "file_utils.h"
 #include "image_utils.h"
+#include "npu_core.h"
 
 static void dump_tensor_attr(rknn_tensor_attr *attr)
 {
@@ -53,6 +54,9 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
         printf("rknn_init fail! ret=%d\n", ret);
         return -1;
     }
+
+    // Spread this model across all three RK3588 NPU cores (see npu_core.h).
+    npu_set_multicore(ctx, "yolov8");
 
     // Get Model Input Output Number
     rknn_input_output_num io_num;

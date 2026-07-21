@@ -26,6 +26,8 @@
 #include <opencv2/opencv.hpp>
 
 #include "rknn_api.h"
+
+#include "detect_ai/npu_core.h"
 #include "common.h"
 #include "postprocess.h"  // object_detect_result_list, OBJ_NUMB_MAX_SIZE
 
@@ -115,6 +117,9 @@ bool RfDetectModel::load(const std::string& modelPath) {
         std::fprintf(stderr, "[rf_detect] rknn_init failed: %d\n", ret);
         return false;
     }
+
+    // Spread the backbone across all three RK3588 NPU cores (see npu_core.h).
+    npu_set_multicore(s.rknn, "rf_detect");
 
     rknn_input_output_num io{};
     if (rknn_query(s.rknn, RKNN_QUERY_IN_OUT_NUM, &io, sizeof(io)) != RKNN_SUCC) {

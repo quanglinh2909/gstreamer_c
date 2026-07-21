@@ -9,6 +9,7 @@
 
 #include "file_utils.h"
 #include "image_utils.h"
+#include "npu_core.h"
 
 static void dump_tensor_attr(rknn_tensor_attr* attr) {
     printf("  index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], n_elems=%d, size=%d, fmt=%s, type=%s, qnt_type=%s, zp=%d, scale=%f\n",
@@ -35,6 +36,9 @@ int init_face_recognition_model(const char* model_path, rknn_app_context_t* app_
         printf("rknn_init fail! ret=%d\n", ret);
         return -1;
     }
+
+    // Spread this model across all three RK3588 NPU cores (see npu_core.h).
+    npu_set_multicore(ctx, "face_recognition");
 
     rknn_input_output_num io_num;
     ret = rknn_query(ctx, RKNN_QUERY_IN_OUT_NUM, &io_num, sizeof(io_num));

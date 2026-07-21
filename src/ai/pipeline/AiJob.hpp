@@ -83,12 +83,17 @@ public:
     void start() {
         if (m_running.exchange(true)) return;
         m_thread = std::thread([this] { run(); });
+        m_pubThread = std::thread([this] { publishLoop(); });
     }
 
     void stop() {
         if (!m_running.exchange(false)) return;
         m_queue.close();
         if (m_thread.joinable()) m_thread.join();
+        // Close the publish queue only after the worker is done producing;
+        // pop() drains whatever is still queued, so no result is lost.
+        m_pubQueue.close();
+        if (m_pubThread.joinable()) m_pubThread.join();
         m_model1.reset();
         m_model2.reset();
     }
@@ -219,8 +224,38 @@ private:
                 encode = true;
             }
         }
-        if (encode) encodeImages(*f, res);
-        if (m_sink) m_sink(std::move(res));
+
+        // The JPEG encode is SOFTWARE (libjpeg-turbo; mppjpegenc freezes the
+        // board, see JpegEncoder) and costs ~a frame period of CPU at 1080p.
+        // Doing it inline here made every detection frame pay detect+encode
+        // back to back, dropping the processed rate whenever objects were in
+        // view. Instead hand the result to the publish thread: detect on
+        // frame N overlaps with encode/serialize/send of frame N-1.
+        //
+        // Backpressure: if the encoder already has kMaxPendingEncodes frames
+        // waiting, publish this result META-ONLY rather than queueing more
+        // pictures. The tracker needs uninterrupted metadata far more than it
+        // needs another JPEG, and each held frame pins a decoder buffer.
+        PublishItem item;
+        if (encode &&
+            m_pendingEncodes.load(std::memory_order_relaxed) < kMaxPendingEncodes) {
+            item.ticket = EncodeTicket(&m_pendingEncodes);
+            item.frame = f;
+        }
+        item.res = std::move(res);
+        m_pubQueue.push(std::move(item));
+    }
+
+    // Runs on m_pubThread: encodes (when a frame is attached) and hands the
+    // result to the sink, strictly in FIFO order so the Python consumer never
+    // sees frames out of sequence.
+    void publishLoop() {
+        PublishItem item;
+        while (m_pubQueue.pop(item)) {
+            if (item.frame) encodeImages(*item.frame, item.res);
+            if (m_sink) m_sink(std::move(item.res));
+            item = PublishItem{};  // drop the frame ref (decoder buffer) now
+        }
     }
 
     // Transform the detection crop, then run model 2 on it.
@@ -266,6 +301,44 @@ private:
         }
     }
 
+    // RAII share of the pending-encode budget. Counting through a guard —
+    // not bare fetch_add/sub at the call sites — means a PublishItem dropped
+    // by the queue's overflow path (consumer stalled >2s and items piled up)
+    // still gives its slot back; a leaked count would silently degrade the
+    // job to meta-only forever.
+    struct EncodeTicket {
+        std::atomic<int>* counter = nullptr;
+        EncodeTicket() = default;
+        explicit EncodeTicket(std::atomic<int>* c) : counter(c) {
+            if (counter) counter->fetch_add(1, std::memory_order_relaxed);
+        }
+        EncodeTicket(EncodeTicket&& o) noexcept : counter(o.counter) {
+            o.counter = nullptr;
+        }
+        EncodeTicket& operator=(EncodeTicket&& o) noexcept {
+            release();
+            counter = o.counter;
+            o.counter = nullptr;
+            return *this;
+        }
+        ~EncodeTicket() { release(); }
+        void release() {
+            if (counter) {
+                counter->fetch_sub(1, std::memory_order_relaxed);
+                counter = nullptr;
+            }
+        }
+    };
+
+    // One unit of work for the publish thread. `frame` is held ONLY when this
+    // result still needs its JPEG encoded — meta-only items keep no frame, so
+    // the queue never pins more than kMaxPendingEncodes decoder buffers.
+    struct PublishItem {
+        FramePtr frame;
+        AiResult res;
+        EncodeTicket ticket;
+    };
+
     cfg::AiJob m_cfg;
     ResultSink m_sink;
 
@@ -278,6 +351,15 @@ private:
     std::thread m_thread;
     std::atomic<bool> m_running{false};
     uint64_t m_lastProcessMs = 0;
+
+    // Publish lane: encode + serialize + socket send, decoupled from detect.
+    // Capacity 8 is a stall backstop (SO_SNDTIMEO lets a dead consumer block
+    // sends for up to 2s); in steady state the queue holds at most a couple
+    // of items because meta-only entries drain in well under a millisecond.
+    BoundedQueue<PublishItem> m_pubQueue{8};
+    std::thread m_pubThread;
+    std::atomic<int> m_pendingEncodes{0};
+    static constexpr int kMaxPendingEncodes = 2;
 
     // Debug-stream gating (see armDebug). When m_debugUntilMs is in the past,
     // no debug-only frames are encoded — zero cost when nobody is watching.
