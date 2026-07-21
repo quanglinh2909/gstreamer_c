@@ -15,7 +15,7 @@ config/config.json
 # OS
 .DS_Store
 Thumbs.db
-
+.env
 # AI models / runtime artifacts (large or generated)
 weights/
 recordings/

@@ -1,3 +1,32 @@
+const fs = require('fs');
+const path = require('path');
+
+// Nạp .env (cùng thư mục với file này) — file RIÊNG của từng máy, KHÔNG copy
+// sang máy khác. Đây là chỗ duy nhất chứa tham số khác nhau giữa các máy
+// (đường dẫn weights, chuỗi DB, IP RTSP công khai...). Nhờ vậy config.json và
+// file này giữ nguyên khi copy project, chỉ .env là mỗi máy tự viết.
+// Xem .env.example để biết các biến hỗ trợ.
+// Không có file cũng không sao: engine chạy đúng theo config/config.json.
+function loadLocalEnv() {
+  const file = path.join(__dirname, '.env');
+  if (!fs.existsSync(file)) return {};
+  const out = {};
+  for (const raw of fs.readFileSync(file, 'utf8').split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    // Bỏ nháy bao ngoài để giá trị có khoảng trắng vẫn viết được.
+    if (val.length >= 2 && (val[0] === '"' || val[0] === "'") && val[val.length - 1] === val[0]) {
+      val = val.slice(1, -1);
+    }
+    out[key] = val;
+  }
+  return out;
+}
+
 module.exports = {
   apps: [
     {
@@ -8,6 +37,7 @@ module.exports = {
       cwd: './',
       autorestart: true,
       watch: false,
+      env: loadLocalEnv(),
       // --- Resilience ---
       // A C++ uncaught exception (e.g. RTSP server port already in use on a
       // fast restart, model file missing) aborts the whole process. Without
@@ -25,4 +55,3 @@ module.exports = {
     },
   ],
 };
-

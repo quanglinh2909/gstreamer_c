@@ -26,6 +26,50 @@ struct GrabResult {
     bool ok() const { return error.empty() && !jpeg.empty(); }
 };
 
+// Returns a launch fragment for the Rockchip hardware JPEG encoder, or ""
+// when mppjpegenc isn't installed (caller falls back to software jpegenc).
+//
+// The quality property is NOT the same across mppjpegenc builds — both
+// report "Version 1.14.4" yet expose different names and scales:
+//   BSP/apt build  (/usr/lib/.../libgstrockchipmpp.so)      -> q-factor, 1..99
+//   source build   (/usr/local/lib/.../libgstrockchipmpp.so) -> quant,    0..10
+// Hardcoding either one makes the snapshot fail on the other machine with
+// `no property "..." in element "mppjpegenc0"` (a 502 from the HTTP layer),
+// so ask the element class which property it actually has. Setting no
+// property at all would also work but silently drops the quality setting.
+//
+// Probed once per process: the installed plugin cannot change at runtime.
+inline std::string mppJpegEncDesc(int jpegQuality) {
+    // -1 = not probed yet, 0 = absent, 1 = quant, 2 = q-factor
+    static int mode = [] {
+        GstElement* e = gst_element_factory_make("mppjpegenc", nullptr);
+        if (!e) return 0;
+        GObjectClass* klass = G_OBJECT_GET_CLASS(e);
+        int m = 3;  // present but no known quality property -> use defaults
+        if (g_object_class_find_property(klass, "quant")) {
+            m = 1;
+        } else if (g_object_class_find_property(klass, "q-factor")) {
+            m = 2;
+        }
+        gst_object_unref(e);
+        return m;
+    }();
+
+    const int q = std::max(0, std::min(100, jpegQuality));
+    switch (mode) {
+        case 1:  // quant: 0..10, 10 = best. Keep >= 1 so quality never hits 0.
+            return "mppjpegenc quant=" +
+                   std::to_string(std::max(1, std::min(10, (q + 5) / 10)));
+        case 2:  // q-factor: 1..99, same "higher is better" sense as jpegenc.
+            return "mppjpegenc q-factor=" +
+                   std::to_string(std::max(1, std::min(99, q)));
+        case 3:
+            return "mppjpegenc";
+        default:
+            return "";
+    }
+}
+
 inline GrabResult grabJpeg(const std::string& rtspUrl,
                            uint32_t latencyMs = 200,
                            uint32_t timeoutMs = 12000,
@@ -41,13 +85,8 @@ inline GrabResult grabJpeg(const std::string& rtspUrl,
     // passthrough) and the CPU encodes nothing. jpegenc stays as the
     // software fallback for other platforms.
     std::string jpegEncoder = "jpegenc quality=" + std::to_string(jpegQuality);
-    if (GstElementFactory* f = gst_element_factory_find("mppjpegenc")) {
-        gst_object_unref(f);
-        // mppjpegenc spells quality as "quant" on a 0..10 scale (10 = best),
-        // not jpegenc's 0..100 "quality". Scale across, keeping at least 1.
-        const int quant =
-            std::max(1, std::min(10, (std::max(0, std::min(100, jpegQuality)) + 5) / 10));
-        jpegEncoder = "mppjpegenc quant=" + std::to_string(quant);
+    if (const std::string mpp = mppJpegEncDesc(jpegQuality); !mpp.empty()) {
+        jpegEncoder = mpp;
     }
 
     // The application/x-rtp,media=video filter drops the audio stream so
