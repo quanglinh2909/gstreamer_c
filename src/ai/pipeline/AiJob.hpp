@@ -214,16 +214,34 @@ private:
         // currently watching this job. The debug-only encode is rate-capped
         // (~5 fps) so a continuous live debug stream stays cheap, and the
         // arming auto-expires so it costs nothing once the viewer leaves.
+        const uint64_t now = nowMs();
         const bool hasDet = !res.detections.empty();
         bool encode = hasDet;
-        if (!hasDet &&
-            nowMs() < m_debugUntilMs.load(std::memory_order_relaxed)) {
-            const uint64_t now = nowMs();
+        if (!hasDet && now < m_debugUntilMs.load(std::memory_order_relaxed)) {
             if (now - m_lastDebugMs >= kDebugMinGapMs) {
                 m_lastDebugMs = now;
                 encode = true;
             }
         }
+
+        // Snapshot keepalive. GET /cameras/{id}/snapshot serves the JPEG
+        // cached from this pipeline when it is fresh, and only falls back to
+        // opening a NEW RTSP session (handshake + wait for an I-frame, ~1-2s,
+        // plus a second concurrent session the camera may refuse) when the
+        // cache is stale. Previously nothing was encoded on an empty scene, so
+        // that fallback was the *normal* path — snapshots were slow exactly
+        // when the view was quiet. One cheap encode per interval keeps the
+        // cache permanently warm.
+        //
+        // Self-limiting: a busy scene already encodes every detection frame
+        // and keeps `m_lastEncodeMs` current, so this adds nothing there — it
+        // only fires when the camera is idle and the board has spare CPU.
+        // Cost is one 1080p libjpeg-turbo encode per kSnapshotWarmMs, on the
+        // publish thread, so it never slows the detect loop.
+        if (!encode && now - m_lastEncodeMs >= kSnapshotWarmMs) {
+            encode = true;
+        }
+        if (encode) m_lastEncodeMs = now;
 
         // The JPEG encode is SOFTWARE (libjpeg-turbo; mppjpegenc freezes the
         // board, see JpegEncoder) and costs ~a frame period of CPU at 1080p.
@@ -366,6 +384,13 @@ private:
     std::atomic<uint64_t> m_debugUntilMs{0};
     uint64_t m_lastDebugMs = 0;                       // worker-thread only
     static constexpr uint64_t kDebugMinGapMs = 200;   // ~5 fps debug cap
+
+    // Snapshot cache keepalive (see process()). Must stay comfortably under
+    // the freshness window CameraService::getSnapshot asks for (2000ms), or
+    // requests landing just before a refresh would still miss the cache and
+    // pay the slow RTSP path.
+    uint64_t m_lastEncodeMs = 0;                          // worker-thread only
+    static constexpr uint64_t kSnapshotWarmMs = 1000;
 };
 
 #endif  // AI_ENGINE_AI_JOB_HPP
