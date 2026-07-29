@@ -18,12 +18,19 @@ pkg_check_modules(GSTREAMER QUIET IMPORTED_TARGET
     gstreamer-app-1.0
     gstreamer-video-1.0
     gstreamer-allocators-1.0
+    gstreamer-webrtc-1.0
+    gstreamer-sdp-1.0
+    gstreamer-pbutils-1.0
+    # gstreamer-rtp-1.0: WebRtcSession viết lại byte payload-type trong header
+    # RTP (gst_rtp_buffer_set_payload_type) để gửi H265 thẳng cho trình duyệt
+    # dùng số payload ngoài dải mà rtph265pay tự phát được — xem buildLaunch.
+    gstreamer-rtp-1.0
 )
 if(NOT GSTREAMER_FOUND)
     message(FATAL_ERROR
         "Missing GStreamer development packages. On Debian/Ubuntu install: "
         "sudo apt-get install -y libgstreamer1.0-dev "
-        "libgstreamer-plugins-base1.0-dev libgstrtspserver-1.0-dev "
+        "libgstreamer-plugins-base1.0-dev libgstrtspserver-1.0-dev gstreamer1.0-nice "
         "gstreamer1.0-plugins-good gstreamer1.0-plugins-bad")
 endif()
 

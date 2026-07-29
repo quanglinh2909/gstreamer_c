@@ -24,6 +24,37 @@ public:
         OATPP_COMPONENT(std::shared_ptr<ObjectMapper>, objectMapper))
         : oatpp::web::server::api::ApiController(objectMapper) {}
 
+    // Giải mã percent ("%3A" -> ":"). Cần cho tham số mốc thời gian: cả API
+    // route lẫn rewrite của Next.js đều mã hoá dấu ':' của chuỗi ISO khi chuyển
+    // tiếp, mà tầng query của oatpp không tự giải mã -> Postgres nhận "%3A" và
+    // báo lỗi timestamp. KHÔNG đổi '+' thành khoảng trắng để không hỏng offset
+    // múi giờ dạng "+00:00".
+    static oatpp::String decodeParam(const oatpp::String& value) {
+        if (!value) return value;
+        const std::string& s = *value;
+        auto hex = [](char c) -> int {
+            if (c >= '0' && c <= '9') return c - '0';
+            if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+            if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+            return -1;
+        };
+        std::string out;
+        out.reserve(s.size());
+        for (size_t i = 0; i < s.size(); ++i) {
+            if (s[i] == '%' && i + 3 <= s.size()) {
+                const int hi = hex(s[i + 1]);
+                const int lo = hex(s[i + 2]);
+                if (hi >= 0 && lo >= 0) {
+                    out.push_back(static_cast<char>(hi * 16 + lo));
+                    i += 2;
+                    continue;
+                }
+            }
+            out.push_back(s[i]);
+        }
+        return oatpp::String(out);
+    }
+
     ENDPOINT_INFO(getAll) {
         info->summary = "List cameras";
         info->addResponse<oatpp::List<oatpp::Object<CameraDto>>>(
@@ -174,7 +205,7 @@ public:
              QUERY(oatpp::String, to, "to", "9999-12-31T23:59:59Z"))
     {
         return createDtoResponse(Status::CODE_200,
-                                 m_service.getRecordingSegments(id, from, to));
+                                 m_service.getRecordingSegments(id, decodeParam(from), decodeParam(to)));
     }
 
     ENDPOINT_INFO(getPlaybackPlaylist) {
@@ -191,7 +222,7 @@ public:
              QUERY(oatpp::String, from, "from"),
              QUERY(oatpp::String, to, "to"))
     {
-        auto segmentsDto = m_service.getRecordingSegments(id, from, to);
+        auto segmentsDto = m_service.getRecordingSegments(id, decodeParam(from), decodeParam(to));
         std::vector<playback::HlsSegment> segments;
         if (segmentsDto) {
             segments.reserve(segmentsDto->size());
@@ -201,10 +232,17 @@ public:
                     segment->container != "ts") {
                     continue;
                 }
+                // Bỏ đoạn ĐANG ghi dở: file còn được ghi tiếp, đưa vào playlist
+                // là hls.js tải nửa chừng và parse lỗi. Phần "đang ghi" xem
+                // bằng chế độ live; client bấm gần hiện tại thì chuyển live.
+                const std::string st =
+                    segment->status ? segment->status->c_str() : "complete";
+                if (st != "complete") continue;
                 segments.push_back({
                     segment->id->c_str(),
                     segment->startAt->c_str(),
                     *segment->durationMs,
+                    segment->sessionStartMs ? *segment->sessionStartMs : 0,
                 });
             }
         }
@@ -231,7 +269,7 @@ public:
              QUERY(oatpp::String, at, "at"))
     {
         return createDtoResponse(Status::CODE_200,
-                                 m_service.seekRecording(id, at));
+                                 m_service.seekRecording(id, decodeParam(at)));
     }
 
     ENDPOINT_INFO(getMotionEvents) {
@@ -245,7 +283,7 @@ public:
              QUERY(oatpp::String, to, "to", "9999-12-31T23:59:59Z"))
     {
         return createDtoResponse(Status::CODE_200,
-                                 m_service.getMotionEvents(id, from, to));
+                                 m_service.getMotionEvents(id, decodeParam(from), decodeParam(to)));
     }
 
     ENDPOINT_INFO(getRecordingFile) {

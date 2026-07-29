@@ -81,6 +81,11 @@ CREATE TABLE IF NOT EXISTS recording_segments (
   has_motion      BOOLEAN     NOT NULL DEFAULT false,
   motion_event_id UUID REFERENCES motion_events(id) ON DELETE SET NULL,
   status          VARCHAR(16) NOT NULL DEFAULT 'complete',
+  -- Mốc (epoch ms) lúc PHIÊN ghi bắt đầu. Mỗi lần engine/pipeline khởi động lại
+  -- là một phiên mới với PTS reset (mpegtsmux luôn bắt đầu ~3600s); playlist
+  -- builder chèn EXT-X-DISCONTINUITY khi session_start đổi giữa hai đoạn kề —
+  -- khoảng-trống-wall-clock nhỏ không phát hiện được PTS reset, cột này thì có.
+  session_start   BIGINT      NOT NULL DEFAULT 0,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_recording_segments_camera_time
@@ -89,3 +94,8 @@ CREATE INDEX IF NOT EXISTS idx_recording_segments_camera_motion_time
   ON recording_segments(camera_id, has_motion, start_at);
 CREATE INDEX IF NOT EXISTS idx_recording_segments_motion_event
   ON recording_segments(motion_event_id);
+-- path là duy nhất cho mỗi file segment. Unique index này cho phép UPSERT theo
+-- path: chèn hàng 'recording' lúc mở đoạn rồi finalize thành 'complete' lúc
+-- đóng (live-edge của timeline), hoặc chèn thẳng 'complete' cho chế độ motion.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_recording_segments_path
+  ON recording_segments(path);

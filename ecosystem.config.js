@@ -37,7 +37,19 @@ module.exports = {
       cwd: './',
       autorestart: true,
       watch: false,
-      env: loadLocalEnv(),
+      // GSETTINGS_BACKEND=memory: TẮT backend GSettings "dconf".
+      //
+      // GStreamer nạp module GIO libdconfsettings, module này đẻ một thread
+      // "dconf worker" mở một GMainContext nói chuyện với D-Bus PHIÊN
+      // (DBUS_SESSION_BUS_ADDRESS mà pm2 thừa kế từ lúc đăng nhập). Khi bus
+      // phiên đó trục trặc/biến mất (đăng xuất, xrdp restart, phiên VS Code
+      // đổi...), worker phát tín hiệu chết -> raise(SIGTERM) NGAY TRONG tiến
+      // trình (bt: dconf worker -> g_main_context_dispatch -> g_signal_emit ->
+      // raise). Process tự tắt sạch (exit 0) và pm2 restart -> lặp vô hạn ~10s.
+      // Engine không cần GSettings, nên ép backend "memory" để không còn worker
+      // dconf và không phụ thuộc D-Bus phiên. (Chẩn đoán 2026-07-27 bằng gdb
+      // catch tgkill: xác nhận kẻ gửi SIGTERM là chính process, từ dconf.)
+      env: { ...loadLocalEnv(), GSETTINGS_BACKEND: 'memory' },
       // --- Resilience ---
       // A C++ uncaught exception (e.g. RTSP server port already in use on a
       // fast restart, model file missing) aborts the whole process. Without

@@ -27,6 +27,7 @@
 #include "pipeline/AiCameraPipeline.hpp"
 #include "pipeline/AiJob.hpp"
 #include "postprocess.h"
+#include "service/CameraSourceRegistry.hpp"
 
 class AiManager {
 public:
@@ -35,6 +36,15 @@ public:
 
     AiManager(const AiManager&) = delete;
     AiManager& operator=(const AiManager&) = delete;
+
+    // Sổ nguồn RTP dùng chung (của GStreamerService). Cho phép pipeline AI BÁM
+    // vào kết nối ghi hình / xem live sẵn có thay vì tự mở kết nối RTSP thứ hai.
+    // Gọi một lần lúc dựng component (xem AiComponent). Không đặt (nullptr) thì
+    // AI tự mở rtspsrc như cũ — hành vi cũ được giữ nguyên làm fallback.
+    void setSourceRegistry(std::shared_ptr<stream::CameraSourceRegistry> sources) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_sources = std::move(sources);
+    }
 
     // Initialises postprocessing and the result publisher. Idempotent.
     // Returns false (AI stays disabled) if the publisher socket fails.
@@ -224,8 +234,21 @@ private:
         jobPtrs.reserve(group.jobs.size());
         for (auto& job : group.jobs) jobPtrs.push_back(job.get());
 
+        // Lookup nguồn chung theo camera, gọi ở MỖI lần (dựng lại) pipeline nên
+        // reconnect tự bám lại nguồn hiện tại (nguồn chung mới sau restart, hoặc
+        // rtspsrc nếu recording tắt). Bắt registry theo giá trị để lambda sống
+        // độc lập với vòng đời group.
+        auto sources = m_sources;
+        const std::string camId = group.camera.id;
+        std::function<std::shared_ptr<stream::FrameSource>()> lookup;
+        if (sources) {
+            lookup = [sources, camId]() -> std::shared_ptr<stream::FrameSource> {
+                return sources->lookup(camId);
+            };
+        }
+
         group.pipeline.reset(new AiCameraPipeline(
-            group.camera, kInferW, kInferH, kPadColor, jobPtrs));
+            group.camera, kInferW, kInferH, kPadColor, jobPtrs, std::move(lookup)));
 
         for (auto& job : group.jobs) job->start();
         group.pipeline->start();
@@ -259,6 +282,9 @@ private:
     bool m_started = false;
     std::unique_ptr<ResultPublisher> m_publisher;
     std::map<std::string, CameraGroup> m_groups;
+    // Sổ nguồn RTP dùng chung để pipeline AI bám kết nối sẵn có (xem
+    // setSourceRegistry). nullptr => AI tự mở rtspsrc như cũ.
+    std::shared_ptr<stream::CameraSourceRegistry> m_sources;
 
     mutable std::mutex m_cacheMutex;
     std::unordered_map<std::string, CachedJpeg> m_latestJpegs;

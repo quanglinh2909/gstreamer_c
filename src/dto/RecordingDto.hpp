@@ -21,6 +21,17 @@ class RecordingSegmentDto : public oatpp::DTO {
     DTO_FIELD(Boolean, hasMotion);
     DTO_FIELD(String, motionEventId);
     DTO_FIELD(String, status);
+    // Mốc phiên ghi (epoch ms): đổi giá trị giữa hai đoạn kề = PTS reset =
+    // playlist phải chèn EXT-X-DISCONTINUITY.
+    DTO_FIELD(Int64, sessionStartMs);
+};
+
+// Hàng 'recording' mồ côi lúc khởi động (chỉ id + path để probe file).
+class OrphanSegmentDto : public oatpp::DTO {
+    DTO_INIT(OrphanSegmentDto, DTO)
+
+    DTO_FIELD(String, id);
+    DTO_FIELD(String, path);
 };
 
 class RecordingSeekDto : public oatpp::DTO {

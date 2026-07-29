@@ -15,7 +15,9 @@
 #include "oatpp/core/macro/component.hpp"
 #include "oatpp/web/protocol/http/Http.hpp"
 
+#include <chrono>
 #include <string>
+#include <thread>
 
 class CameraService {
 public:
@@ -61,7 +63,12 @@ public:
             camera->id ? std::string(camera->id->c_str()) : std::string();
 
         if (!cameraId.empty()) {
-            auto cached = m_ai->getLatestJpeg(cameraId, /*maxAgeMs=*/2000);
+            // 5000ms đi đôi với kSnapshotWarmMs=4000 bên AiJob: encode giữ-ấm
+            // là JPEG PHẦN MỀM 1080p ~50ms CPU mỗi lần, nhân với số camera
+            // nhàn rỗi từng chiếm ~2/3 nhân CPU khi warm mỗi 1s. Cửa sổ tươi
+            // phải RỘNG hơn nhịp warm để request rơi ngay trước lần warm kế
+            // vẫn trúng cache; ảnh cũ nhất ~4s là chấp nhận được cho thumbnail.
+            auto cached = m_ai->getLatestJpeg(cameraId, /*maxAgeMs=*/5000);
             if (!cached.empty()) {
                 return std::string(cached.begin(), cached.end());
             }
@@ -135,7 +142,22 @@ public:
 
     void startAllStreamsFromDatabase() {
         auto cameras = getAllCamerasForStartup();
+        // GIÃN CÁCH khởi động. Trước đây bật CẢ 16 camera trong một vòng lặp
+        // liền nhau: 16 kết nối RTSP + 16 pipeline ghi hình + giải mã dồn LÊN
+        // CÙNG MỘT LÚC -> đỉnh I/O ghi đĩa + CPU + DÒNG ĐIỆN dồn cục ngay lúc
+        // boot. Trên board này (một ổ NVMe chứa cả OS lẫn recording, link PCIe
+        // yếu, nguồn sát ngưỡng) đỉnh đó từng làm NVMe rớt bus -> ext4 lỗi I/O
+        // -> remount read-only -> "Input/output error" mọi thứ -> phải rút
+        // nguồn (378 unsafe shutdown trong SMART). Bật từng camera cách nhau
+        // kStaggerMs để trải đỉnh ra vài giây, mỗi camera kịp connect+ghi ổn
+        // định rồi mới tới camera sau. Chạy trong thread khởi động nền nên
+        // sleep ở đây không chặn HTTP server.
+        bool first = true;
         for (const auto& camera : *cameras) {
+            if (!first) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(kStaggerMs));
+            }
+            first = false;
             m_streams->startCamera(camera);
         }
     }
@@ -207,6 +229,10 @@ public:
     }
 
 private:
+    // Khoảng giãn cách giữa hai camera lúc bật hàng loạt (chống đỉnh I/O+điện
+    // lúc boot làm rớt NVMe). 16 camera × 500ms ≈ trải đều trong ~8s.
+    static constexpr int kStaggerMs = 500;
+
     OATPP_COMPONENT(std::shared_ptr<CameraDb>, m_db);
     OATPP_COMPONENT(std::shared_ptr<GStreamerService>, m_streams);
     OATPP_COMPONENT(std::shared_ptr<AiManager>, m_ai);

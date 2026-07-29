@@ -8,16 +8,20 @@
 #include "controller/AiJobController.hpp"
 #include "controller/ImageInferenceController.hpp"
 #include "controller/WebSocketController.hpp"
+#include "controller/WebRtcController.hpp"
+#include "controller/PlaybackController.hpp"
 #include "AiComponent.hpp"
 
 #include "oatpp-swagger/Controller.hpp"
 #include "oatpp/network/Server.hpp"
 
 #include <gst/gst.h>
+#include <gst/pbutils/pbutils.h>
 
 #include <atomic>
 #include <csignal>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -31,6 +35,36 @@ std::atomic<bool> g_shutdown{false};
 void onSignal(int) {
     g_shutdown.store(true);
     if (g_server) g_server->stop();
+}
+
+// Đo thời lượng THẬT (ms) của một file media bằng GstDiscoverer; -1 nếu không
+// đọc được. Dùng để finalize segment mồ côi: file bị cắt giữa chừng khi tắt đột
+// ngột thường ngắn hơn nhiều so với ước lượng — ghi ước lượng vào DB tạo "đuôi
+// ma" làm trình phát chờ dữ liệu không tồn tại (xoay vô hạn).
+int32_t probeMediaDurationMs(const std::string& absPath) {
+    GError* err = nullptr;
+    GstDiscoverer* discoverer = gst_discoverer_new(10 * GST_SECOND, &err);
+    if (!discoverer) {
+        if (err) g_error_free(err);
+        return -1;
+    }
+    int32_t ms = -1;
+    if (gchar* uri = g_filename_to_uri(absPath.c_str(), nullptr, nullptr)) {
+        GstDiscovererInfo* info = gst_discoverer_discover_uri(discoverer, uri, &err);
+        g_free(uri);
+        if (info) {
+            if (gst_discoverer_info_get_result(info) == GST_DISCOVERER_OK) {
+                const GstClockTime duration = gst_discoverer_info_get_duration(info);
+                if (GST_CLOCK_TIME_IS_VALID(duration) && duration > 0) {
+                    ms = static_cast<int32_t>(duration / GST_MSECOND);
+                }
+            }
+            g_object_unref(info);
+        }
+    }
+    if (err) g_error_free(err);
+    g_object_unref(discoverer);
+    return ms;
 }
 
 std::string resolveConfigPath(int argc, char* argv[]) {
@@ -82,6 +116,23 @@ bool runDbStartupStep(const char* what, Fn&& step) {
 }
 
 void run(const std::string& configPath) {
+    // Zero-copy cho transcode H265->H264 (nhánh xem live của trình duyệt không
+    // nhận HEVC). Mặc định mpph264enc ÉP căn vstride bội 16 (1080 -> 1088);
+    // decoder lại nhả đúng 1080 nên strides KHÔNG khớp, encoder rơi vào nhánh
+    // "converting to aligned NV12" và CHÉP TỪNG KHUNG bằng CPU
+    // (gst_video_frame_copy). Đo tận nơi: 1080p ~5,5MB/khung x 25 khung/s đọc
+    // từ vùng nhớ không cache = 21% trong tổng 32% CPU của một transcode.
+    //
+    // RKVENC của RK3588 KHÔNG cần vstride căn 16 — plugin có sẵn công tắc bỏ
+    // ép căn, và khi bỏ thì encoder dùng thẳng bộ đệm dmabuf của decoder
+    // ("using imported buffer" cho 545/545 khung, kiểm bằng GST_DEBUG=mppenc:6).
+    // Đo: 32% -> 11% CPU mỗi camera, cùng ~25 khung/s, ảnh ra kiểm tra bằng mắt
+    // vẫn đúng (không méo/không xanh).
+    //
+    // Đặt ở đây thay vì trong ecosystem/.env để chạy kiểu nào cũng có hiệu lực;
+    // 0 = không ghi đè nếu người dùng đã tự đặt biến này.
+    setenv("GST_MPP_ENC_UNALIGNED_VSTRIDE", "1", 0);
+
     gst_init(nullptr, nullptr);
 
     ConfigComponent   configComponents(configPath);
@@ -111,6 +162,12 @@ void run(const std::string& configPath) {
     auto webSocketController = std::make_shared<WebSocketController>();
     router->addController(webSocketController);
 
+    auto webRtcController = std::make_shared<WebRtcController>();
+    router->addController(webRtcController);
+
+    auto playbackController = std::make_shared<PlaybackController>();
+    router->addController(playbackController);
+
     // Load camera streams and AI jobs from the database in the background so a
     // slow or temporarily-unavailable PostgreSQL does not block the HTTP server
     // from starting. runDbStartupStep retries until the database is reachable,
@@ -118,6 +175,41 @@ void run(const std::string& configPath) {
     // GStreamerService and AiManager are mutex-guarded, so loading concurrently
     // with live API requests is safe.
     std::thread dbStartupThread([] {
+        // Đóng các segment còn 'recording' mồ côi từ lần chạy trước (tắt đột
+        // ngột giữa lúc ghi) TRƯỚC khi khởi động stream — nếu không, finalizer
+        // sẽ đóng nhầm luôn đoạn mà camera vừa mới mở khi bắt đầu ghi lại.
+        // Thời lượng lấy bằng cách ĐO FILE THẬT, không ước lượng (xem
+        // probeMediaDurationMs); file thiếu/rỗng/hỏng thì xoá hàng.
+        runDbStartupStep("finalize orphan recording segments", [] {
+            OATPP_COMPONENT(std::shared_ptr<CameraDb>, cameraDb);
+            auto res = cameraDb->listOrphanRecordingSegments();
+            auto rows = res
+                ? res->fetch<oatpp::Vector<oatpp::Object<OrphanSegmentDto>>>()
+                : nullptr;
+            if (!rows) return;
+            for (const auto& row : *rows) {
+                if (!row || !row->id || !row->path) continue;
+                const std::string id = row->id->c_str();
+                const std::string path = row->path->c_str();
+                std::error_code fsError;
+                const auto abs = std::filesystem::absolute(path, fsError);
+                const bool exists = !fsError &&
+                    std::filesystem::exists(abs, fsError) &&
+                    std::filesystem::file_size(abs, fsError) > 0;
+                const int32_t realMs =
+                    exists ? probeMediaDurationMs(abs.string()) : -1;
+                if (realMs > 0) {
+                    cameraDb->finalizeRecordingSegmentProbed(id.c_str(), realMs);
+                    std::cout << "[recording] orphan finalized (" << realMs
+                              << "ms do thuc): " << path << std::endl;
+                } else {
+                    cameraDb->deleteRecordingSegmentById(id.c_str());
+                    std::cout << "[recording] orphan bo (file thieu/hong): "
+                              << path << std::endl;
+                }
+            }
+        });
+
         runDbStartupStep("start camera streams from database", [] {
             CameraService startupCameraService;
             startupCameraService.startAllStreamsFromDatabase();
@@ -133,6 +225,8 @@ void run(const std::string& configPath) {
     auto docEndpoints = cameraController->getEndpoints();
     docEndpoints.append(aiJobController->getEndpoints());
     docEndpoints.append(imageInferenceController->getEndpoints());
+    docEndpoints.append(webRtcController->getEndpoints());
+    docEndpoints.append(playbackController->getEndpoints());
     auto swaggerController = oatpp::swagger::Controller::createShared(docEndpoints);
     router->addController(swaggerController);
 

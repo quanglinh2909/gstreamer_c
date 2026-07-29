@@ -3,6 +3,7 @@
 
 #include "dto/CameraDto.hpp"
 #include "dto/StreamStatusDto.hpp"
+#include "service/CameraSourceRegistry.hpp"
 #include "service/CameraStreamSession.hpp"
 #include "service/StreamTypes.hpp"
 
@@ -13,6 +14,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <functional>
 #include <thread>
 #include <unordered_map>
 #include <utility>
@@ -23,11 +25,20 @@ public:
     explicit GStreamerService(stream::GStreamerConfig config,
                               stream::StreamStatusSink statusSink = {},
                               recording::RecordingSegmentSink segmentSink = {},
-                              recording::MotionEventSink motionSink = {})
+                              recording::MotionEventSink motionSink = {},
+                              std::shared_ptr<stream::CameraSourceRegistry> sources = {})
         : m_config(std::move(config)),
           m_statusSink(std::move(statusSink)),
           m_segmentSink(std::move(segmentSink)),
-          m_motionSink(std::move(motionSink)) {}
+          m_motionSink(std::move(motionSink)),
+          m_sourceRegistry(sources ? std::move(sources)
+                                    : std::make_shared<stream::CameraSourceRegistry>()) {}
+
+    // Registry nguồn dùng chung — WebRtcService cần cùng instance để xem live và
+    // ghi hình chia sẻ một kết nối camera. Tạo sẵn nếu component không tiêm vào.
+    std::shared_ptr<stream::CameraSourceRegistry> sourceRegistry() const {
+        return m_sourceRegistry;
+    }
 
     ~GStreamerService() {
         cleanup();
@@ -111,8 +122,24 @@ public:
         }
     }
 
+    // Báo cho bên ngoài biết luồng của một camera vừa bị dựng lại / dừng hẳn,
+    // để họ dọn thứ đang bám vào luồng cũ (hiện tại: các phiên xem WebRTC).
+    //
+    // Dùng callback thay vì gọi thẳng WebRtcService: vòng đời hai bên độc lập
+    // (stream sống theo camera, phiên xem sống theo tab trình duyệt) và
+    // GStreamerService không nên biết gì về WebRTC.
+    using StreamResetSink = std::function<void(const std::string& cameraId)>;
+
+    void setStreamResetSink(StreamResetSink sink) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_streamResetSink = std::move(sink);
+    }
+
     void startCamera(const stream::CameraRuntimeConfig& camera) {
         ensureStarted();
+        // Gọi TRƯỚC khi dựng lại: mount cũ sắp biến mất, phiên đang bám vào nó
+        // phải chết ngay thay vì đợi watchdog phát hiện hết dữ liệu.
+        notifyStreamReset(camera.id);
 
         std::shared_ptr<CameraStreamSession> session;
         {
@@ -122,7 +149,8 @@ public:
             auto found = m_sessions.find(camera.id);
             if (found == m_sessions.end()) {
                 session = std::make_shared<CameraStreamSession>(
-                    m_config, camera, m_mounts, m_statusSink, m_segmentSink, m_motionSink);
+                    m_config, camera, m_mounts, m_statusSink, m_segmentSink, m_motionSink,
+                    m_sourceRegistry);
                 m_sessions[camera.id] = session;
             } else {
                 session = found->second;
@@ -138,6 +166,7 @@ public:
 
     void stopCamera(const oatpp::String& cameraId) {
         const auto id = toStdString(cameraId);
+        notifyStreamReset(id);
         std::shared_ptr<CameraStreamSession> session;
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -149,6 +178,7 @@ public:
 
     void cleanupCamera(const oatpp::String& cameraId) {
         const auto id = toStdString(cameraId);
+        notifyStreamReset(id);
         std::shared_ptr<CameraStreamSession> session;
         {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -316,10 +346,23 @@ private:
         return dto;
     }
 
+    // Gọi sink NGOÀI khoá: nó dọn phiên WebRTC (đưa pipeline về NULL, mất một
+    // lúc), giữ khoá suốt thời gian đó sẽ chặn mọi thao tác camera khác.
+    void notifyStreamReset(const std::string& cameraId) {
+        StreamResetSink sink;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            sink = m_streamResetSink;
+        }
+        if (sink) sink(cameraId);
+    }
+
     stream::GStreamerConfig m_config;
+    StreamResetSink m_streamResetSink;
     stream::StreamStatusSink m_statusSink;
     recording::RecordingSegmentSink m_segmentSink;
     recording::MotionEventSink m_motionSink;
+    std::shared_ptr<stream::CameraSourceRegistry> m_sourceRegistry;
     GstRTSPServer* m_server = nullptr;
     GstRTSPMountPoints* m_mounts = nullptr;
     GMainLoop* m_loop = nullptr;

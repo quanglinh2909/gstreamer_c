@@ -2,6 +2,7 @@
 #define test_gstreamer_CameraStreamSession_hpp
 
 #include "service/CameraRecordingSession.hpp"
+#include "service/CameraSourceRegistry.hpp"
 #include "service/StreamTypes.hpp"
 
 #include <gst/gst.h>
@@ -26,7 +27,8 @@ public:
                         GstRTSPMountPoints* mounts,
                         stream::StreamStatusSink statusSink = {},
                         recording::RecordingSegmentSink segmentSink = {},
-                        recording::MotionEventSink motionSink = {})
+                        recording::MotionEventSink motionSink = {},
+                        std::shared_ptr<stream::CameraSourceRegistry> sources = {})
         : m_config(std::move(config)),
           m_camera(std::move(camera)),
           m_mounts(GST_RTSP_MOUNT_POINTS(g_object_ref(mounts))),
@@ -34,7 +36,8 @@ public:
           m_motionMountPath(m_mountPath + "/motion"),
           m_statusSink(std::move(statusSink)),
           m_segmentSink(std::move(segmentSink)),
-          m_motionSink(std::move(motionSink))
+          m_motionSink(std::move(motionSink)),
+          m_sourceRegistry(std::move(sources))
     {
         if (m_camera.hardware.empty()) m_camera.hardware = m_config.defaultHardware;
         normalizeRecordingFlag(m_camera);
@@ -264,6 +267,19 @@ private:
             return;
         }
 
+        // Ghi hình ăn từ NGUỒN DÙNG CHUNG (cùng nguồn với xem live): camera chỉ
+        // bị kéo một lần dù vừa ghi vừa xem. Nguồn sống theo shared_ptr mà phiên
+        // ghi giữ; hết ghi + hết xem thì nguồn tự tắt.
+        const std::string codecStr =
+            (codec == stream::StreamCodec::H265) ? "h265" : "h264";
+        auto source = m_sourceRegistry
+            ? m_sourceRegistry->acquire(m_camera.id, m_camera.rtsp, codecStr, m_config)
+            : nullptr;
+        if (!source) {
+            markRecordingError("Khong lay duoc nguon RTP dung chung cho ghi hinh");
+            return;
+        }
+
         auto weak = weak_from_this();
         auto recordingErrorSink = [weak](const recording::RecordingErrorSnapshot& error) {
             if (auto self = weak.lock()) {
@@ -272,7 +288,8 @@ private:
         };
 
         auto session = std::make_shared<CameraRecordingSession>(
-            m_config, m_camera, codec, m_segmentSink, m_motionSink, recordingErrorSink);
+            m_config, m_camera, codec, m_segmentSink, m_motionSink, recordingErrorSink,
+            std::move(source));
         if (!session->start()) {
             return;
         }
@@ -620,7 +637,24 @@ private:
         }
         if (probe.codec == stream::StreamCodec::H264 ||
             probe.codec == stream::StreamCodec::H265) {
-            return;  // camera still reachable — nothing to do
+            // Camera còn sống, nhưng CÓ THỂ đã đổi codec (người dùng vào web
+            // UI của camera đổi H264 <-> H265). Đường ống mount được dựng với
+            // caps cố định theo codec lúc khởi động, nên codec mới làm nó câm
+            // lặng: không lỗi, không EOS, chỉ là không còn dữ liệu nào hợp lệ
+            // đi qua. Không so ở đây thì stream đứng ở "online" vĩnh viễn với
+            // một mount chết, và người xem chỉ thấy hình đứng.
+            stream::StreamCodec current;
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                current = m_codec;
+            }
+            if (probe.codec != current) {
+                markTransientError(std::string("Codec doi tu ") +
+                                   stream::toString(current) + " sang " +
+                                   stream::toString(probe.codec) +
+                                   ", dung lai luong");
+            }
+            return;
         }
         markTransientError(probe.error.empty() ? "Camera health check failed"
                                                : probe.error);
@@ -658,6 +692,7 @@ private:
     stream::StreamStatusSink m_statusSink;
     recording::RecordingSegmentSink m_segmentSink;
     recording::MotionEventSink m_motionSink;
+    std::shared_ptr<stream::CameraSourceRegistry> m_sourceRegistry;
     std::shared_ptr<CameraRecordingSession> m_recording;
 
     mutable std::mutex m_mutex;

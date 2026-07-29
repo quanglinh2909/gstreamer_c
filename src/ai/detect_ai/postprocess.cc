@@ -241,6 +241,112 @@ void fill_box_result(const std::vector<float>& boxes,
     od_results->count = count;
 }
 
+// ---- int8 (quantized) decode ------------------------------------------------
+// Đường nóng CPU đo được: quét float 8400 anchor × num_classes + dequant TOÀN
+// BỘ output (want_float=1 trong librknnrt) tốn ~13ms CPU mỗi inference. Đường
+// int8 này (theo đúng mẫu rknn_model_zoo của Rockchip):
+//   * so sánh ngưỡng NGAY trên int8 (ngưỡng được lượng-tử-hoá 1 lần/branch);
+//   * dùng nhánh score-sum (1×h×w) loại phần lớn anchor bằng MỘT phép so sánh
+//     thay vì quét đủ num_classes;
+//   * chỉ dequant sang float cho số ít anchor vượt ngưỡng (box DFL + score).
+
+inline float deqnt_affine_to_f32(int8_t q, int zp, float scale) {
+    return (static_cast<float>(q) - static_cast<float>(zp)) * scale;
+}
+
+inline int8_t qnt_f32_to_affine(float f, int zp, float scale) {
+    float dst = f / scale + static_cast<float>(zp);
+    if (dst > 127.0f) dst = 127.0f;
+    if (dst < -128.0f) dst = -128.0f;
+    return static_cast<int8_t>(dst);
+}
+
+int decode_detect_branch_i8(const rknn_output* outputs,
+                            rknn_app_context_t* app_ctx,
+                            int box_idx,
+                            int score_idx,
+                            int score_sum_idx,
+                            float threshold,
+                            std::vector<float>& boxes,
+                            std::vector<float>& scores,
+                            std::vector<int>& class_ids) {
+    const int8_t* box_tensor = static_cast<const int8_t*>(outputs[box_idx].buf);
+    const int8_t* score_tensor = static_cast<const int8_t*>(outputs[score_idx].buf);
+    const int8_t* sum_tensor =
+        score_sum_idx >= 0 ? static_cast<const int8_t*>(outputs[score_sum_idx].buf)
+                           : nullptr;
+
+    const rknn_tensor_attr& box_attr = app_ctx->output_attrs[box_idx];
+    const rknn_tensor_attr& score_attr = app_ctx->output_attrs[score_idx];
+    const int box_zp = box_attr.zp;
+    const float box_scale = box_attr.scale;
+    const int score_zp = score_attr.zp;
+    const float score_scale = score_attr.scale;
+    const int8_t score_thres_i8 = qnt_f32_to_affine(threshold, score_zp, score_scale);
+    int8_t sum_thres_i8 = 0;
+    if (sum_tensor) {
+        const rknn_tensor_attr& sum_attr = app_ctx->output_attrs[score_sum_idx];
+        sum_thres_i8 = qnt_f32_to_affine(threshold, sum_attr.zp, sum_attr.scale);
+    }
+
+    const int grid_h = get_nchw_h(box_attr);
+    const int grid_w = get_nchw_w(box_attr);
+    const int dfl_len = get_nchw_c(box_attr) / 4;
+    const int num_classes = get_nchw_c(score_attr);
+    const int grid_len = grid_h * grid_w;
+    const int stride = app_ctx->model_height / grid_h;
+    int valid = 0;
+
+    for (int offset = 0; offset < grid_len; ++offset) {
+        // Loại nhanh: tổng score mọi lớp còn dưới ngưỡng thì không lớp nào
+        // vượt được — bỏ anchor bằng một phép so sánh int8.
+        if (sum_tensor && sum_tensor[offset] < sum_thres_i8) {
+            continue;
+        }
+
+        int best_class = -1;
+        int8_t best_score = score_thres_i8;
+        const int8_t* col = score_tensor + offset;
+        for (int c = 0; c < num_classes; ++c) {
+            const int8_t s = col[c * grid_len];
+            if (s > best_score) {
+                best_score = s;
+                best_class = c;
+            }
+        }
+        if (best_class < 0) {
+            continue;
+        }
+
+        float raw_box[256];
+        if (dfl_len * 4 > 256) {
+            continue;
+        }
+        for (int k = 0; k < dfl_len * 4; ++k) {
+            raw_box[k] = deqnt_affine_to_f32(box_tensor[k * grid_len + offset],
+                                             box_zp, box_scale);
+        }
+
+        const int x = offset % grid_w;
+        const int y = offset / grid_w;
+        float box[4];
+        compute_dfl(raw_box, dfl_len, box);
+        const float x1 = (-box[0] + x + 0.5f) * stride;
+        const float y1 = (-box[1] + y + 0.5f) * stride;
+        const float x2 = (box[2] + x + 0.5f) * stride;
+        const float y2 = (box[3] + y + 0.5f) * stride;
+
+        boxes.push_back(x1);
+        boxes.push_back(y1);
+        boxes.push_back(x2 - x1);
+        boxes.push_back(y2 - y1);
+        scores.push_back(deqnt_affine_to_f32(best_score, score_zp, score_scale));
+        class_ids.push_back(best_class);
+        valid++;
+    }
+    return valid;
+}
+
 int decode_detect_branch(const rknn_output* outputs,
                          rknn_app_context_t* app_ctx,
                          int box_idx,
@@ -452,7 +558,16 @@ int post_process(rknn_app_context_t* app_ctx,
     for (int i = 0; i < 3; ++i) {
         const int box_idx = i * output_per_branch;
         const int score_idx = box_idx + 1;
-        valid_count += decode_detect_branch(out, app_ctx, box_idx, score_idx, -1, conf_threshold, boxes, scores, class_ids);
+        // Nhánh score-sum (1×h×w, chỉ có ở export 9-output) cho phép loại
+        // anchor bằng một phép so sánh duy nhất.
+        const int sum_idx = output_per_branch >= 3 ? box_idx + 2 : -1;
+        if (app_ctx->is_quant && !out[box_idx].want_float) {
+            // Output còn nguyên int8 (caller đặt want_float=0): decode trên
+            // int8, không tốn dequant toàn bộ tensor.
+            valid_count += decode_detect_branch_i8(out, app_ctx, box_idx, score_idx, sum_idx, conf_threshold, boxes, scores, class_ids);
+        } else {
+            valid_count += decode_detect_branch(out, app_ctx, box_idx, score_idx, -1, conf_threshold, boxes, scores, class_ids);
+        }
     }
 
     if (valid_count <= 0) {

@@ -8,6 +8,8 @@
 // The detector, stage-2 model and transform are all resolved from AiCatalog —
 // AiJob itself has no per-model-type or per-transform branching.
 
+#include <pthread.h>
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -21,6 +23,7 @@
 
 #include "AiCatalog.hpp"
 #include "AiResult.hpp"
+#include "MaskBits.hpp"
 #include "Config.hpp"
 #include "FrameQueue.hpp"
 #include "FrameTypes.hpp"
@@ -82,8 +85,17 @@ public:
 
     void start() {
         if (m_running.exchange(true)) return;
-        m_thread = std::thread([this] { run(); });
-        m_pubThread = std::thread([this] { publishLoop(); });
+        // Đặt tên thread để top -H / gdb đọc được ngay thread nào của AI —
+        // không tên thì chúng hiện "test_gstreamer" chung chung, rất khó chẩn
+        // đoán CPU (giới hạn 15 ký tự của pthread_setname_np).
+        m_thread = std::thread([this] {
+            pthread_setname_np(pthread_self(), "ai_worker");
+            run();
+        });
+        m_pubThread = std::thread([this] {
+            pthread_setname_np(pthread_self(), "ai_pub");
+            publishLoop();
+        });
     }
 
     void stop() {
@@ -100,6 +112,26 @@ public:
 
     // Called from the camera pipeline thread; never blocks (drop-old queue).
     void submit(FramePtr frame) { m_queue.push(std::move(frame)); }
+
+    // Cửa nhịp maxFps, HỎI TRƯỚC khi camera pipeline bỏ công tiền-xử-lý khung.
+    //
+    // Trước đây cửa này nằm trong run() — tức là khung đã bị letterbox (memset
+    // 1,2MB + blit RGA + memcpy 1,2MB về vector) RỒI mới bị vứt vì quá nhịp.
+    // Camera chạy 15 khung/s mà job chỉ dùng 5 khung/s nghĩa là 2/3 công tiền-xử-
+    // lý là công đổ đi. Hỏi ở đây rồi mới dựng Frame cho đúng những job đang tới
+    // hạn. (Đúng ý `interval` của nvinfer bên DeepStream: bỏ khung TRƯỚC khâu
+    // tiền-xử-lý, không phải sau.)
+    //
+    // wantsFrame KHÔNG đổi trạng thái — pipeline có thể hỏi nhiều job rồi mới
+    // quyết định; chỉ job nào thật sự nhận được khung mới gọi noteAccepted.
+    // Cả hai chỉ chạy trên thread appsink của camera pipeline (một thread cho
+    // mỗi camera, và mỗi job thuộc đúng một pipeline) nên không cần khoá.
+    bool wantsFrame(uint64_t nowMs) const {
+        if (m_cfg.maxFps <= 0) return true;  // 0 = chạy nhanh nhất có thể
+        const uint64_t minGap = 1000u / static_cast<uint64_t>(m_cfg.maxFps);
+        return nowMs - m_lastAcceptMs >= minGap;
+    }
+    void noteAccepted(uint64_t nowMs) { m_lastAcceptMs = nowMs; }
 
     // Keep the debug stream alive for ttlMs more. Called repeatedly (every
     // couple of seconds) by the Python MJPEG viewer over HTTP while a client
@@ -127,12 +159,8 @@ private:
         unsigned long lastDropped = 0;
         while (m_queue.pop(frame)) {
             if (!frame) continue;
-            if (m_cfg.maxFps > 0) {
-                const uint64_t now = nowMs();
-                const uint64_t minGap = 1000u / static_cast<uint64_t>(m_cfg.maxFps);
-                if (now - m_lastProcessMs < minGap) continue;  // drop to cap fps
-                m_lastProcessMs = now;
-            }
+            // Nhịp maxFps đã được lọc TRƯỚC letterbox ở AiCameraPipeline (xem
+            // wantsFrame) — mọi khung tới đây đều là khung đã tới hạn xử lý.
             process(frame);
 
             // Report how many frames this job actually processes per second,
@@ -204,6 +232,13 @@ private:
                 det.keypoints.push_back(d.keypoints[k].score);
             }
 
+            // Mask phân vùng: postprocess đã dựng sẵn một ảnh nhãn cho CẢ
+            // KHUNG ở không gian model (mỗi pixel = cls_id+1, 0 = nền). Cắt
+            // đúng phần trong bbox rồi hạ mẫu về lưới 32×32 bit.
+            if (results.seg_valid && results.seg_width > 0 && results.seg_height > 0) {
+                fillMaskBits(results, d, det);
+            }
+
             if (m_model2) runStage2(*f, det);
 
             res.detections.push_back(std::move(det));
@@ -216,8 +251,23 @@ private:
         // arming auto-expires so it costs nothing once the viewer leaves.
         const uint64_t now = nowMs();
         const bool hasDet = !res.detections.empty();
-        bool encode = hasDet;
-        if (!hasDet && now < m_debugUntilMs.load(std::memory_order_relaxed)) {
+        // Encode ảnh JPEG đầy khi CÓ phát hiện — nhưng GIỚI HẠN TẦN SUẤT. JPEG
+        // ở đây là encode PHẦN MỀM 1080p (libjpeg-turbo; mppjpegenc treo board
+        // — xem JpegEncoder), tốn ~một chu kỳ khung CPU mỗi lần. Người đứng yên
+        // trong khung làm MỌI khung (tới maxFps, vd 5fps) có phát hiện -> encode
+        // 5 ảnh gần như giống hệt mỗi giây, phí CPU (đo tận nơi: một luồng
+        // libjpeg ~8-10% cho mỗi camera có người). METADATA (bbox) VẪN gửi mỗi
+        // khung cho tracker/overlay; chỉ ẢNH bị hạ xuống ~kDetJpegMinGapMs. Sự
+        // kiện phía Python đã debounce theo tracker-id và có fallback "ảnh đầy
+        // MỚI NHẤT của camera" (process_ai_service) nên không mất ảnh sự kiện dù
+        // sự kiện rơi đúng khung bị bỏ encode.
+        bool encode = false;
+        if (hasDet) {
+            if (now - m_lastDetJpegMs >= kDetJpegMinGapMs) {
+                m_lastDetJpegMs = now;
+                encode = true;
+            }
+        } else if (now < m_debugUntilMs.load(std::memory_order_relaxed)) {
             if (now - m_lastDebugMs >= kDebugMinGapMs) {
                 m_lastDebugMs = now;
                 encode = true;
@@ -368,7 +418,9 @@ private:
     BoundedQueue<FramePtr> m_queue{1};
     std::thread m_thread;
     std::atomic<bool> m_running{false};
-    uint64_t m_lastProcessMs = 0;
+    // Lần gần nhất job này NHẬN một khung (cửa maxFps, xem wantsFrame). Chỉ
+    // thread appsink của camera pipeline đọc/ghi.
+    uint64_t m_lastAcceptMs = 0;
 
     // Publish lane: encode + serialize + socket send, decoupled from detect.
     // Capacity 8 is a stall backstop (SO_SNDTIMEO lets a dead consumer block
@@ -385,12 +437,20 @@ private:
     uint64_t m_lastDebugMs = 0;                       // worker-thread only
     static constexpr uint64_t kDebugMinGapMs = 200;   // ~5 fps debug cap
 
+    // Giới hạn tần suất encode JPEG đầy khi CÓ phát hiện (xem process()). Encode
+    // phần mềm 1080p tốn CPU; ~2.5fps là đủ cho ảnh sự kiện (Python có fallback
+    // ảnh mới nhất) trong khi metadata vẫn ra mỗi khung. Worker-thread only.
+    uint64_t m_lastDetJpegMs = 0;
+    static constexpr uint64_t kDetJpegMinGapMs = 400;  // ~2.5 fps ảnh phát hiện
+
     // Snapshot cache keepalive (see process()). Must stay comfortably under
-    // the freshness window CameraService::getSnapshot asks for (2000ms), or
+    // the freshness window CameraService::getSnapshot asks for (5000ms), or
     // requests landing just before a refresh would still miss the cache and
-    // pay the slow RTSP path.
+    // pay the slow RTSP path. 4000ms chứ không phải 1000ms: encode là JPEG
+    // phần mềm 1080p ~50ms CPU — warm mỗi giây × 14 camera nhàn rỗi từng đốt
+    // ~2/3 nhân CPU chỉ để giữ snapshot; 4s giảm 4 lần chi phí đó.
     uint64_t m_lastEncodeMs = 0;                          // worker-thread only
-    static constexpr uint64_t kSnapshotWarmMs = 1000;
+    static constexpr uint64_t kSnapshotWarmMs = 4000;
 };
 
 #endif  // AI_ENGINE_AI_JOB_HPP

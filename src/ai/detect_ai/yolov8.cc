@@ -226,12 +226,15 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
         return -1;
     }
 
-    // Get Output
+    // Get Output. Model int8: giữ nguyên int8 (want_float=0) — post_process
+    // decode thẳng trên int8 với ngưỡng lượng-tử-hoá, khỏi bắt librknnrt
+    // dequant ~1.2 triệu giá trị sang float mỗi inference (đo được ~4ms CPU
+    // outputs_get + ~9ms CPU post mỗi lần trước khi đổi).
     memset(outputs.data(), 0, outputs.size() * sizeof(rknn_output));
     for (int i = 0; i < app_ctx->io_num.n_output; i++)
     {
         outputs[i].index = i;
-        outputs[i].want_float = 1;
+        outputs[i].want_float = app_ctx->is_quant ? 0 : 1;
     }
     ret = rknn_outputs_get(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs.data(), NULL);
     if (ret < 0)

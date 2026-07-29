@@ -5,6 +5,8 @@
 #include "db/CameraDb.hpp"
 #include "service/GStreamerService.hpp"
 #include "service/StreamTypes.hpp"
+#include "service/PlaybackService.hpp"
+#include "service/WebRtcService.hpp"
 #include "ws/CameraStateSocket.hpp"
 
 #include "oatpp/core/macro/component.hpp"
@@ -55,25 +57,39 @@ public:
             [cameraDb](const recording::RecordingSegmentSnapshot& segment) {
                 if (!cameraDb || segment.cameraId.empty() || segment.path.empty()) return;
                 try {
-                    auto res = cameraDb->insertRecordingSegment(
-                        segment.cameraId.c_str(),
-                        segment.path.c_str(),
-                        segment.startAt.c_str(),
-                        segment.endAt.c_str(),
-                        segment.durationMs,
-                        segment.codec.c_str(),
-                        segment.container.c_str(),
-                        segment.recordingMode.c_str(),
-                        segment.hasMotion);
+                    // status="recording": đoạn vừa MỞ (live-edge) -> chèn hàng
+                    // tạm; durationMs mang segmentSeconds để DB tính end ước
+                    // lượng. status="complete": đoạn đã ĐÓNG -> UPSERT finalize.
+                    auto res = (segment.status == "recording")
+                        ? cameraDb->insertRecordingSegmentOpen(
+                              segment.cameraId.c_str(),
+                              segment.path.c_str(),
+                              segment.startAt.c_str(),
+                              segment.durationMs,
+                              segment.codec.c_str(),
+                              segment.container.c_str(),
+                              segment.recordingMode.c_str(),
+                              segment.sessionStartMs)
+                        : cameraDb->insertRecordingSegment(
+                              segment.cameraId.c_str(),
+                              segment.path.c_str(),
+                              segment.startAt.c_str(),
+                              segment.endAt.c_str(),
+                              segment.durationMs,
+                              segment.codec.c_str(),
+                              segment.container.c_str(),
+                              segment.recordingMode.c_str(),
+                              segment.hasMotion,
+                              segment.sessionStartMs);
                     if (res && !res->isSuccess()) {
-                        std::cerr << "[recording] insert segment failed: "
+                        std::cerr << "[recording] upsert segment failed: "
                                   << res->getErrorMessage()->c_str() << std::endl;
                     }
                 } catch (const std::exception& error) {
-                    std::cerr << "[recording] insert segment threw: "
+                    std::cerr << "[recording] upsert segment threw: "
                               << error.what() << std::endl;
                 } catch (...) {
-                    std::cerr << "[recording] insert segment threw unknown error"
+                    std::cerr << "[recording] upsert segment threw unknown error"
                               << std::endl;
                 }
             },
@@ -119,8 +135,42 @@ private:
         out.defaultHardware = toStdString(in->defaultHardware, out.defaultHardware);
         if (in->recordingEnabled) out.recordingEnabled = *in->recordingEnabled;
         out.recordingDir = toStdString(in->recordingDir, out.recordingDir);
+        out.webrtcStunServer = toStdString(in->webrtcStunServer, out.webrtcStunServer);
+        out.webrtcTurnServer = toStdString(in->webrtcTurnServer, out.webrtcTurnServer);
         return out;
     }
+
+public:
+    // Sổ đăng ký phiên xem WebRTC. Tách khỏi GStreamerService vì vòng đời khác
+    // hẳn: session sống theo tab trình duyệt, còn stream sống theo camera.
+    OATPP_CREATE_COMPONENT(std::shared_ptr<webrtc::WebRtcService>, webRtcService)([] {
+        OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
+        OATPP_COMPONENT(std::shared_ptr<GStreamerService>, streams);
+        // Dùng CHUNG registry nguồn của GStreamerService: xem live và ghi hình
+        // qua đó chia sẻ đúng một kết nối RTSP tới mỗi camera.
+        auto service = std::make_shared<webrtc::WebRtcService>(
+            toStreamConfig(config), streams->sourceRegistry());
+
+        // Camera bị dựng lại (đổi setting, đổi codec, restart) thì mount RTSP
+        // cũ biến mất — mọi phiên xem đang bám vào nó phải chết ngay. Trình
+        // duyệt tự nối lại và phiên mới được dựng theo codec/độ phân giải mới.
+        // Không có mắc nối này thì người xem đứng hình cho tới khi tự bấm lại.
+        //
+        // weak_ptr: sink sống trong GStreamerService, giữ shared_ptr sẽ tạo
+        // vòng tham chiếu khiến cả hai service không bao giờ được giải phóng.
+        std::weak_ptr<webrtc::WebRtcService> weak = service;
+        streams->setStreamResetSink([weak](const std::string& cameraId) {
+            if (auto locked = weak.lock()) locked->destroySessionsForCamera(cameraId);
+        });
+        return service;
+    }());
+
+    // Sổ phiên XEM LẠI. Dựa trên WebRtcService (dùng chung watchdog và đường
+    // thương lượng SDP), chỉ thêm đường dây điều khiển seek/tốc độ/tạm dừng.
+    OATPP_CREATE_COMPONENT(std::shared_ptr<playback::PlaybackService>, playbackService)([] {
+        OATPP_COMPONENT(std::shared_ptr<webrtc::WebRtcService>, webrtc);
+        return std::make_shared<playback::PlaybackService>(webrtc);
+    }());
 };
 
 #endif

@@ -187,6 +187,18 @@ private:
             os << d.keypoints[k];
         }
         os << "],";
+        // Mask phân vùng: lưới bit MASK_GRID×MASK_GRID phủ đúng bbox, gửi
+        // dạng chuỗi HEX (128 byte -> 256 ký tự). Bỏ hẳn khoá khi không có
+        // để job không phải seg đỡ tốn.
+        if (!d.maskBits.empty()) {
+            static const char* kHex = "0123456789abcdef";
+            os << "\"maskGrid\":" << Detection::MASK_GRID << ',';
+            os << "\"mask\":\"";
+            for (unsigned char b : d.maskBits) {
+                os << kHex[b >> 4] << kHex[b & 0x0F];
+            }
+            os << "\",";
+        }
         os << "\"embedding\":[";
         for (size_t e = 0; e < d.embedding.size(); ++e) {
             if (e) os << ',';

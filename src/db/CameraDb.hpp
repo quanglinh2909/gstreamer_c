@@ -172,6 +172,7 @@ public:
 
     QUERY(listRecordingSegments,
           "SELECT CAST(id AS text) AS id, CAST(camera_id AS text) AS \"cameraId\", path, "
+          "session_start AS \"sessionStartMs\", "
           "CAST(start_at AS text) AS \"startAt\", CAST(end_at AS text) AS \"endAt\", "
           "duration_ms AS \"durationMs\", codec, container, recording_mode AS \"recordingMode\", "
           "has_motion AS \"hasMotion\", CAST(motion_event_id AS text) AS \"motionEventId\", status "
@@ -184,15 +185,22 @@ public:
           PARAM(oatpp::String, from),
           PARAM(oatpp::String, to))
 
+    // Finalize một đoạn thành 'complete'. UPSERT theo path: nếu đã có hàng
+    // 'recording' (chèn lúc mở đoạn, chế độ always) thì cập nhật số liệu thật;
+    // nếu chưa có (chế độ motion chỉ chèn khi xác nhận có chuyển động) thì chèn
+    // mới. Nhờ vậy một lối vào duy nhất phục vụ cả hai chế độ.
     QUERY(insertRecordingSegment,
           "INSERT INTO recording_segments("
           "  camera_id, path, start_at, end_at, duration_ms, codec, container, "
-          "  recording_mode, has_motion, status"
+          "  recording_mode, has_motion, status, session_start"
           ") VALUES ("
           "  CAST(:cameraId AS uuid), :path, CAST(:startAt AS timestamptz), "
           "  CAST(:endAt AS timestamptz), :durationMs, :codec, :container, "
-          "  :recordingMode, :hasMotion, 'complete'"
-          ");",
+          "  :recordingMode, :hasMotion, 'complete', :sessionStart"
+          ") ON CONFLICT (path) DO UPDATE SET "
+          "  end_at = EXCLUDED.end_at, duration_ms = EXCLUDED.duration_ms, "
+          "  has_motion = EXCLUDED.has_motion, status = 'complete', "
+          "  session_start = EXCLUDED.session_start;",
           PARAM(oatpp::String, cameraId),
           PARAM(oatpp::String, path),
           PARAM(oatpp::String, startAt),
@@ -201,7 +209,58 @@ public:
           PARAM(oatpp::String, codec),
           PARAM(oatpp::String, container),
           PARAM(oatpp::String, recordingMode),
-          PARAM(oatpp::Boolean, hasMotion))
+          PARAM(oatpp::Boolean, hasMotion),
+          PARAM(oatpp::Int64, sessionStart))
+
+    // Chèn hàng 'recording' lúc MỞ đoạn (chế độ always) để timeline thấy được
+    // đoạn đang ghi ngay, không phải đợi tới khi đóng đoạn. end_at/duration là
+    // ước lượng (start + segmentSeconds); finalize sẽ ghi đè số thật.
+    QUERY(insertRecordingSegmentOpen,
+          "INSERT INTO recording_segments("
+          "  camera_id, path, start_at, end_at, duration_ms, codec, container, "
+          "  recording_mode, has_motion, status, session_start"
+          ") VALUES ("
+          "  CAST(:cameraId AS uuid), :path, CAST(:startAt AS timestamptz), "
+          "  CAST(:startAt AS timestamptz) + make_interval(secs => :segmentSeconds), "
+          "  :segmentSeconds * 1000, :codec, :container, "
+          "  :recordingMode, false, 'recording', :sessionStart"
+          ") ON CONFLICT (path) DO NOTHING;",
+          PARAM(oatpp::String, cameraId),
+          PARAM(oatpp::String, path),
+          PARAM(oatpp::String, startAt),
+          PARAM(oatpp::Int32, segmentSeconds),
+          PARAM(oatpp::String, codec),
+          PARAM(oatpp::String, container),
+          PARAM(oatpp::String, recordingMode),
+          PARAM(oatpp::Int64, sessionStart))
+
+    // Xoá hàng segment theo path — dùng khi chế độ motion vứt một đoạn đã mở
+    // nhưng không có chuyển động (file cũng bị xoá).
+    QUERY(deleteRecordingSegmentByPath,
+          "DELETE FROM recording_segments WHERE path = :path;",
+          PARAM(oatpp::String, path))
+
+    // Lúc khởi động: mọi hàng còn 'recording' là mồ côi do lần chạy trước tắt
+    // đột ngột. KHÔNG được finalize bằng end_at ƯỚC LƯỢNG: file bị cắt giữa
+    // chừng thường ngắn hơn nhiều — phần "đuôi ma" (DB khai có, file không có)
+    // làm hls chờ dữ liệu không tồn tại = xoay vô hạn. App.cpp đo thời lượng
+    // THẬT của từng file (GstDiscoverer) rồi gọi finalizeRecordingSegmentProbed;
+    // file thiếu/rỗng/không đọc được thì xoá hàng.
+    QUERY(listOrphanRecordingSegments,
+          "SELECT CAST(id AS text) AS id, path "
+          "FROM recording_segments WHERE status = 'recording';")
+
+    QUERY(finalizeRecordingSegmentProbed,
+          "UPDATE recording_segments SET status = 'complete', "
+          "  duration_ms = :durationMs, "
+          "  end_at = start_at + make_interval(secs => :durationMs / 1000.0) "
+          "WHERE id = CAST(:id AS uuid);",
+          PARAM(oatpp::String, id),
+          PARAM(oatpp::Int32, durationMs))
+
+    QUERY(deleteRecordingSegmentById,
+          "DELETE FROM recording_segments WHERE id = CAST(:id AS uuid);",
+          PARAM(oatpp::String, id))
 
     QUERY(seekRecordingSegment,
           "SELECT CAST(id AS text) AS \"segmentId\", CAST(camera_id AS text) AS \"cameraId\", "

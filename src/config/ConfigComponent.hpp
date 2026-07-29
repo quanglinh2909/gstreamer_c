@@ -22,6 +22,8 @@
 //   GS_DEFAULT_HARDWARE   gstreamer.defaultHardware
 //   GS_RECORDING_ENABLED  gstreamer.recordingEnabled   (1/true/yes/on)
 //   GS_RECORDING_DIR      gstreamer.recordingDir
+//   GS_WEBRTC_STUN_SERVER gstreamer.webrtcStunServer
+//   GS_WEBRTC_TURN_SERVER gstreamer.webrtcTurnServer
 //   GS_WEIGHTS_DIR        ai.weightsDir
 
 #include "config/ConfigDto.hpp"
@@ -114,6 +116,8 @@ private:
         overrideStr("GS_DEFAULT_HARDWARE", cfg->gstreamer->defaultHardware);
         overrideBool("GS_RECORDING_ENABLED", cfg->gstreamer->recordingEnabled);
         overrideStr("GS_RECORDING_DIR", cfg->gstreamer->recordingDir);
+        overrideStr("GS_WEBRTC_STUN_SERVER", cfg->gstreamer->webrtcStunServer);
+        overrideStr("GS_WEBRTC_TURN_SERVER", cfg->gstreamer->webrtcTurnServer);
 
         overrideStr("GS_WEIGHTS_DIR", cfg->ai->weightsDir);
     }

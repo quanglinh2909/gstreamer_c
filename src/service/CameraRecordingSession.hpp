@@ -1,6 +1,8 @@
 #ifndef test_gstreamer_CameraRecordingSession_hpp
 #define test_gstreamer_CameraRecordingSession_hpp
 
+#include "service/AppSrcBridge.hpp"
+#include "service/CameraRtpSource.hpp"
 #include "service/RecordingTypes.hpp"
 #include "service/StreamTypes.hpp"
 
@@ -28,13 +30,15 @@ public:
                            stream::StreamCodec codec,
                            recording::RecordingSegmentSink segmentSink,
                            recording::MotionEventSink motionSink,
-                           recording::RecordingErrorSink errorSink)
+                           recording::RecordingErrorSink errorSink,
+                           std::shared_ptr<stream::CameraRtpSource> source)
         : m_config(std::move(config)),
           m_camera(std::move(camera)),
           m_codec(codec),
           m_segmentSink(std::move(segmentSink)),
           m_motionSink(std::move(motionSink)),
-          m_errorSink(std::move(errorSink)) {}
+          m_errorSink(std::move(errorSink)),
+          m_source(std::move(source)) {}
 
     ~CameraRecordingSession() {
         stop();
@@ -137,10 +141,35 @@ public:
             stop();
             return false;
         }
+
+        // Đấu nguồn dùng chung vào appsrc SAU khi pipeline PLAYING. Nguồn phải
+        // sẵn sàng — CameraStreamSession chỉ dựng recording khi acquire được.
+        if (!m_source || !m_source->alive()) {
+            errorOut = "Nguon RTP dung chung chua san sang cho ghi hinh";
+            stop();
+            return false;
+        }
+        if (GstElement* appsrc = gst_bin_get_by_name(GST_BIN(pipeline), "record_src")) {
+            m_bridge.attach(m_source, appsrc);
+            gst_object_unref(appsrc);  // pipeline vẫn giữ; bridge chỉ mượn con trỏ
+        } else {
+            errorOut = "Recording pipeline thieu appsrc record_src";
+            stop();
+            return false;
+        }
+        // Mốc phiên ghi: mọi segment của pipeline này mang cùng giá trị để
+        // playlist biết chỗ nào PTS reset (phiên mới) mà chèn DISCONTINUITY.
+        m_sessionStartMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
         return true;
     }
 
     void stop() {
+        // Cắt cầu nối nguồn TRƯỚC khi finalize/tháo: ngừng bơm buffer để EOS
+        // đóng segment cuối sạch sẽ, và không còn push nào chạy khi pipeline về
+        // NULL. Gọi được nhiều lần (bridge tự idempotent).
+        m_bridge.detach();
+
         GstElement* pipeline = nullptr;
         guint watchId = 0;
         std::vector<std::string> pendingFilesToDelete;
@@ -168,6 +197,10 @@ public:
             gst_object_unref(pipeline);
         }
         deleteRecordingFiles(pendingFilesToDelete);
+        // KHÔNG reset m_source ở đây: start() gọi stop() để dọn trước khi dựng
+        // lại, reset sẽ làm mất nguồn giữa chừng. Nguồn được buông khi cả
+        // CameraRecordingSession bị huỷ (m_source member tự hết) -> lúc đó, nếu
+        // không còn ai xem, nguồn tự tắt.
     }
 
     // Picks the first decoder element that exists for this camera's hardware
@@ -440,11 +473,36 @@ private:
             const gchar* location = gst_structure_get_string(structure, "location");
             if (!location) return;
 
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_openSegments[location] = {
-                nowIso8601(),
-                Clock::now(),
-                m_motionActive || isPostMotionActiveLocked(Clock::now())};
+            std::string openedAt;
+            bool announceOpen = false;
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                openedAt = nowIso8601();
+                m_openSegments[location] = {
+                    openedAt,
+                    Clock::now(),
+                    m_motionActive || isPostMotionActiveLocked(Clock::now())};
+                // Chỉ báo "đang ghi" cho chế độ always: chế độ motion còn phải
+                // đợi xác nhận chuyển động mới biết có giữ đoạn hay không, báo
+                // sớm sẽ để lại hàng mồ côi khi đoạn bị vứt.
+                announceOpen = !isMotionMode();
+            }
+            // Emit NGOÀI khoá: sink đi tới DB.
+            if (announceOpen && m_segmentSink) {
+                recording::RecordingSegmentSnapshot open;
+                open.cameraId = m_camera.id;
+                open.path = location;
+                open.startAt = openedAt;
+                open.codec = stream::toString(m_codec);
+                open.container = "ts";
+                open.recordingMode = m_camera.recordingMode;
+                open.status = "recording";
+                open.sessionStartMs = m_sessionStartMs;
+                // durationMs mang segmentSeconds để DB tính end_at ước lượng.
+                open.durationMs = static_cast<int32_t>(
+                    std::max<uint32_t>(1, m_camera.segmentSeconds));
+                m_segmentSink(open);
+            }
             return;
         }
 
@@ -496,6 +554,7 @@ private:
             snapshot.codec = stream::toString(m_codec);
             snapshot.container = "ts";
             snapshot.recordingMode = m_camera.recordingMode;
+            snapshot.sessionStartMs = m_sessionStartMs;
             snapshot.hasMotion =
                 found->second.hadMotion || m_motionActive || isPostMotionActiveLocked(endedClock);
             m_openSegments.erase(found);
@@ -605,8 +664,14 @@ private:
     recording::MotionEventSink m_motionSink;
     recording::RecordingErrorSink m_errorSink;
 
+    // Nguồn RTP dùng chung với xem live + cầu nối vào appsrc ghi hình.
+    std::shared_ptr<stream::CameraRtpSource> m_source;
+    stream::AppSrcBridge m_bridge;
+
     mutable std::mutex m_mutex;
     GstElement* m_pipeline = nullptr;
+    // Epoch ms lúc pipeline ghi hiện tại lên PLAYING — xem RecordingSegmentSnapshot.
+    int64_t m_sessionStartMs = 0;
     guint m_busWatchId = 0;
     bool m_motionActive = false;
     bool m_motionBranchEnabled = false;

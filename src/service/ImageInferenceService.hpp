@@ -19,6 +19,7 @@
 #include "ai/AiCatalog.hpp"
 #include "ai/AiResult.hpp"
 #include "ai/FrameTypes.hpp"
+#include "ai/MaskBits.hpp"
 #include "ai/RgaConverter.hpp"
 #include "ai/ResultPublisher.hpp"
 #include "ai/models/AiModel.hpp"
@@ -151,6 +152,12 @@ public:
                 det.keypoints.push_back(ox);
                 det.keypoints.push_back(oy);
                 det.keypoints.push_back(d.keypoints[k].score);
+            }
+
+            // Cùng lưới bit mask như pipeline RTSP — endpoint này hứa trả
+            // ĐÚNG JSON mà pipeline bắn ra, nên không được thiếu khoá `mask`.
+            if (results.seg_valid && results.seg_width > 0 && results.seg_height > 0) {
+                fillMaskBits(results, d, det);
             }
 
             if (model2) {

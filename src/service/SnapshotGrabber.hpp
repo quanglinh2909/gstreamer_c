@@ -80,21 +80,33 @@ inline GrabResult grabJpeg(const std::string& rtspUrl,
         return result;
     }
 
-    // Prefer the Rockchip MPP hardware JPEG encoder: with mppvideodec
-    // upstream the NV12 buffer goes straight in (videoconvert collapses to
-    // passthrough) and the CPU encodes nothing. jpegenc stays as the
-    // software fallback for other platforms.
-    std::string jpegEncoder = "jpegenc quality=" + std::to_string(jpegQuality);
-    if (const std::string mpp = mppJpegEncDesc(jpegQuality); !mpp.empty()) {
-        jpegEncoder = mpp;
-    }
+    // DÙNG jpegenc PHẦN MỀM cho snapshot một-lần.
+    //
+    // Trước đây ưu tiên mppjpegenc (phần cứng) cho nhẹ CPU, nhưng nó nhả ẢNH
+    // TOÀN XANH LÁ (chroma = 0) — hoặc không ra khung nào — với một số camera,
+    // rõ nhất là luồng H265 1080p đi qua mppvideodec (NV12 vào mppjpegenc bị
+    // hỏng). Camera "test" H265 720p không lộ vì nó có job AI nên snapshot đi
+    // đường RGA khác; camera "Của showroom" H265 1080p KHÔNG có job AI nên rơi
+    // vào đây và ra xanh. Đo tận nơi: cùng pipeline, đổi mppjpegenc -> jpegenc
+    // là hết xanh. Snapshot là một-lần, thưa, nên chi phí encode phần mềm một
+    // khung không đáng kể; đổi lại chạy đúng trên MỌI luồng. (mppJpegEncDesc
+    // vẫn giữ lại phòng khi cần, nhưng KHÔNG dùng ở đây.)
+    const std::string jpegEncoder = "jpegenc quality=" + std::to_string(jpegQuality);
 
-    // The application/x-rtp,media=video filter drops the audio stream so
-    // decodebin only ever sees video; video/x-raw forces a system-memory
-    // buffer that videoconvert / the JPEG encoder can consume on any decoder.
+    // KHÔNG dùng drop-on-latency, và sàn latency 500ms.
+    //
+    // Camera 1080p/4K gửi khung IDR (H265) thành một BURST hàng trăm gói RTP
+    // dồn cục. Với drop-on-latency=true + latency thấp (200ms), jitterbuffer
+    // vứt phần đuôi của burst đó -> IDR thiếu gói -> mppvideodec giải mã ra rác:
+    // ẢNH TOÀN XANH LÁ (chroma = 0). Camera 720p IDR nhỏ nên lọt, không lộ; đó
+    // là lý do chỉ camera H265 1080p KHÔNG có job AI (rơi vào đường grabJpeg
+    // này) mới bị. Đo tận nơi: cùng pipeline, bỏ drop-on-latency + latency=500
+    // là hết xanh. Nguồn dùng chung CameraRtpSource cũng né đúng bẫy này (sàn
+    // 300ms, không drop) — xem comment ở đó.
+    const unsigned latency = latencyMs < 500 ? 500 : latencyMs;
     const std::string launch =
-        "rtspsrc name=src protocols=tcp drop-on-latency=true latency=" +
-        std::to_string(latencyMs) +
+        "rtspsrc name=src protocols=tcp latency=" +
+        std::to_string(latency) +
         " ! application/x-rtp,media=video"
         " ! decodebin"
         " ! video/x-raw"
@@ -137,6 +149,15 @@ inline GrabResult grabJpeg(const std::string& rtspUrl,
         const gint64 deadline =
             g_get_monotonic_time() + static_cast<gint64>(timeoutMs) * 1000;
         GstSample* sample = nullptr;
+        // BỎ vài khung ĐẦU rồi mới lấy. mppvideodec (rõ nhất với H265) hay nhả
+        // MỘT khung "xanh lá" chưa dựng xong ngay khi vừa mở van decode — lấy
+        // đúng khung đầu (max-buffers=1) là dễ dính khung xanh đó, snapshot ra
+        // toàn màu xanh. Với appsink max-buffers=1 drop=false, mỗi lần pull đẩy
+        // decoder tiến đúng một khung, nên vài lần pull là qua hẳn khung xanh
+        // (~0,3s @25fps) mà không phụ thuộc thời điểm. Giữ khung warm-up mới
+        // nhất làm dự phòng nếu luồng quá ngắn/chậm để có khung sau warm-up.
+        GstSample* lastSeen = nullptr;
+        int warmup = 8;
         while (g_get_monotonic_time() < deadline) {
             // Fail fast on a pipeline error instead of waiting out the timeout.
             GstMessage* msg = gst_bus_pop_filtered(
@@ -157,10 +178,27 @@ inline GrabResult grabJpeg(const std::string& rtspUrl,
                 gst_message_unref(msg);
                 break;
             }
-            sample = gst_app_sink_try_pull_sample(GST_APP_SINK(sink),
-                                                  200 * GST_MSECOND);
-            if (sample) break;
+            GstSample* s = gst_app_sink_try_pull_sample(GST_APP_SINK(sink),
+                                                        200 * GST_MSECOND);
+            if (!s) continue;
+            if (warmup > 0) {
+                --warmup;
+                if (lastSeen) gst_sample_unref(lastSeen);
+                lastSeen = s;  // dự phòng: khung warm-up mới nhất
+                continue;
+            }
+            sample = s;
+            break;
         }
+        // Không lấy được khung sau warm-up (luồng quá ngắn hoặc EOS sớm) thì
+        // dùng khung cuối đã thấy — vẫn hơn báo lỗi; và xoá lỗi EOS nếu thực sự
+        // đã có khung để trả.
+        if (!sample && lastSeen) {
+            sample = lastSeen;
+            lastSeen = nullptr;
+            result.error.clear();
+        }
+        if (lastSeen) gst_sample_unref(lastSeen);
 
         if (sample) {
             GstBuffer* buf = gst_sample_get_buffer(sample);

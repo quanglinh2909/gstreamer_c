@@ -2,7 +2,8 @@
 build/
 cmake-build-*/
 out/
-
+gst-plugins-rs
+gst-plugins-rs/
 # vcpkg
 vcpkg_installed/
 
@@ -29,4 +30,4 @@ __pycache__/
 
 # Tooling
 .sixth/
-/logs
+/logsgst-plugins-rs/

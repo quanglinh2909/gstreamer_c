@@ -16,9 +16,11 @@
 #include "oatpp/web/protocol/http/Http.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <filesystem>
 #include <string>
+#include <thread>
 #include <vector>
 
 // CRUD + lifecycle for AI jobs. Persists rows in the ai_jobs table and keeps
@@ -185,10 +187,24 @@ public:
         assertSuccess(res);
         auto jobs = res->fetch<oatpp::List<oatpp::Object<AiJobDto>>>();
         if (!jobs) return;
+        // GIÃN CÁCH như khởi động stream (xem CameraService): mỗi job dựng
+        // pipeline giải mã + nạp model RKNN (khởi tạo NPU tốn CPU dồn cục).
+        // Bật 14 job liền nhau tạo đỉnh CPU/điện; cách nhau kStaggerMs để trải
+        // ra. Chạy trong thread khởi động nền nên sleep không chặn HTTP.
+        bool first = true;
         for (const auto& job : *jobs) {
-            if (job) syncToManager(job);
+            if (!job) continue;
+            if (!first) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(kStaggerMs));
+            }
+            first = false;
+            syncToManager(job);
         }
     }
+
+    // Giãn cách nạp job AI lúc boot (chống đỉnh CPU/điện). Nhỏ hơn stream vì AI
+    // giờ dùng chung kết nối RTSP (không mở kết nối mới), chỉ tốn dựng decode+NPU.
+    static constexpr int kStaggerMs = 400;
 
 private:
     OATPP_COMPONENT(std::shared_ptr<AiJobDb>, m_db);

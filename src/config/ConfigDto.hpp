@@ -38,6 +38,10 @@ class GStreamerConfigDto : public oatpp::DTO {
     DTO_FIELD(String, defaultHardware);
     DTO_FIELD(Boolean, recordingEnabled);
     DTO_FIELD(String, recordingDir);
+    // STUN cho WebRTC. Trống = chỉ dùng candidate host (đủ cho LAN).
+    DTO_FIELD(String, webrtcStunServer);
+    // TURN cho WebRTC, "turn://user:pass@host:port". Trống = không dùng TURN.
+    DTO_FIELD(String, webrtcTurnServer);
 };
 
 class AiConfigDto : public oatpp::DTO {

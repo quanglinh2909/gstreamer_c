@@ -22,7 +22,9 @@
     "sourceLatencyMs": 100,
     "defaultHardware": "auto",
     "recordingEnabled": false,
-    "recordingDir": "recordings"
+    "recordingDir": "recordings",
+    "webrtcStunServer": "stun://stun.l.google.com:19302",
+    "webrtcTurnServer": "turn://vms:123456@103.226.251.58:3478"
   },
   "ai": {
     "weightsDir": "/home/orangepi/Documents/ai_gstreamer/weights"

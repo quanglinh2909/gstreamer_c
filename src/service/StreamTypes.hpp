@@ -42,6 +42,16 @@ struct GStreamerConfig {
     std::string defaultHardware = "auto";
     bool recordingEnabled = false;
     std::string recordingDir = "recordings";
+    // STUN server cho WebRTC. Để TRỐNG khi xem trong cùng mạng LAN: lúc đó
+    // candidate host là đủ và không phải chờ round-trip ra Internet. Chỉ cần
+    // đặt (vd "stun://stun.l.google.com:19302") khi người xem ở mạng khác.
+    std::string webrtcStunServer;
+    // TURN server cho WebRTC, dạng "turn://user:pass@host:port". Dùng khi NAT
+    // hai đầu không đục lỗ được (NAT symmetric) hoặc mạng chặn UDP: media đi
+    // vòng qua TURN thay vì nối thẳng. Tốn băng thông của TURN nên chỉ được
+    // ICE chọn khi mọi cặp candidate trực tiếp đều hỏng.
+    // Mật khẩu có ký tự lạ (@ : / ?) thì phải mã hoá %XX.
+    std::string webrtcTurnServer;
 };
 
 struct CameraRuntimeConfig {
@@ -188,10 +198,15 @@ inline std::string launchStringForCamera(const GStreamerConfig& config,
 
     std::ostringstream launch;
     launch
+        // KHÔNG drop-on-latency ở nhánh phân phối này: camera gửi IDR frame
+        // lớn (4K ~ hàng trăm gói TCP dồn cục); lúc board bận, cả cục vượt
+        // hạn latency và jitterbuffer vứt phần đuôi -> IDR hỏng -> MỌI người
+        // xem (RTSP lẫn WebRTC) nhận luồng không giải mã nổi, hình đen/đứng
+        // từng đợt theo tải máy. Nhánh này chỉ phục vụ xem live, trễ thêm vài
+        // trăm ms vô hại; deadline thời gian thực đã có nhánh AI lo riêng.
         << "( rtspsrc name=src location=" << quoteLaunchValue(camera.rtsp)
-        << " latency=" << config.sourceLatencyMs
+        << " latency=" << (config.sourceLatencyMs < 300 ? 300 : config.sourceLatencyMs)
         << " protocols=tcp"
-        << " drop-on-latency=true"
         << " ! application/x-rtp,media=video,encoding-name=" << encoding
         << " ! " << depay
         << " ! " << parser << " config-interval=-1"

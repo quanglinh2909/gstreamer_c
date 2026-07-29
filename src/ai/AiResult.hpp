@@ -17,6 +17,18 @@ struct Detection {
     // Face embedding vector (empty for non-face jobs).
     std::vector<float> embedding;
 
+    // Segmentation mask for THIS detection, as a MASK_GRID×MASK_GRID bitmap
+    // covering exactly the detection's bbox (bit set = pixel belongs to the
+    // object). Empty unless the model is a *_seg one.
+    //
+    // Why a coarse grid instead of the full-res mask: the raw mask is a
+    // 640×640 byte image per FRAME (410 KB). Shipping that per detection at
+    // ~12 fps would dwarf everything else on the wire and in the DB, and an
+    // overlay drawn on a video tile can't show that detail anyway. 32×32 bits
+    // = 128 bytes per object is plenty for a silhouette.
+    std::vector<uint8_t> maskBits;   // MASK_GRID*MASK_GRID/8 bytes, row-major
+    static constexpr int MASK_GRID = 32;
+
     // Stage-2 sub-detections produced when model 2 is itself a detector
     // (e.g. OCR characters found inside this detection's crop). Coordinates
     // are in stage-2 crop space. Empty for single-stage / embedding jobs.

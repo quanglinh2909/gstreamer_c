@@ -40,6 +40,13 @@ struct RecordingSegmentSnapshot {
     std::string container = "ts";
     std::string recordingMode;
     bool hasMotion = false;
+    // "recording" = đoạn ĐANG ghi (mới mở, dùng cho live-edge của timeline);
+    // "complete"  = đoạn đã đóng, số liệu end_at/duration là thật.
+    std::string status = "complete";
+    // Epoch ms lúc PHIÊN ghi (pipeline) bắt đầu — mọi đoạn của cùng một phiên
+    // mang cùng giá trị. Phiên mới = PTS reset (mpegtsmux bắt đầu lại ~3600s);
+    // playlist chèn DISCONTINUITY khi giá trị này đổi giữa hai đoạn kề nhau.
+    int64_t sessionStartMs = 0;
 };
 
 struct MotionEventSnapshot {
@@ -217,9 +224,6 @@ inline std::string recordingLaunchStringForCamera(const stream::GStreamerConfig&
     const bool h265 = codec == stream::StreamCodec::H265;
     if (!h264 && !h265) return {};
 
-    const char* encoding = h264 ? "H264" : "H265";
-    const char* depay = h264 ? "rtph264depay" : "rtph265depay";
-    const char* parser = h264 ? "h264parse" : "h265parse";
     const char* parsedCaps = h264
         ? "video/x-h264,stream-format=byte-stream,alignment=au"
         : "video/x-h265,stream-format=byte-stream,alignment=au";
@@ -227,20 +231,18 @@ inline std::string recordingLaunchStringForCamera(const stream::GStreamerConfig&
     const uint64_t segmentNs =
         static_cast<uint64_t>(std::max<uint32_t>(1, camera.segmentSeconds)) * 1000ULL * 1000ULL * 1000ULL;
 
+    // Nguồn là appsrc do CameraRtpSource (dùng chung với xem live) bơm access
+    // unit đã parse vào — KHÔNG còn rtspsrc riêng, camera chỉ bị kéo một lần dù
+    // vừa ghi vừa xem. do-timestamp=true: buffer từ pipeline nguồn mang PTS
+    // đồng hồ khác, appsrc phải tự dán lại theo đồng hồ pipeline ghi hình thì
+    // splitmuxsink mới cắt segment đúng. Xem AppSrcBridge / CameraRecordingSession.
+    //
     // No surrounding "( ... )": this string is parsed with gst_parse_launch,
     // which returns a real GstPipeline only for an unwrapped description.
-    // A "( ... )" wrapper would yield a clock-less GstBin that cannot run a
-    // live source. (The live-stream launch string is wrapped because it goes
-    // to gst_rtsp_media_factory_set_launch, a different API.)
     std::ostringstream launch;
     launch
-        << "rtspsrc name=record_src location=" << stream::quoteLaunchValue(camera.rtsp)
-        << " latency=" << config.sourceLatencyMs
-        << " protocols=tcp"
-        << " drop-on-latency=true"
-        << " ! application/x-rtp,media=video,encoding-name=" << encoding
-        << " ! " << depay
-        << " ! " << parser << " config-interval=-1"
+        << "appsrc name=record_src is-live=true format=time do-timestamp=true"
+        << " max-bytes=0 block=false"
         << " ! " << parsedCaps
         << " ! tee name=record_t"
         << " record_t. ! queue"
