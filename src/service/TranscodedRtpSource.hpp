@@ -21,6 +21,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -59,6 +60,35 @@ public:
         return m_alive.load() && m_base && m_base->alive();
     }
 
+    // Bitrate cho mpph264enc, lấy từ bitrate THẬT của camera nguồn.
+    //
+    // Hệ số 1,6: H264 cần nhiều bit hơn H265 cho cùng chất lượng, nên nhân lên
+    // mới không làm xấu hình. Nhờ vậy chất lượng đi theo ĐÚNG từng camera, khác
+    // với một con số cố định (camera 0,85 Mbps và camera 3,4 Mbps cần khác nhau).
+    //
+    // Nguồn nền hầu như luôn đã chạy sẵn (ghi hình giữ nó sống) nên số đo có
+    // ngay khi người xem đầu tiên vào. Nếu chưa có thì dùng mức dự phòng thay
+    // vì bps=0 — "tự tính" của MPP là cái bẫy đang sửa.
+    uint64_t encoderBps() const {
+        if (const char* forced = std::getenv("AI_TRANSCODE_BPS")) {
+            const long v = atol(forced);
+            if (v > 0) return static_cast<uint64_t>(v);
+        }
+        double factor = 1.6;
+        if (const char* f = std::getenv("AI_TRANSCODE_FACTOR")) {
+            const double v = g_ascii_strtod(f, nullptr);
+            if (v > 0.2 && v < 10.0) factor = v;
+        }
+        const uint64_t src = m_base ? m_base->bitrateBps() : 0;
+        uint64_t bps = src ? static_cast<uint64_t>(src * factor) : 3000000;
+        if (bps < 512000) bps = 512000;        // sàn: đừng bết quá
+        if (bps > 8000000) bps = 8000000;      // trần: chặn camera bitrate cao
+        g_print("[transcode] camera %s: nguon %.2f Mbps -> encoder %.2f Mbps"
+                " (he so %.2f)\n",
+                m_cameraId.c_str(), src / 1e6, bps / 1e6, factor);
+        return bps;
+    }
+
     bool start() {
         if (!m_base || m_base->codec() != "h265") {
             g_printerr("[transcode] camera %s: nguon nen khong phai H265, bo qua\n",
@@ -68,16 +98,27 @@ public:
 
         // Toàn bộ transcode chạy trên VPU (mppvideodec/mpph264enc), không đụng
         // CPU/NPU. gop=-1 => một keyframe mỗi giây: người xem mới vào có hình
-        // trong ~1s kể cả khi camera gốc để GOP hàng chục giây. bps=0 để encoder
-        // tự chọn bitrate theo độ phân giải. Xem WebRtcSession::buildLaunch —
-        // cụm này y hệt đường transcode per-session cũ, chỉ khác là dùng CHUNG.
+        // trong ~1s kể cả khi camera gốc để GOP hàng chục giây.
+        //
+        // TUYỆT ĐỐI KHÔNG để bps=0. "Tự tính" của MPP là `w*h*fps/8`, ra
+        // 6,48 Mbps cho 1080p25 BẤT KỂ nguồn bao nhiêu. Đo trên hệ này
+        // (30/07/2026): 6 camera H265 nguồn tổng 11,3 Mbps bị phát lại thành
+        // 31,4 Mbps — phình 1,7-3,7 lần, chiếm 3083/6334 gói mỗi giây tức 49%
+        // toàn bộ tải gửi WebRTC, mà chi phí đường gửi là THEO TỪNG GÓI. Kiểm
+        // riêng bằng cách transcode một file ghi hình: 23,3 MB -> 46,5 MB, đúng
+        // 2,00 lần.
+        const uint64_t targetBps = encoderBps();
         std::ostringstream launch;
         launch
             << "appsrc name=in is-live=true format=time do-timestamp=true"
             << " max-bytes=0 block=false"
             << " ! video/x-h265,stream-format=byte-stream,alignment=au"
             << " ! h265parse config-interval=-1"
-            << " ! mppvideodec ! mpph264enc gop=-1 rc-mode=vbr bps=0"
+            << " ! mppvideodec ! mpph264enc gop=-1 rc-mode=vbr"
+            << " bps=" << targetBps
+            // bps-max nới 1,5 lần để cảnh động (mưa, xe chạy) không bị bết,
+            // nhưng vẫn có trần thay vì để encoder tự do như bps=0.
+            << " bps-max=" << (targetBps * 3 / 2)
             << " ! h264parse config-interval=-1"
             << " ! video/x-h264,stream-format=byte-stream,alignment=au"
             << " ! appsink name=out sync=false max-buffers=30 drop=false";

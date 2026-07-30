@@ -28,6 +28,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <mutex>
 #include <sstream>
@@ -60,6 +61,57 @@ public:
     const std::string& cameraId() const { return m_cameraId; }
     const std::string& codec() const override { return m_codec; }
     bool alive() const override { return m_alive.load(); }
+    uint64_t bitrateBps() const override { return m_bitrateBps.load(); }
+
+    // Giao thức vận chuyển RTP của nguồn dùng chung. Mặc định `tcp` — đã kiểm
+    // chứng là bền khi mạng nghẽn, và burst IDR 1080p/4K không bị rớt gói (rớt
+    // gói giữa burst IDR = khung XANH cho MỌI người dùng nguồn này: ghi hình,
+    // AI, người xem live).
+    //
+    // AI_RTSP_PROTOCOLS=udp có thể đo thử ở lắp đặt khác, nhưng ĐỪNG kỳ vọng
+    // giảm CPU: đo A/B trên hệ này (16 camera) ra TCP 160,0% — UDP 160,0%,
+    // không chênh một chút nào, mà UDP còn kém ổn định hơn. Xem chú thích ở
+    // chuỗi launch bên dưới.
+    // Chỉ SETUP luồng video, bỏ audio ngay ở rtspsrc (xem onSelectStream).
+    static bool videoOnly() {
+        static const bool on = [] {
+            const char* e = std::getenv("AI_RTSP_VIDEO_ONLY");
+            return !(e && e[0] == '0');
+        }();
+        return on;
+    }
+
+    static const char* rtspProtocols() {
+        static const std::string v = [] {
+            const char* e = std::getenv("AI_RTSP_PROTOCOLS");
+            return std::string(e && *e ? e : "tcp");
+        }();
+        return v.c_str();
+    }
+
+    // ĐỪNG THỬ LẠI: tự nhận RTP interleaved để bỏ rtpbin.
+    //
+    // Đã dựng đủ (30/07/2026): client RTSP riêng bằng GstRTSPConnection, nhận
+    // RTP interleaved trên chính socket TCP, đẩy vào appsrc ! rtph26Xdepay.
+    // Tầng vận chuyển ĐÚNG — 60 000+ gói, 0 gói RTP lỗi, 0 lệch seqnum, cùng
+    // nhịp access unit và cùng nhịp keyframe như rtspsrc.
+    //
+    // NHƯNG KHÔNG DÙNG ĐƯỢC: nhánh AI (appsrc ! decodebin, người tiêu thụ DUY
+    // NHẤT có giải mã) chết. `mppvideodec` khớp khung ra với khung vào theo dấu
+    // thời gian; thiếu rtpjitterbuffer là nó bỏ MỌI khung —
+    // "MPP is not able to generate pts" rồi "can't process this frame" (thấy
+    // bằng GST_DEBUG=mpp*:4). Đo được 320-928 AU vào, 0 khung ra; ghi hình,
+    // snapshot và WebRTC vẫn tốt nên rất dễ tưởng là ổn.
+    //
+    // Thêm lại RIÊNG rtpjitterbuffer để rải nhịp: vẫn không sửa được AI (5/16
+    // job), MÀ thread về đúng 275 — tức PHẦN TIẾT KIỆM NẰM CHÍNH Ở
+    // rtpjitterbuffer, không ở bộ máy của rtspsrc. Bỏ nó thì AI chết; giữ nó
+    // thì không còn gì để tiết kiệm. Lập luận "TCP không mất gói nên
+    // jitterbuffer vô ích" là SAI ở chỗ đó.
+    //
+    // Đã loại trừ bằng đo (đừng điều tra lại): mất/đảo gói, caps, framerate,
+    // SPS/PPS, cờ keyframe, codec, PTS không hợp lệ, dồn cụm (đường tự viết
+    // dồn cụm ÍT HƠN rtspsrc), bão hoà CPU, appsrc chặn.
 
     bool start() {
         const bool h265 = (m_codec == "h265");
@@ -77,13 +129,16 @@ public:
         std::ostringstream launch;
         launch
             << "rtspsrc name=src location=" << stream::quoteLaunchValue(m_rtspUrl)
-            << " latency=" << latency << " protocols=tcp"
+            << " latency=" << latency << " protocols=" << rtspProtocols()
             // Đã THỬ do-retransmission=false + buffer-mode=none để giảm CPU
-            // jitterbuffer trên TCP — ĐO LẠI: KHÔNG giảm CPU (chi phí RTP thật
-            // nằm ở xử lý TỪNG GÓI của rtspsrc TCP-interleaved, không phải máy
-            // móc sắp-xếp/RTX). Đã revert về mặc định TCP đã kiểm chứng (bền
-            // hơn khi mạng nghẽn). Lever thật là UDP nhưng rủi ro rớt gói burst
-            // IDR 1080p/4K -> khung xanh (xem snapshot-green-frame-h265).
+            // jitterbuffer trên TCP — ĐO LẠI: KHÔNG giảm CPU. Đã revert về mặc
+            // định TCP đã kiểm chứng (bền hơn khi mạng nghẽn).
+            //
+            // ĐO A/B 29/07/2026 (16 camera, 60s mỗi mốc sau 100s ổn định):
+            // TCP 160,0% — UDP 160,0%. KHÔNG chênh một chút nào, mà UDP còn
+            // đẻ 9 cảnh báo/reconnect so với 1. Câu "lever thật là UDP" ở bản
+            // chú thích cũ là SAI — chi phí ~38% của nhóm thread `src` không
+            // phụ thuộc giao thức vận chuyển. Đừng thử lại.
             << " ! application/x-rtp,media=video,encoding-name=" << encoding
             << " ! " << depay << " ! " << parser << " config-interval=-1"
             // Ép byte-stream/au: rtph26Xpay phía phiên nhận thẳng caps này nên
@@ -100,6 +155,29 @@ public:
             if (err) g_error_free(err);
             stop();
             return false;
+        }
+
+        // BỎ LUỒNG AUDIO NGAY TỪ ĐẦU, đừng để capsfilter phía sau lọc.
+        //
+        // Capsfilter `media=video` chỉ chặn dữ liệu Ở HẠ NGUỒN — rtspsrc vẫn
+        // SETUP luồng audio, vẫn dựng đủ một rtpjitterbuffer + rtpsession +
+        // thread RTCP + thread timer cho nó, và vẫn nhận + bóc + xếp lại từng
+        // gói audio rồi mới bị bỏ. Đo trên hệ này: 32 thread rtpjitterbuffer và
+        // 32 thread rtpsession-rtcp cho 16 camera, vì 4/6 camera kiểm thử có
+        // luồng audio trong SDP. Toàn bộ chỗ đó là công đổ đi.
+        //
+        // `select-stream` được phát TRƯỚC khi cấu hình luồng; trả FALSE thì
+        // rtspsrc bỏ hẳn luồng đó (không pad, không jitterbuffer, không nhận
+        // gói). Chi phí RTP ở đây là theo TỪNG GÓI nên bỏ ~50 gói/s audio mỗi
+        // camera là đáng, chưa kể tiết kiệm hẳn 3 thread mỗi camera.
+        // AI_RTSP_VIDEO_ONLY=0 để tắt (cửa thoát nếu có camera lạ khai SDP
+        // không có trường `media` và video bị bỏ oan).
+        if (videoOnly()) {
+            if (GstElement* src = gst_bin_get_by_name(GST_BIN(m_pipeline), "src")) {
+                g_signal_connect(src, "select-stream",
+                                 G_CALLBACK(&CameraRtpSource::onSelectStream), this);
+                gst_object_unref(src);
+            }
         }
 
         m_appsink = gst_bin_get_by_name(GST_BIN(m_pipeline), "out");
@@ -177,6 +255,24 @@ private:
         bool needKeyframe = true;
     };
 
+    // Chỉ nhận luồng VIDEO (xem chỗ g_signal_connect trong start()). Trả FALSE
+    // là rtspsrc bỏ hẳn luồng, không tốn jitterbuffer/rtpsession/RTCP/thread.
+    // Không đọc được `media` thì trả TRUE để giữ đúng hành vi cũ, tránh vô tình
+    // bỏ mất video của một camera lạ.
+    static gboolean onSelectStream(GstElement*, guint num, GstCaps* caps,
+                                   gpointer user) {
+        auto* self = static_cast<CameraRtpSource*>(user);
+        const GstStructure* s = caps ? gst_caps_get_structure(caps, 0) : nullptr;
+        const gchar* media = s ? gst_structure_get_string(s, "media") : nullptr;
+        if (!media) return TRUE;
+        const gboolean keep = (g_strcmp0(media, "video") == 0) ? TRUE : FALSE;
+        if (!keep) {
+            g_print("[rtpsrc] camera %s: bo luong %u (media=%s)\n",
+                    self ? self->m_cameraId.c_str() : "?", num, media);
+        }
+        return keep;
+    }
+
     static GstFlowReturn onNewSample(GstAppSink* appsink, gpointer user) {
         auto* self = static_cast<CameraRtpSource*>(user);
         GstSample* sample = gst_app_sink_pull_sample(appsink);
@@ -193,6 +289,29 @@ private:
 
         const bool keyframe =
             !GST_BUFFER_FLAG_IS_SET(buffer, GST_BUFFER_FLAG_DELTA_UNIT);
+
+        // Đo bitrate thật của luồng bằng TRUNG BÌNH LUỸ KẾ (tổng byte / tổng
+        // thời gian), công bố khi đã có ít nhất 2 giây dữ liệu. Rẻ: một phép
+        // cộng mỗi khung. Đây là số duy nhất cho phép TranscodedRtpSource đặt
+        // bitrate encoder theo ĐÚNG camera — xem FrameSource::bitrateBps.
+        //
+        // KHÔNG dùng cửa sổ tức thời. Đã thử cửa sổ 1 giây và HỎNG: video có
+        // GOP nên một giây trúng khung IDR đo ra gấp rưỡi tới gấp đôi mức thật
+        // — camera babdd763 ra 4,65 Mbps (thực ~3,3), encoder bị đặt 7,44 Mbps,
+        // tức CÒN TỆ HƠN lúc chưa sửa. Trung bình luỹ kế thì càng chạy càng
+        // đúng và không bao giờ vọt vì một khung lớn.
+        //
+        // Ngưỡng 2 giây là thoả hiệp: `bps` của mpph264enc chỉ đặt được lúc
+        // dựng pipeline, nên phải có số TRƯỚC khi người xem đầu tiên vào; với
+        // cửa sổ 5 giây thì 4/6 camera transcode khởi động khi chưa có số nào.
+        const gint64 nowUs = g_get_monotonic_time();
+        m_rateBytes += gst_buffer_get_size(buffer);
+        if (m_rateSinceUs == 0) {
+            m_rateSinceUs = nowUs;
+        } else if (nowUs - m_rateSinceUs >= 2 * G_USEC_PER_SEC) {
+            m_bitrateBps.store(m_rateBytes * 8 * G_USEC_PER_SEC /
+                               static_cast<uint64_t>(nowUs - m_rateSinceUs));
+        }
 
         // Gom danh sách sink cần gọi TRONG khoá (còn xử lý cổng keyframe), rồi
         // gọi NGOÀI khoá: sink đẩy sang appsrc của phiên, không nên giữ khoá
@@ -251,6 +370,11 @@ private:
     GstElement* m_appsink = nullptr;
     guint m_busWatchId = 0;
     std::atomic<bool> m_alive{false};
+    // Đo bitrate: chỉ thread appsink ghi m_rateBytes/m_rateSinceUs; kết quả
+    // công bố qua atomic vì TranscodedRtpSource đọc từ thread khác.
+    std::atomic<uint64_t> m_bitrateBps{0};
+    uint64_t m_rateBytes = 0;
+    gint64 m_rateSinceUs = 0;
 
     mutable std::mutex m_mutex;
     std::unordered_map<uint64_t, Consumer> m_consumers;

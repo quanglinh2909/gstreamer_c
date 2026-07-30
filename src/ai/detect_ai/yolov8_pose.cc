@@ -3,7 +3,8 @@
 #include <string.h>
 
 int init_yolov8_pose_model(const char* model_path, rknn_app_context_t* app_ctx) {
-    return init_yolov8_model(model_path, app_ctx);
+    // 0 = KHÔNG zero-copy: post_process_pose/seg đọc NCHW (xem yolov8.h).
+    return init_yolov8_model_ex(model_path, app_ctx, 0);
 }
 
 int release_yolov8_pose_model(rknn_app_context_t* app_ctx) {
@@ -43,7 +44,7 @@ int inference_yolov8_pose_model(rknn_app_context_t* app_ctx, image_buffer_t* img
 
     for (int i = 0; i < app_ctx->io_num.n_output; ++i) {
         outputs[i].index = i;
-        outputs[i].want_float = 1;
+        outputs[i].want_float = app_ctx->is_quant ? 0 : 1;
     }
 
     ret = rknn_outputs_get(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs, NULL);

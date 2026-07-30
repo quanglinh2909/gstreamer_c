@@ -47,12 +47,29 @@ typedef struct rknn_app_context_t {
     int model_width;
     int model_height;
     bool is_quant;
+
+    // Zero-copy đầu ra (xem init_yolov8_model). NPU vốn SINH ra tensor ở layout
+    // NC1HWC2; `rknn_outputs_get` tốn CPU chỉ để đổi sang NCHW — đo được
+    // 1,6-1,75 ms mỗi lần suy luận = 11-12% CPU toàn hệ với 16 job. Gán thẳng
+    // bộ nhớ đầu ra rồi cho postprocess đọc NC1HWC2.
+    // native_output_attrs == NULL nghĩa là KHÔNG dùng zero-copy (đường cũ).
+    rknn_tensor_attr* native_output_attrs;
+    rknn_tensor_mem** zc_output_mems;
+    // 1 = muốn zero-copy nhưng CHƯA gắn. Việc gắn phải hoãn tới sau lần
+    // rknn_inputs_set ĐẦU TIÊN — xem arm_zero_copy_out trong yolov8.cc.
+    int zc_want;
 } rknn_app_context_t;
 
 #include "postprocess.h"
 
 
 int init_yolov8_model(const char* model_path, rknn_app_context_t* app_ctx);
+
+// Bản đầy đủ. zero_copy_out=1 chỉ dành cho ĐƯỜNG DETECT: khi bật, rknn_run ghi
+// thẳng vào bộ nhớ ta cấp ở layout NC1HWC2 và post_process đọc layout đó. Pose
+// và seg dùng postprocess đọc NCHW nên PHẢI truyền 0, nếu không chúng sẽ đọc
+// sai bố cục bộ nhớ.
+int init_yolov8_model_ex(const char* model_path, rknn_app_context_t* app_ctx, int zero_copy_out);
 
 int release_yolov8_model(rknn_app_context_t* app_ctx);
 

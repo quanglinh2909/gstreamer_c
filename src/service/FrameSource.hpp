@@ -41,6 +41,16 @@ public:
 
     // "h264" / "h265" — quyết định passthrough hay transcode.
     virtual const std::string& codec() const = 0;
+
+    // Bitrate THẬT của luồng đang chảy (bit/giây), 0 nếu chưa đo được.
+    //
+    // Vì sao interface cần biết: TranscodedRtpSource phải đặt bitrate cho
+    // mpph264enc, mà `bps=0` (tự tính) của MPP ra `w*h*fps/8` = 6,5 Mbps cho
+    // 1080p25 BẤT KỂ nguồn bao nhiêu. Đo trên hệ này: 6 camera H265 nguồn tổng
+    // 11,3 Mbps bị phát lại thành 31,4 Mbps, chiếm 49% số gói của cả đường xem
+    // live — mà chi phí gửi là THEO TỪNG GÓI. Lấy bitrate nguồn rồi nhân hệ số
+    // là cách duy nhất giữ chất lượng đi theo camera thay vì ép một con số.
+    virtual uint64_t bitrateBps() const { return 0; }
 };
 
 }  // namespace stream

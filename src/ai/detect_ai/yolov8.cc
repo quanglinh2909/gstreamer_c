@@ -34,6 +34,11 @@ static void dump_tensor_attr(rknn_tensor_attr *attr)
 
 int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
 {
+    return init_yolov8_model_ex(model_path, app_ctx, 1);
+}
+
+int init_yolov8_model_ex(const char *model_path, rknn_app_context_t *app_ctx, int zero_copy_out)
+{
     int ret;
     int model_len = 0;
     char *model = NULL;
@@ -136,11 +141,41 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
     printf("model input height=%d, width=%d, channel=%d\n",
            app_ctx->model_height, app_ctx->model_width, app_ctx->model_channel);
 
+    // --- Zero-copy đầu ra: chỉ ĐẶT CỜ ở đây ------------------------------
+    // Việc gắn bộ nhớ (rknn_create_mem + rknn_set_io_mem) PHẢI hoãn tới sau
+    // lần rknn_inputs_set đầu tiên — xem arm_zero_copy_out.
+    app_ctx->native_output_attrs = NULL;
+    app_ctx->zc_output_mems = NULL;
+    {
+        const char* zc_env = getenv("AI_RKNN_ZEROCOPY_OUT");
+        // Mặc định BẬT cho model lượng-tử-hoá; AI_RKNN_ZEROCOPY_OUT=0 để tắt.
+        app_ctx->zc_want = (zero_copy_out && app_ctx->is_quant &&
+                            !(zc_env && zc_env[0] == '0')) ? 1 : 0;
+    }
+
     return 0;
 }
 
 int release_yolov8_model(rknn_app_context_t *app_ctx)
 {
+    // Nhả bộ nhớ zero-copy TRƯỚC rknn_destroy (rknn_destroy_mem cần context).
+    if (app_ctx->zc_output_mems != NULL)
+    {
+        for (uint32_t i = 0; i < app_ctx->io_num.n_output; i++)
+        {
+            if (app_ctx->zc_output_mems[i])
+            {
+                rknn_destroy_mem(app_ctx->rknn_ctx, app_ctx->zc_output_mems[i]);
+            }
+        }
+        free(app_ctx->zc_output_mems);
+        app_ctx->zc_output_mems = NULL;
+    }
+    if (app_ctx->native_output_attrs != NULL)
+    {
+        free(app_ctx->native_output_attrs);
+        app_ctx->native_output_attrs = NULL;
+    }
     if (app_ctx->input_attrs != NULL)
     {
         free(app_ctx->input_attrs);
@@ -157,6 +192,69 @@ int release_yolov8_model(rknn_app_context_t *app_ctx)
         app_ctx->rknn_ctx = 0;
     }
     return 0;
+}
+
+
+// Gắn bộ nhớ đầu ra zero-copy. GỌI SAU rknn_inputs_set ĐẦU TIÊN, không sớm hơn.
+//
+// Vì sao: NPU sinh tensor ở layout NC1HWC2 ([N,C1,H,W,C2], C2=16 với int8);
+// `rknn_outputs_get` chạy một vòng ĐỔI LAYOUT sang NCHW bằng CPU — đo được
+// 1,6-1,75 ms mỗi lần suy luận, tức 11-12% CPU toàn hệ với 16 job. Gắn thẳng
+// bộ nhớ rồi để post_process đọc NC1HWC2 thì bỏ hẳn vòng đó.
+//
+// THỨ TỰ LÀ BẮT BUỘC (đo được, tài liệu KHÔNG nói): nếu gọi rknn_set_io_mem
+// TRƯỚC bất kỳ rknn_inputs_set nào thì rknn_run vẫn trả về 0 nhưng bộ đệm đầu
+// ra chứa RÁC — 409.483/409.600 byte sai. Hậu quả từng gặp: mỗi khung sinh
+// ~121 phát hiện rác, CPU vọt >500%. Chỉ cần MỘT lần rknn_inputs_set trước đó
+// là đúng. Đừng dời lời gọi này về init_yolov8_model.
+static void arm_zero_copy_out(rknn_app_context_t *app_ctx)
+{
+    const uint32_t n = app_ctx->io_num.n_output;
+    rknn_tensor_attr* nattrs = (rknn_tensor_attr *)calloc(n, sizeof(rknn_tensor_attr));
+    rknn_tensor_mem** mems = (rknn_tensor_mem **)calloc(n, sizeof(rknn_tensor_mem *));
+    bool ok = nattrs && mems;
+    for (uint32_t i = 0; ok && i < n; i++)
+    {
+        nattrs[i].index = i;
+        if (rknn_query(app_ctx->rknn_ctx, RKNN_QUERY_NATIVE_OUTPUT_ATTR, &nattrs[i],
+                       sizeof(rknn_tensor_attr)) != RKNN_SUCC)
+        {
+            ok = false;
+            break;
+        }
+        // post_process chỉ biết đọc NC1HWC2 int8 5 chiều; layout khác thì bỏ
+        // zero-copy và chạy đường cũ (an toàn hơn đoán mò).
+        if (nattrs[i].fmt != RKNN_TENSOR_NC1HWC2 || nattrs[i].type != RKNN_TENSOR_INT8 ||
+            nattrs[i].n_dims != 5)
+        {
+            ok = false;
+            break;
+        }
+        mems[i] = rknn_create_mem(app_ctx->rknn_ctx, nattrs[i].size_with_stride);
+        if (!mems[i] || rknn_set_io_mem(app_ctx->rknn_ctx, mems[i], &nattrs[i]) < 0)
+        {
+            ok = false;
+            break;
+        }
+    }
+    app_ctx->zc_want = 0;  // thử đúng một lần, hỏng thì thôi
+    if (ok)
+    {
+        app_ctx->native_output_attrs = nattrs;
+        app_ctx->zc_output_mems = mems;
+        printf("yolov8: zero-copy dau ra BAT (NC1HWC2, bo rknn_outputs_get)\n");
+        return;
+    }
+    if (mems)
+    {
+        for (uint32_t i = 0; i < n; i++)
+        {
+            if (mems[i]) rknn_destroy_mem(app_ctx->rknn_ctx, mems[i]);
+        }
+        free(mems);
+    }
+    free(nattrs);
+    printf("yolov8: zero-copy dau ra TAT (layout khong ho tro) — dung rknn_outputs_get\n");
 }
 
 int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, object_detect_result_list *od_results)
@@ -219,6 +317,13 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
     }
 
     // Run
+    // Gắn zero-copy NGAY SAU lần rknn_inputs_set đầu tiên (bắt buộc — xem
+    // arm_zero_copy_out), trước lần rknn_run đầu tiên.
+    if (app_ctx->zc_want)
+    {
+        arm_zero_copy_out(app_ctx);
+    }
+
     ret = rknn_run(app_ctx->rknn_ctx, nullptr);
     if (ret < 0)
     {
@@ -226,28 +331,43 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
         return -1;
     }
 
-    // Get Output. Model int8: giữ nguyên int8 (want_float=0) — post_process
+    // Lấy đầu ra. Model int8: giữ nguyên int8 (want_float=0) — post_process
     // decode thẳng trên int8 với ngưỡng lượng-tử-hoá, khỏi bắt librknnrt
     // dequant ~1.2 triệu giá trị sang float mỗi inference (đo được ~4ms CPU
     // outputs_get + ~9ms CPU post mỗi lần trước khi đổi).
+    //
+    // Khi zero-copy đang bật, rknn_run đã ghi thẳng vào bộ nhớ ta cấp — không
+    // gọi rknn_outputs_get (và do đó cũng không có gì để release).
     memset(outputs.data(), 0, outputs.size() * sizeof(rknn_output));
-    for (int i = 0; i < app_ctx->io_num.n_output; i++)
+    if (app_ctx->native_output_attrs != NULL)
     {
-        outputs[i].index = i;
-        outputs[i].want_float = app_ctx->is_quant ? 0 : 1;
+        for (int i = 0; i < app_ctx->io_num.n_output; i++)
+        {
+            outputs[i].index = i;
+            outputs[i].want_float = 0;
+            outputs[i].buf = app_ctx->zc_output_mems[i]->virt_addr;
+            outputs[i].size = app_ctx->native_output_attrs[i].size_with_stride;
+        }
+        post_process(app_ctx, outputs.data(), &letter_box, box_conf_threshold, nms_threshold, od_results);
     }
-    ret = rknn_outputs_get(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs.data(), NULL);
-    if (ret < 0)
+    else
     {
-        printf("rknn_outputs_get fail! ret=%d\n", ret);
-        goto out;
+        for (int i = 0; i < app_ctx->io_num.n_output; i++)
+        {
+            outputs[i].index = i;
+            outputs[i].want_float = app_ctx->is_quant ? 0 : 1;
+        }
+        ret = rknn_outputs_get(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs.data(), NULL);
+        if (ret < 0)
+        {
+            printf("rknn_outputs_get fail! ret=%d\n", ret);
+            goto out;
+        }
+
+        post_process(app_ctx, outputs.data(), &letter_box, box_conf_threshold, nms_threshold, od_results);
+
+        rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs.data());
     }
-
-    // Post Process
-    post_process(app_ctx, outputs.data(), &letter_box, box_conf_threshold, nms_threshold, od_results);
-
-    // Remeber to release rknn output
-    rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs.data());
 
 out:
     // Note: dst_img not used anymore, using input buffer directly

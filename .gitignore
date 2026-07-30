@@ -10,7 +10,7 @@ vcpkg_installed/
 # IDE
 .idea/
 .vscode/
-*.user
+*.user 
 config/*
 config/config.json
 # OS
