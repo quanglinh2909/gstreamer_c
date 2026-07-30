@@ -85,6 +85,23 @@ inline constexpr int kHandshakeTimeoutMs = 30000;
 // 10s đủ rộng để không giết oan camera GOP dài đang giữa hai keyframe.
 inline constexpr int kMediaStallTimeoutMs = 10000;
 
+// Phiên đã connected mà TRÌNH DUYỆT không gửi RTCP nào trong ngần này thì coi
+// như người xem đã biến mất -> dọn.
+//
+// Vì sao cần thêm mốc này khi đã có connection-state: phát hiện "trình duyệt
+// biến mất" của WebRTC dựa vào ICE consent freshness, mà consent freshness chỉ
+// có từ libnice 0.1.19. Máy chạy Ubuntu 22.04 có libnice 0.1.18 (không có nó),
+// nên ICE nằm "connected" VĨNH VIỄN sau khi tab đóng — connection-state không
+// bao giờ rời connected, m_connected miễn nhiễm watchdog, còn m_lastMedia thì
+// do CHÍNH đường ống của ta bơm vào nên luôn tươi. Kết quả: phiên bất tử, số
+// người xem không bao giờ giảm. Trên máy có libnice 0.1.23 thì có giảm, nhưng
+// phải đợi consent (~30s) rồi mới tới watchdog — tức là rất lâu.
+//
+// RTCP thì không phụ thuộc phiên bản gì: mọi trình duyệt đều gửi Receiver
+// Report đều đặn (RFC 3550 ép tối thiểu 5 giây một lần), và ngừng ngay khi tab
+// chết. 15s = 3 lần chu kỳ tối thiểu, đủ rộng để không giết oan lúc mạng nghẽn.
+inline constexpr int kPeerSilenceTimeoutMs = 15000;
+
 // Phiên XEM LẠI hết hạn sau ngần này nếu client không hỏi trạng thái lần nào.
 // Client hỏi mỗi ~1s, nên 30s là rộng rãi; đây là cái duy nhất dọn được phiên
 // khi tab bị đóng đột ngột (không kịp gửi DELETE).
@@ -376,6 +393,20 @@ public:
         g_signal_connect(m_webrtc, "notify::ice-connection-state",
                          G_CALLBACK(&WebRtcSession::onIceConnectionState), this);
 
+        // Nhịp sống của TRÌNH DUYỆT (xem kPeerSilenceTimeoutMs). webrtcbin đặt
+        // tên phần tử rtpbin bên trong đúng là "rtpbin"; "on-ssrc-active" nổ mỗi
+        // khi nhận được RTCP từ một nguồn — với phiên chỉ-gửi như ở đây thì đó
+        // chính là Receiver Report của trình duyệt.
+        if (GstElement* rtpbin = gst_bin_get_by_name(GST_BIN(m_webrtc), "rtpbin")) {
+            g_signal_connect(rtpbin, "on-ssrc-active",
+                             G_CALLBACK(&WebRtcSession::onSsrcActive), this);
+            gst_object_unref(rtpbin);
+        } else {
+            g_print("[webrtc] session %s: KHONG tim thay rtpbin trong webrtcbin —"
+                    " khong do duoc nhip RTCP cua trinh duyet\n",
+                    m_sessionId.c_str());
+        }
+
         // PLAYING trước khi thương lượng: webrtcbin cần đường ống chạy thì mới
         // gom được ICE candidate. Caps của m-line không phụ thuộc dữ liệu thật
         // nhờ capsfilter cố định ngay trước webrtcbin (xem buildLaunch), nên
@@ -591,6 +622,17 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
         if (m_failed) return true;
         const auto now = std::chrono::steady_clock::now();
+        // Trình duyệt đã im lặng ở mức RTCP = người xem không còn, dù ICE/DTLS
+        // vẫn báo "connected". Áp cho CẢ xem lại lẫn xem trực tiếp, và chỉ áp
+        // sau khi đã từng nhận được RTCP — client lạ không gửi RTCP thì giữ
+        // nguyên hành vi cũ thay vì bị dọn oan.
+        if (m_connected && m_rtcpSeen) {
+            const auto quiet = now - m_lastRtcp;
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(quiet).count() >
+                kPeerSilenceTimeoutMs) {
+                return true;
+            }
+        }
         if (m_heartbeatMode) {
             // Đang kết nối được với trình duyệt = còn người xem, kể cả khi
             // đang tạm dừng và không có một byte media nào chảy.
@@ -1179,6 +1221,14 @@ private:
         return G_SOURCE_CONTINUE;
     }
 
+    // RTCP về từ trình duyệt. Chạy trên thread RTCP của rtpbin — giữ khoá ngắn.
+    static void onSsrcActive(GstElement*, guint, guint, gpointer userData) {
+        auto* self = static_cast<WebRtcSession*>(userData);
+        std::lock_guard<std::mutex> lock(self->m_mutex);
+        self->m_lastRtcp = std::chrono::steady_clock::now();
+        self->m_rtcpSeen = true;
+    }
+
     static void onConnectionState(GstElement* webrtcbin, GParamSpec*, gpointer userData) {
         auto* self = static_cast<WebRtcSession*>(userData);
         GstWebRTCPeerConnectionState state;
@@ -1247,6 +1297,10 @@ private:
     guint m_statusTimerId = 0;
     std::chrono::steady_clock::time_point m_lastSeen;
     std::chrono::steady_clock::time_point m_lastMedia = std::chrono::steady_clock::now();
+    // Lần cuối trình duyệt gửi RTCP về. m_rtcpSeen phân biệt "chưa từng nhận"
+    // với "đã im lặng" — xem kPeerSilenceTimeoutMs.
+    std::chrono::steady_clock::time_point m_lastRtcp = std::chrono::steady_clock::now();
+    bool m_rtcpSeen = false;
     std::chrono::steady_clock::time_point m_createdAt = std::chrono::steady_clock::now();
 };
 
