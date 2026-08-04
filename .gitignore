@@ -6,6 +6,8 @@ gst-plugins-rs
 gst-plugins-rs/
 # vcpkg
 vcpkg_installed/
+motion-snapshots
+motion-snapshots/
 
 # IDE
 .idea/
