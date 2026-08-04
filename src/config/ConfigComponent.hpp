@@ -116,6 +116,7 @@ private:
         overrideStr("GS_DEFAULT_HARDWARE", cfg->gstreamer->defaultHardware);
         overrideBool("GS_RECORDING_ENABLED", cfg->gstreamer->recordingEnabled);
         overrideStr("GS_RECORDING_DIR", cfg->gstreamer->recordingDir);
+        overrideStr("GS_MOTION_SNAPSHOT_DIR", cfg->gstreamer->motionSnapshotDir);
         overrideStr("GS_WEBRTC_STUN_SERVER", cfg->gstreamer->webrtcStunServer);
         overrideStr("GS_WEBRTC_TURN_SERVER", cfg->gstreamer->webrtcTurnServer);
 

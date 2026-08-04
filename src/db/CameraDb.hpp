@@ -23,6 +23,8 @@ public:
           "  hardware, recording_enabled, recording_mode, motion_enabled, "
           "  motion_sensitivity, motion_threshold, pre_motion_seconds, "
           "  post_motion_seconds, segment_seconds, motion_keyframe_only, "
+          "  motion_grid_x, motion_grid_y, motion_cell_levels, motion_zones, "
+          "  motion_save_events, retention_days, "
           "  retry_count, last_error, last_changed_at"
           ") "
           "VALUES ("
@@ -31,7 +33,10 @@ public:
           "  COALESCE(:recordingMode, 'off'), COALESCE(:motionEnabled, false), "
           "  COALESCE(:motionSensitivity, 0.5), COALESCE(:motionThreshold, 0.01), "
           "  COALESCE(:preMotionSeconds, 10), COALESCE(:postMotionSeconds, 20), "
-          "  COALESCE(:segmentSeconds, 10), COALESCE(:motionKeyframeOnly, false), 0, '', ''"
+          "  COALESCE(:segmentSeconds, 10), COALESCE(:motionKeyframeOnly, false), "
+          "  COALESCE(:motionGridX, 32), COALESCE(:motionGridY, 32), "
+          "  COALESCE(:motionCellLevels, ''), COALESCE(:motionZones, ''), "
+          "  COALESCE(:motionSaveEvents, true), COALESCE(:retentionDays, 0), 0, '', ''"
           ") "
           "RETURNING CAST(id AS text) AS id, name, rtsp, state, "
           "input_rtsp AS \"inputRtsp\", output_rtsp AS \"outputRtsp\", codec, hardware, "
@@ -41,6 +46,10 @@ public:
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
           "motion_keyframe_only AS \"motionKeyframeOnly\", "
+          "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
+          "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
+          "motion_save_events AS \"motionSaveEvents\", "
+          "retention_days AS \"retentionDays\", "
           "last_error AS \"lastError\", last_changed_at AS \"lastChangedAt\";",
           PARAM(oatpp::String, name),
           PARAM(oatpp::String, rtsp),          PARAM(oatpp::String, hardware),
@@ -52,7 +61,13 @@ public:
           PARAM(oatpp::UInt32, preMotionSeconds),
           PARAM(oatpp::UInt32, postMotionSeconds),
           PARAM(oatpp::UInt32, segmentSeconds),
-          PARAM(oatpp::Boolean, motionKeyframeOnly))
+          PARAM(oatpp::Boolean, motionKeyframeOnly),
+          PARAM(oatpp::UInt32, motionGridX),
+          PARAM(oatpp::UInt32, motionGridY),
+          PARAM(oatpp::String, motionCellLevels),
+          PARAM(oatpp::String, motionZones),
+          PARAM(oatpp::Boolean, motionSaveEvents),
+          PARAM(oatpp::UInt32, retentionDays))
 
     QUERY(getCameraById,
           "SELECT CAST(id AS text) AS id, name, rtsp, state, "
@@ -63,6 +78,10 @@ public:
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
           "motion_keyframe_only AS \"motionKeyframeOnly\", "
+          "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
+          "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
+          "motion_save_events AS \"motionSaveEvents\", "
+          "retention_days AS \"retentionDays\", "
           "last_error AS \"lastError\", last_changed_at AS \"lastChangedAt\" "
           "FROM cameras WHERE id = CAST(:id AS uuid) LIMIT 1;",
           PARAM(oatpp::String, id))
@@ -76,6 +95,10 @@ public:
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
           "motion_keyframe_only AS \"motionKeyframeOnly\", "
+          "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
+          "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
+          "motion_save_events AS \"motionSaveEvents\", "
+          "retention_days AS \"retentionDays\", "
           "last_error AS \"lastError\", last_changed_at AS \"lastChangedAt\" "
           "FROM cameras ORDER BY id LIMIT :limit OFFSET :offset;",
           PARAM(oatpp::Int64, limit),
@@ -90,6 +113,10 @@ public:
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
           "motion_keyframe_only AS \"motionKeyframeOnly\", "
+          "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
+          "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
+          "motion_save_events AS \"motionSaveEvents\", "
+          "retention_days AS \"retentionDays\", "
           "last_error AS \"lastError\", last_changed_at AS \"lastChangedAt\" "
           "FROM cameras ORDER BY id;")
 
@@ -107,7 +134,13 @@ public:
           "  pre_motion_seconds = COALESCE(:preMotionSeconds, pre_motion_seconds), "
           "  post_motion_seconds = COALESCE(:postMotionSeconds, post_motion_seconds), "
           "  segment_seconds   = COALESCE(:segmentSeconds, segment_seconds), "
-          "  motion_keyframe_only = COALESCE(:motionKeyframeOnly, motion_keyframe_only) "
+          "  motion_keyframe_only = COALESCE(:motionKeyframeOnly, motion_keyframe_only), "
+          "  motion_grid_x = COALESCE(:motionGridX, motion_grid_x), "
+          "  motion_grid_y = COALESCE(:motionGridY, motion_grid_y), "
+          "  motion_cell_levels = COALESCE(:motionCellLevels, motion_cell_levels), "
+          "  motion_zones = COALESCE(:motionZones, motion_zones), "
+          "  motion_save_events = COALESCE(:motionSaveEvents, motion_save_events), "
+          "  retention_days = COALESCE(:retentionDays, retention_days) "
           "WHERE id = CAST(:id AS uuid) "
           "RETURNING CAST(id AS text) AS id, name, rtsp, state, "
           "input_rtsp AS \"inputRtsp\", output_rtsp AS \"outputRtsp\", codec, hardware, "
@@ -117,6 +150,10 @@ public:
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
           "motion_keyframe_only AS \"motionKeyframeOnly\", "
+          "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
+          "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
+          "motion_save_events AS \"motionSaveEvents\", "
+          "retention_days AS \"retentionDays\", "
           "last_error AS \"lastError\", last_changed_at AS \"lastChangedAt\";",
           PARAM(oatpp::String, id),
           PARAM(oatpp::String, name),
@@ -129,7 +166,13 @@ public:
           PARAM(oatpp::UInt32, preMotionSeconds),
           PARAM(oatpp::UInt32, postMotionSeconds),
           PARAM(oatpp::UInt32, segmentSeconds),
-          PARAM(oatpp::Boolean, motionKeyframeOnly))
+          PARAM(oatpp::Boolean, motionKeyframeOnly),
+          PARAM(oatpp::UInt32, motionGridX),
+          PARAM(oatpp::UInt32, motionGridY),
+          PARAM(oatpp::String, motionCellLevels),
+          PARAM(oatpp::String, motionZones),
+          PARAM(oatpp::Boolean, motionSaveEvents),
+          PARAM(oatpp::UInt32, retentionDays))
 
     QUERY(updateCameraStreamSnapshot,
           "UPDATE cameras SET "
@@ -167,6 +210,10 @@ public:
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
           "motion_keyframe_only AS \"motionKeyframeOnly\", "
+          "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
+          "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
+          "motion_save_events AS \"motionSaveEvents\", "
+          "retention_days AS \"retentionDays\", "
           "last_error AS \"lastError\", last_changed_at AS \"lastChangedAt\";",
           PARAM(oatpp::String, id))
 
@@ -287,7 +334,9 @@ public:
     QUERY(listMotionEvents,
           "SELECT CAST(id AS text) AS id, CAST(camera_id AS text) AS \"cameraId\", "
           "CAST(start_at AS text) AS \"startAt\", CAST(end_at AS text) AS \"endAt\", "
-          "max_score AS \"maxScore\" "
+          "max_score AS \"maxScore\", cells, "
+          "grid_x AS \"gridX\", grid_y AS \"gridY\", "
+          "image_path AS \"imagePath\" "
           "FROM motion_events "
           "WHERE camera_id = CAST(:cameraId AS uuid) "
           "  AND start_at < CAST(:to AS timestamptz) "
@@ -298,13 +347,25 @@ public:
           PARAM(oatpp::String, to))
 
     QUERY(insertMotionEvent,
-          "INSERT INTO motion_events(camera_id, start_at, end_at, max_score) "
+          "INSERT INTO motion_events(camera_id, start_at, end_at, max_score, "
+          "  cells, grid_x, grid_y, image_path) "
           "VALUES (CAST(:cameraId AS uuid), CAST(:startAt AS timestamptz), "
-          "CAST(:endAt AS timestamptz), :maxScore);",
+          "CAST(:endAt AS timestamptz), :maxScore, :cells, :gridX, :gridY, "
+          ":imagePath);",
           PARAM(oatpp::String, cameraId),
           PARAM(oatpp::String, startAt),
           PARAM(oatpp::String, endAt),
-          PARAM(oatpp::Float64, maxScore))
+          PARAM(oatpp::Float64, maxScore),
+          PARAM(oatpp::String, cells),
+          PARAM(oatpp::Int32, gridX),
+          PARAM(oatpp::Int32, gridY),
+          PARAM(oatpp::String, imagePath))
+
+    // Ảnh của MỘT sự kiện, tra theo id — cho endpoint phục vụ file ảnh.
+    QUERY(getMotionEventImagePath,
+          "SELECT image_path AS \"imagePath\" FROM motion_events "
+          "WHERE id = CAST(:id AS uuid);",
+          PARAM(oatpp::String, id))
 };
 
 #include OATPP_CODEGEN_END(DbClient)

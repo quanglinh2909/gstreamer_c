@@ -31,7 +31,17 @@ public:
                                       in->recordingMode, in->motionEnabled,
                                       in->motionSensitivity, in->motionThreshold,
                                       in->preMotionSeconds, in->postMotionSeconds,
-                                      in->segmentSeconds, in->motionKeyframeOnly);
+                                      in->segmentSeconds, in->motionKeyframeOnly,
+                                      in->motionGridX, in->motionGridY,
+                                      in->motionCellLevels,
+                                      in->motionZones,
+                                      in->motionSaveEvents,
+                                      // Engine khong doc gia tri nay va no CO Y
+                                      // khong nam trong streamRelevantInputPresent:
+                                      // doi han luu khong duoc dung lai pipeline,
+                                      // neu khong sua mot con so la nhay hinh
+                                      // truc tiep cua camera do.
+                                      in->retentionDays);
         assertSuccess(res);
         auto camera = fetchOne(res, Status::CODE_500, "Failed to create camera");
         m_streams->startCamera(camera);
@@ -114,7 +124,17 @@ public:
                                       in->recordingMode, in->motionEnabled,
                                       in->motionSensitivity, in->motionThreshold,
                                       in->preMotionSeconds, in->postMotionSeconds,
-                                      in->segmentSeconds, in->motionKeyframeOnly);
+                                      in->segmentSeconds, in->motionKeyframeOnly,
+                                      in->motionGridX, in->motionGridY,
+                                      in->motionCellLevels,
+                                      in->motionZones,
+                                      in->motionSaveEvents,
+                                      // Engine khong doc gia tri nay va no CO Y
+                                      // khong nam trong streamRelevantInputPresent:
+                                      // doi han luu khong duoc dung lai pipeline,
+                                      // neu khong sua mot con so la nhay hinh
+                                      // truc tiep cua camera do.
+                                      in->retentionDays);
         assertSuccess(res);
         auto camera = fetchOne(res, Status::CODE_404, "Camera not found");
         if (shouldRestart) {
@@ -228,6 +248,46 @@ public:
         return res->fetch<oatpp::List<oatpp::Object<MotionEventDto>>>();
     }
 
+    /**
+     * "Camera này vừa có sự kiện AI" — bên Python gọi vào để engine GIỮ lại
+     * đoạn ghi quanh thời điểm đó (chế độ ghi 'motion').
+     *
+     * Không nhận cửa sổ thời gian từ bên gọi: "ghi trước/ghi sau" là cài đặt
+     * của CAMERA (preMotionSeconds/postMotionSeconds), một chỗ duy nhất cho cả
+     * chuyển động lẫn mọi AI. Cho mỗi AI tự khai một cửa sổ riêng thì con số
+     * đó có thể vượt quá độ sâu bộ đệm đoạn-chờ và im lặng không có tác dụng.
+     */
+    oatpp::Object<StatusDto> noteAiEvent(const oatpp::String& cameraId,
+                                         const oatpp::Object<AiEventDto>& in) {
+        getCameraById(cameraId);  // 404 nếu camera không tồn tại
+        (void)in;  // `source` chỉ để đọc log, engine không xử lý khác theo loại
+
+        const bool armed = m_streams->noteAiEvent(cameraId);
+        auto status = StatusDto::createShared();
+        status->statusCode = 200;
+        status->message = armed
+            ? "Da giu doan ghi quanh su kien AI"
+            : "Camera khong o che do ghi 'motion' - khong co doan nao de giu";
+        return status;
+    }
+
+    /**
+     * Đường dẫn ảnh của một sự kiện chuyển động, hoặc ném 404.
+     *
+     * Trả đường dẫn chứ không trả bytes: chỗ gọi (controller) mới biết cách
+     * dựng HTTP response, còn service thì chỉ nói chuyện với DB.
+     */
+    std::string getMotionEventImagePath(const oatpp::String& id) {
+        validateUuid(id, "Invalid motion event id");
+        auto res = m_db->getMotionEventImagePath(id);
+        assertSuccess(res);
+        auto row = fetchOneTyped<MotionEventDto>(res, Status::CODE_404,
+                                                 "Motion event not found");
+        OATPP_ASSERT_HTTP(row->imagePath && row->imagePath->size() > 0,
+                          Status::CODE_404, "Motion event has no image");
+        return row->imagePath->c_str();
+    }
+
 private:
     // Khoảng giãn cách giữa hai camera lúc bật hàng loạt (chống đỉnh I/O+điện
     // lúc boot làm rớt NVMe). 16 camera × 500ms ≈ trải đều trong ~8s.
@@ -327,7 +387,18 @@ private:
                    static_cast<bool>(in->preMotionSeconds),
                    static_cast<bool>(in->postMotionSeconds),
                    static_cast<bool>(in->segmentSeconds),
-                   static_cast<bool>(in->motionKeyframeOnly));
+                   static_cast<bool>(in->motionKeyframeOnly)) ||
+               // Đổi lưới/mức là phải dựng lại pipeline: số motioncells và mặt
+               // nạ nằm trong chuỗi launch, không set nóng được.
+               static_cast<bool>(in->motionGridX) ||
+               static_cast<bool>(in->motionGridY) ||
+               static_cast<bool>(in->motionCellLevels) ||
+               static_cast<bool>(in->motionZones) ||
+               // Cờ này KHÔNG đổi chuỗi launch, nhưng phiên ghi giữ một BẢN SAO
+               // cấu hình camera từ lúc dựng pipeline — không dựng lại thì sink
+               // vẫn đọc giá trị cũ và tiếp tục ghi DB dù người dùng đã tắt
+               // (đo được: tắt xong vẫn có thêm hàng trong motion_events).
+               static_cast<bool>(in->motionSaveEvents);
     }
 };
 

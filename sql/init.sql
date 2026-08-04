@@ -1,3 +1,18 @@
+-- Toan bo schema cua engine C++ (cameras + recording_segments + motion_events
+-- + ai_jobs) trong MOT file. Truoc day tach 001/002 theo kieu migration danh so,
+-- nhung khong co gi chay chung theo thu tu ca: engine KHONG tu chay file nay,
+-- nguoi cai dat phai psql -f bang tay. Hai file danh so ma chi chay tay thi chi
+-- tao co hoi chay thieu mot file.
+--
+-- CHAY LAI BAO NHIEU LAN CUNG DUOC: moi cau deu la CREATE ... IF NOT EXISTS
+-- hoac ALTER ... ADD COLUMN IF NOT EXISTS, nen dung duoc ca cho may moi lan may
+-- dang chay du lieu that.
+--
+--   psql "postgresql://oryza:Oryza%40123@localhost:5433/parking" -f sql/init.sql
+--
+-- THU TU QUAN TRONG: ai_jobs co khoa ngoai toi cameras(id) nen phai nam SAU
+-- phan cameras -- dung dao nguoc hai khoi.
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS cameras (
@@ -99,3 +114,76 @@ CREATE INDEX IF NOT EXISTS idx_recording_segments_motion_event
 -- đóng (live-edge của timeline), hoặc chèn thẳng 'complete' cho chế độ motion.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_recording_segments_path
   ON recording_segments(path);
+
+-- Lưới phát hiện chuyển động theo ô (kiểu đầu ghi): mỗi ô một mức 0-9.
+--   0      = bỏ qua ô (đưa vào motionmaskcellspos)
+--   1..9   = mức, 5 trung tính; càng lớn càng phải động nhiều mới tính
+-- motion_cell_levels là chuỗi CHỮ SỐ dài đúng grid_x*grid_y, đọc theo hàng.
+-- Rỗng = mọi ô ở mức 5.
+ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS motion_grid_x SMALLINT NOT NULL DEFAULT 32;
+ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS motion_grid_y SMALLINT NOT NULL DEFAULT 32;
+ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS motion_cell_levels TEXT NOT NULL DEFAULT '';
+-- ADD COLUMN IF NOT EXISTS ở trên KHÔNG đụng tới cột đã tồn tại, nên máy nào
+-- chạy bản trước (mặc định 10) vẫn giữ 10. Đặt lại tường minh cho khớp.
+ALTER TABLE IF EXISTS cameras ALTER COLUMN motion_grid_x SET DEFAULT 32;
+ALTER TABLE IF EXISTS cameras ALTER COLUMN motion_grid_y SET DEFAULT 32;
+
+-- VÙNG chuyển động: JSON [{"r1","c1","r2","c2","level"}]. Thay cho
+-- motion_cell_levels (một chữ số mỗi ô): cách cũ gom ô cùng mức thành một
+-- motioncells kèm mặt nạ, mà motioncells chỉ đọc 255 ô đầu của mặt nạ (đã đo)
+-- nên lưới lớn là dò sai trong im lặng. Giờ engine tự xét vùng, không cần mặt nạ.
+ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS motion_zones TEXT NOT NULL DEFAULT '';
+-- Có ghi sự kiện chuyển động xuống DB không. Tắt = chỉ bắn WebSocket để vẽ
+-- live, giống nhận diện khẩu trang (loại đó vốn không có bảng nào). Camera
+-- ngoài trời nhiều cây cối sinh hàng nghìn sự kiện/ngày mà chẳng ai xem lại.
+ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS motion_save_events BOOLEAN NOT NULL DEFAULT true;
+
+-- Ô nào đã động trong một sự kiện — để vẽ lại và tìm kiếm theo vùng.
+-- cells: danh sách "hàng:cột" ngăn bằng dấu phẩy, gộp cả sự kiện.
+ALTER TABLE IF EXISTS motion_events ADD COLUMN IF NOT EXISTS cells TEXT NOT NULL DEFAULT '';
+ALTER TABLE IF EXISTS motion_events ADD COLUMN IF NOT EXISTS grid_x SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE IF EXISTS motion_events ADD COLUMN IF NOT EXISTS grid_y SMALLINT NOT NULL DEFAULT 0;
+
+-- Khung hình lúc sự kiện BẮT ĐẦU, đường dẫn tương đối thư mục engine
+-- ("motion-snapshots/<camera>/<ngày>/<epoch_ms>.jpg"). Rỗng = không có ảnh.
+--
+-- Trước đây thẻ sự kiện chuyển động mượn khung từ endpoint thumbnail của bản
+-- ghi: camera không bật ghi thì chẳng có gì để trích, mà sự kiện vừa xảy ra
+-- thì đoạn chứa nó còn đang ghi dở nên trả 404. Giờ sự kiện có ảnh của chính
+-- nó, như ba loại sự kiện AI kia.
+ALTER TABLE IF EXISTS motion_events ADD COLUMN IF NOT EXISTS image_path TEXT NOT NULL DEFAULT '';
+
+-- Hạn lưu theo NGÀY của riêng camera này; 0 = không giới hạn. ENGINE KHÔNG ĐỌC
+-- CỘT NÀY — bộ dọn dung lượng bên Python đọc (storage_cleanup_service.py).
+--
+-- Cột nằm ở đây thay vì một bảng riêng để camera bị xoá thì hạn của nó đi theo,
+-- và để hạn vẫn có hiệu lực khi camera đã TẮT GHI HÌNH hoặc mất kết nối: lượt
+-- dọn chỉ đọc DB, không cần luồng nào đang chạy.
+ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS retention_days INTEGER NOT NULL DEFAULT 0;
+
+-- ===========================================================================
+-- AI jobs (truoc day o file 002_init_ai_jobs.sql)
+-- ===========================================================================
+
+-- AI jobs: one detector (optionally cascaded into a model-2 stage) per row.
+-- A camera can have many AI jobs. Deleting a camera removes its AI jobs.
+
+CREATE TABLE IF NOT EXISTS ai_jobs (
+  id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  name            VARCHAR(128) NOT NULL,
+  camera_id       UUID         NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
+  enabled         BOOLEAN      NOT NULL DEFAULT true,
+  model_path      VARCHAR(512) NOT NULL,
+  model_type      VARCHAR(32)  NOT NULL DEFAULT 'yolov8_detect',
+  class_filter    VARCHAR(256) NOT NULL DEFAULT 'all',
+  model_path_2    VARCHAR(512) NOT NULL DEFAULT '',
+  model_type_2    VARCHAR(32)  NOT NULL DEFAULT '',
+  transform_data  VARCHAR(32)  NOT NULL DEFAULT '',
+  primary_conf    DOUBLE PRECISION NOT NULL DEFAULT 0.25,
+  secondary_conf  DOUBLE PRECISION NOT NULL DEFAULT 0.25,
+  max_fps         INTEGER      NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_jobs_camera ON ai_jobs(camera_id);
+CREATE INDEX IF NOT EXISTS idx_ai_jobs_enabled ON ai_jobs(enabled);

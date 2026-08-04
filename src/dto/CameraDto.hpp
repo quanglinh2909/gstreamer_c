@@ -60,6 +60,42 @@ class CameraDto : public oatpp::DTO {
     DTO_FIELD_INFO(motionKeyframeOnly) { info->description = "Analyze motion on keyframes only (lower CPU)"; }
     DTO_FIELD(Boolean, motionKeyframeOnly);
 
+    DTO_FIELD_INFO(motionGridX) { info->description = "Motion grid columns (8..32)"; }
+    DTO_FIELD(UInt32, motionGridX);
+
+    DTO_FIELD_INFO(motionGridY) { info->description = "Motion grid rows (8..32)"; }
+    DTO_FIELD(UInt32, motionGridY);
+
+    DTO_FIELD_INFO(motionCellLevels) {
+        info->description = "One digit per cell, row-major: 0 = ignore, 1..9 = level (5 neutral)";
+    }
+    DTO_FIELD(String, motionCellLevels);
+    DTO_FIELD_INFO(motionZones) {
+        info->description =
+            "Vung chuyen dong, JSON [{\"r1\",\"c1\",\"r2\",\"c2\",\"level\"}]. "
+            "Toa do theo O cua luoi, ke ca hai dau. level 1..10 = can level*10% "
+            "so o CUA CHINH VUNG do cung dong.";
+    }
+    DTO_FIELD(String, motionZones);
+    DTO_FIELD_INFO(motionSaveEvents) {
+        info->description =
+            "Ghi su kien chuyen dong xuong DB hay chi ban WebSocket. Tat thi lop "
+            "phu live van ve, chi khong con lich su de xem lai.";
+    }
+    DTO_FIELD(Boolean, motionSaveEvents);
+
+    // ENGINE KHONG DUNG GIA TRI NAY. Bo don dung luong ben Python doc cot
+    // cameras.retention_days: qua bay nhieu ngay thi ban ghi va su kien cua
+    // camera bi xoa, ke ca khi dia con rong. 0 = khong gioi han.
+    // Engine chi cho no di qua de bieu mau sua camera doc/ghi bang DUNG MOT
+    // lan PUT nhu moi thiet lap khac cua camera.
+    DTO_FIELD_INFO(retentionDays) {
+        info->description =
+            "So ngay giu du lieu cua camera nay (0 = khong gioi han). Engine "
+            "khong doc; bo don cua Python thi hanh.";
+    }
+    DTO_FIELD(UInt32, retentionDays);
+
     DTO_FIELD_INFO(retryCount) { info->description = "Current reconnect retry count"; }
     DTO_FIELD(UInt32, retryCount);
 
@@ -85,6 +121,34 @@ class CreateCameraDto : public oatpp::DTO {
     DTO_FIELD(UInt32, postMotionSeconds);
     DTO_FIELD(UInt32, segmentSeconds);
     DTO_FIELD(Boolean, motionKeyframeOnly);
+    DTO_FIELD(UInt32, motionGridX);
+    DTO_FIELD(UInt32, motionGridY);
+    DTO_FIELD(String, motionCellLevels);
+    DTO_FIELD_INFO(motionZones) {
+        info->description =
+            "Vung chuyen dong, JSON [{\"r1\",\"c1\",\"r2\",\"c2\",\"level\"}]. "
+            "Toa do theo O cua luoi, ke ca hai dau. level 1..10 = can level*10% "
+            "so o CUA CHINH VUNG do cung dong.";
+    }
+    DTO_FIELD(String, motionZones);
+    DTO_FIELD_INFO(motionSaveEvents) {
+        info->description =
+            "Ghi su kien chuyen dong xuong DB hay chi ban WebSocket. Tat thi lop "
+            "phu live van ve, chi khong con lich su de xem lai.";
+    }
+    DTO_FIELD(Boolean, motionSaveEvents);
+
+    // ENGINE KHONG DUNG GIA TRI NAY. Bo don dung luong ben Python doc cot
+    // cameras.retention_days: qua bay nhieu ngay thi ban ghi va su kien cua
+    // camera bi xoa, ke ca khi dia con rong. 0 = khong gioi han.
+    // Engine chi cho no di qua de bieu mau sua camera doc/ghi bang DUNG MOT
+    // lan PUT nhu moi thiet lap khac cua camera.
+    DTO_FIELD_INFO(retentionDays) {
+        info->description =
+            "So ngay giu du lieu cua camera nay (0 = khong gioi han). Engine "
+            "khong doc; bo don cua Python thi hanh.";
+    }
+    DTO_FIELD(UInt32, retentionDays);
 };
 
 #include OATPP_CODEGEN_END(DTO)

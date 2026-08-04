@@ -38,6 +38,9 @@ class GStreamerConfigDto : public oatpp::DTO {
     DTO_FIELD(String, defaultHardware);
     DTO_FIELD(Boolean, recordingEnabled);
     DTO_FIELD(String, recordingDir);
+    // Ảnh chụp lúc bắt đầu mỗi sự kiện chuyển động. Thư mục riêng để bộ dọn
+    // dung lượng đo được nó tách khỏi video.
+    DTO_FIELD(String, motionSnapshotDir);
     // STUN cho WebRTC. Trống = chỉ dùng candidate host (đủ cho LAN).
     DTO_FIELD(String, webrtcStunServer);
     // TURN cho WebRTC, "turn://user:pass@host:port". Trống = không dùng TURN.

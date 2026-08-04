@@ -8,6 +8,7 @@
 #include "service/PlaybackService.hpp"
 #include "service/WebRtcService.hpp"
 #include "ws/CameraStateSocket.hpp"
+#include "ws/MotionEventSocket.hpp"
 
 #include "oatpp/core/macro/component.hpp"
 
@@ -19,6 +20,7 @@ public:
         OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
         OATPP_COMPONENT(std::shared_ptr<CameraDb>, cameraDb);
         OATPP_COMPONENT(std::shared_ptr<ws::CameraStateRegistry>, stateRegistry);
+        OATPP_COMPONENT(std::shared_ptr<ws::MotionEventRegistry>, motionRegistry);
         return std::make_shared<GStreamerService>(
             toStreamConfig(config),
             [cameraDb, stateRegistry](const stream::StreamStatusSnapshot& snapshot) {
@@ -93,14 +95,27 @@ public:
                               << std::endl;
                 }
             },
-            [cameraDb](const recording::MotionEventSnapshot& event) {
-                if (!cameraDb || event.cameraId.empty()) return;
+            [cameraDb, motionRegistry](const recording::MotionEventSnapshot& event) {
+                if (event.cameraId.empty()) return;
+                // Bắn cho client TRƯỚC khi ghi DB: Live View chỉ cần biết
+                // "vừa có chuyển động ở mấy ô này", không nên chờ một vòng
+                // ghi đĩa mới thấy.
+                if (motionRegistry) motionRegistry->broadcastEvent(event);
+                // Tắt "lưu sự kiện" thì DỪNG ở đây: live vẫn vẽ được vì đã bắn
+                // WebSocket ở trên, chỉ không còn lịch sử. Giống hệt nhận diện
+                // khẩu trang — loại đó vốn không có bảng nào.
+                if (!event.saveToDb) return;
+                if (!cameraDb) return;
                 try {
                     auto res = cameraDb->insertMotionEvent(
                         event.cameraId.c_str(),
                         event.startAt.c_str(),
                         event.endAt.c_str(),
-                        event.maxScore);
+                        event.maxScore,
+                        event.cells.c_str(),
+                        static_cast<v_int32>(event.gridX),
+                        static_cast<v_int32>(event.gridY),
+                        event.imagePath.c_str());
                     if (res && !res->isSuccess()) {
                         std::cerr << "[recording] insert motion event failed: "
                                   << res->getErrorMessage()->c_str() << std::endl;
@@ -112,6 +127,13 @@ public:
                     std::cerr << "[recording] insert motion event threw unknown error"
                               << std::endl;
                 }
+            },
+            // KHUNG chuyển động: chỉ đẩy ra WebSocket, KHÔNG ghi DB. Nó bắn 5
+            // lần/giây cho mỗi camera đang động — ghi đĩa ngần đó là vô nghĩa,
+            // dữ liệu này chỉ để vẽ lên video đang xem. Registry tự bỏ qua nếu
+            // không ai đăng ký camera đó.
+            [motionRegistry](const recording::MotionFrameSnapshot& frame) {
+                if (motionRegistry) motionRegistry->broadcastFrame(frame);
             });
     }());
 
@@ -135,6 +157,7 @@ private:
         out.defaultHardware = toStdString(in->defaultHardware, out.defaultHardware);
         if (in->recordingEnabled) out.recordingEnabled = *in->recordingEnabled;
         out.recordingDir = toStdString(in->recordingDir, out.recordingDir);
+        out.motionSnapshotDir = toStdString(in->motionSnapshotDir, out.motionSnapshotDir);
         out.webrtcStunServer = toStdString(in->webrtcStunServer, out.webrtcStunServer);
         out.webrtcTurnServer = toStdString(in->webrtcTurnServer, out.webrtcTurnServer);
         return out;

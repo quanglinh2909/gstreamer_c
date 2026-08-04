@@ -26,11 +26,13 @@ public:
                               stream::StreamStatusSink statusSink = {},
                               recording::RecordingSegmentSink segmentSink = {},
                               recording::MotionEventSink motionSink = {},
+                              recording::MotionFrameSink motionFrameSink = {},
                               std::shared_ptr<stream::CameraSourceRegistry> sources = {})
         : m_config(std::move(config)),
           m_statusSink(std::move(statusSink)),
           m_segmentSink(std::move(segmentSink)),
           m_motionSink(std::move(motionSink)),
+          m_motionFrameSink(std::move(motionFrameSink)),
           m_sourceRegistry(sources ? std::move(sources)
                                     : std::make_shared<stream::CameraSourceRegistry>()) {}
 
@@ -150,6 +152,7 @@ public:
             if (found == m_sessions.end()) {
                 session = std::make_shared<CameraStreamSession>(
                     m_config, camera, m_mounts, m_statusSink, m_segmentSink, m_motionSink,
+                    m_motionFrameSink,
                     m_sourceRegistry);
                 m_sessions[camera.id] = session;
             } else {
@@ -188,6 +191,22 @@ public:
             m_sessions.erase(found);
         }
         session->cleanup();
+    }
+
+    /**
+     * "Camera này vừa có sự kiện AI" — giữ đoạn ghi quanh thời điểm đó.
+     * false = camera không tồn tại hoặc đang không ghi hình.
+     */
+    bool noteAiEvent(const oatpp::String& cameraId) {
+        const auto id = toStdString(cameraId);
+        std::shared_ptr<CameraStreamSession> session;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            auto found = m_sessions.find(id);
+            if (found != m_sessions.end()) session = found->second;
+        }
+        if (!session) return false;
+        return session->noteAiEvent();
     }
 
     void restartCamera(const stream::CameraRuntimeConfig& camera) {
@@ -289,6 +308,11 @@ private:
         if (dto->postMotionSeconds) out.postMotionSeconds = *dto->postMotionSeconds;
         if (dto->segmentSeconds) out.segmentSeconds = *dto->segmentSeconds;
         if (dto->motionKeyframeOnly) out.motionKeyframeOnly = *dto->motionKeyframeOnly;
+        if (dto->motionGridX) out.motionGridX = *dto->motionGridX;
+        if (dto->motionGridY) out.motionGridY = *dto->motionGridY;
+        out.motionCellLevels = toStdString(dto->motionCellLevels);
+        out.motionZones = toStdString(dto->motionZones);
+        if (dto->motionSaveEvents) out.motionSaveEvents = *dto->motionSaveEvents;
         return out;
     }
 
@@ -362,6 +386,7 @@ private:
     stream::StreamStatusSink m_statusSink;
     recording::RecordingSegmentSink m_segmentSink;
     recording::MotionEventSink m_motionSink;
+    recording::MotionFrameSink m_motionFrameSink;
     std::shared_ptr<stream::CameraSourceRegistry> m_sourceRegistry;
     GstRTSPServer* m_server = nullptr;
     GstRTSPMountPoints* m_mounts = nullptr;

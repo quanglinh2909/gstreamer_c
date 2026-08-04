@@ -19,6 +19,9 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <cmath>
+#include <cstdlib>
+#include <limits>
 #include <vector>
 
 #include "AiCatalog.hpp"
@@ -261,9 +264,35 @@ private:
         // kiện phía Python đã debounce theo tracker-id và có fallback "ảnh đầy
         // MỚI NHẤT của camera" (process_ai_service) nên không mất ảnh sự kiện dù
         // sự kiện rơi đúng khung bị bỏ encode.
+        //
+        // NGOẠI LỆ — vật thể MỚI xuất hiện thì encode ngay, không đợi hết nhịp.
+        // Lý do: sự kiện phía Python (entered_zone) bắn đúng ở khung ĐẦU TIÊN
+        // đối tượng lọt vào vùng, mà với camera đường phố thì khung đầu tiên
+        // thấy nó cũng thường là khung nó vào vùng luôn. Khung đó bị bỏ ảnh thì
+        // Python phải mượn ảnh cũ, và vật thể MỚI thì không có mặt trong ảnh cũ
+        // để căn hộp về — hộp giữ nguyên toạ độ khung hiện tại và lệch đúng
+        // quãng đường đi trong 400ms. Đo trên camera Cổng PTZ: hộp lưu vào DB
+        // nằm cách người thật ~300px, chạy lại model trên chính ảnh đã lưu thì
+        // không khớp một người nào.
+        //
+        // Nhận biết bằng CHUYỂN ĐỘNG chứ không bằng số lượng: đã thử đếm số
+        // phát hiện tăng, nhưng một vật vào cùng lúc một vật ra thì số đếm
+        // không đổi và ca đó vẫn lệch (đo lại còn 143px và 212px). Chuyển động
+        // mới đúng là thứ sinh ra độ lệch — lệch bao nhiêu CHÍNH LÀ quãng đường
+        // đi được giữa khung có ảnh và khung hiện tại.
+        //
+        // Vật thể MỚI cũng rơi vào đây: không tìm được tâm nào gần nó trong
+        // khung đã encode, nên khoảng cách là vô cùng.
+        //
+        // Cảnh đứng yên (người ngồi làm việc) rung ±vài pixel nên không vượt
+        // ngưỡng -> vẫn giữ nguyên phần tiết kiệm CPU vốn là mục đích của nhịp
+        // 400ms. Cảnh đường phố thì gần như khung nào cũng encode — đúng chỗ
+        // cần trả giá, vì đó mới là chỗ ảnh sự kiện sai.
         bool encode = false;
         if (hasDet) {
-            if (now - m_lastDetJpegMs >= kDetJpegMinGapMs) {
+            const bool moved = now - m_lastDetJpegMs >= kNewObjMinGapMs &&
+                               maxCentreShift(res.detections) > moveThresholdPx();
+            if (moved || now - m_lastDetJpegMs >= kDetJpegMinGapMs) {
                 m_lastDetJpegMs = now;
                 encode = true;
             }
@@ -291,7 +320,16 @@ private:
         if (!encode && now - m_lastEncodeMs >= kSnapshotWarmMs) {
             encode = true;
         }
-        if (encode) m_lastEncodeMs = now;
+        if (encode) {
+            m_lastEncodeMs = now;
+            // Mốc so sánh cho lần sau là tâm các phát hiện ở khung ĐÃ có ảnh.
+            m_lastEncodedCentres.clear();
+            m_lastEncodedCentres.reserve(res.detections.size());
+            for (const Detection& d : res.detections) {
+                m_lastEncodedCentres.push_back({(d.x1 + d.x2) * 0.5f,
+                                                (d.y1 + d.y2) * 0.5f});
+            }
+        }
 
         // The JPEG encode is SOFTWARE (libjpeg-turbo; mppjpegenc freezes the
         // board, see JpegEncoder) and costs ~a frame period of CPU at 1080p.
@@ -442,6 +480,50 @@ private:
     // ảnh mới nhất) trong khi metadata vẫn ra mỗi khung. Worker-thread only.
     uint64_t m_lastDetJpegMs = 0;
     static constexpr uint64_t kDetJpegMinGapMs = 400;  // ~2.5 fps ảnh phát hiện
+    // Tâm các phát hiện ở khung ĐÃ encode gần nhất, để đo vật đã đi bao xa kể
+    // từ tấm ảnh Python đang cầm. Worker-thread only.
+    struct Centre { float x, y; };
+    std::vector<Centre> m_lastEncodedCentres;
+    // Sàn thời gian cho ngoại lệ chuyển động — trần ~8fps ảnh, trong khi AI
+    // thường chạy 5fps nên thực tế không chạm tới.
+    static constexpr uint64_t kNewObjMinGapMs = 120;
+    // Đi quá ngần này (pixel, hệ toạ độ gốc) so với khung đã encode thì ảnh cũ
+    // không còn dùng để cắt/vẽ được nữa. 30px ở 1080p: rung của vật đứng yên
+    // đo được dưới 10px, còn xe máy 40km/h đi 30px chỉ trong ~80ms.
+    static constexpr float kMoveThresholdPxDefault = 30.0f;
+
+    // Chỉnh được qua env AI_JPEG_MOVE_PX để A/B đo CPU mà không phải build lại;
+    // đặt số rất lớn (vd 99999) là quay về hành vi cũ chỉ-chặn-theo-nhịp.
+    static float moveThresholdPx() {
+        static const float value = [] {
+            if (const char* raw = std::getenv("AI_JPEG_MOVE_PX")) {
+                const float parsed = std::atof(raw);
+                if (parsed >= 0.0f) return parsed;
+            }
+            return kMoveThresholdPxDefault;
+        }();
+        return value;
+    }
+
+    // Quãng đường LỚN NHẤT mà một phát hiện đã đi kể từ khung encode gần nhất.
+    // Vật thể mới (không có tâm nào gần trong khung cũ) trả về vô cùng.
+    float maxCentreShift(const std::vector<Detection>& dets) const {
+        if (m_lastEncodedCentres.empty()) return std::numeric_limits<float>::max();
+        float worst = 0.0f;
+        for (const Detection& d : dets) {
+            const float cx = (d.x1 + d.x2) * 0.5f;
+            const float cy = (d.y1 + d.y2) * 0.5f;
+            float nearest = std::numeric_limits<float>::max();
+            for (const Centre& c : m_lastEncodedCentres) {
+                const float dx = cx - c.x, dy = cy - c.y;
+                const float dist2 = dx * dx + dy * dy;
+                if (dist2 < nearest) nearest = dist2;
+            }
+            nearest = std::sqrt(nearest);
+            if (nearest > worst) worst = nearest;
+        }
+        return worst;
+    }
 
     // Snapshot cache keepalive (see process()). Must stay comfortably under
     // the freshness window CameraService::getSnapshot asks for (5000ms), or

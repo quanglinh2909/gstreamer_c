@@ -42,6 +42,13 @@ struct GStreamerConfig {
     std::string defaultHardware = "auto";
     bool recordingEnabled = false;
     std::string recordingDir = "recordings";
+    // Ảnh JPEG chụp lúc bắt đầu MỖI sự kiện chuyển động, để xem lại còn thấy
+    // được khung hình như các sự kiện AI khác.
+    //
+    // Thư mục RIÊNG, không nằm trong recordingDir: bộ dọn dung lượng bên
+    // Python đo dung lượng từng loại bằng `du` trên đúng một thư mục, nhét
+    // chung vào recordings là ảnh chuyển động bị tính vào hạn mức của video.
+    std::string motionSnapshotDir = "motion-snapshots";
     // STUN server cho WebRTC. Để TRỐNG khi xem trong cùng mạng LAN: lúc đó
     // candidate host là đủ và không phải chờ round-trip ra Internet. Chỉ cần
     // đặt (vd "stun://stun.l.google.com:19302") khi người xem ở mạng khác.
@@ -68,6 +75,25 @@ struct CameraRuntimeConfig {
     uint32_t postMotionSeconds = 20;
     uint32_t segmentSeconds = 10;
     bool motionKeyframeOnly = false;
+    // Lưới phát hiện chuyển động theo ô. motioncells chỉ nhận gridx/gridy trong
+    // khoảng 8..32.
+    uint32_t motionGridX = 32;
+    uint32_t motionGridY = 32;
+    // BỎ KHÔNG DÙNG. Bản trước lưu một chữ số mức cho MỖI ô rồi gom ô cùng mức
+    // thành một motioncells kèm mặt nạ che ô của mức khác. Cách đó CHẾT vì
+    // motioncells chỉ đọc 255 ô đầu của motionmaskcellspos (đo trực tiếp: che
+    // 255, 256 hay 300 ô đều ra kết quả y hệt) — lưới 20x20 trở lên là mặt nạ
+    // vượt ngưỡng và phần dò SAI trong im lặng. Giữ cột lại để không mất dữ
+    // liệu cũ; cái đang dùng là motionZones.
+    std::string motionCellLevels;
+    // Danh sách VÙNG chữ nhật, JSON:
+    //   [{"r1":4,"c1":4,"r2":6,"c2":7,"level":8}, ...]
+    // Toạ độ theo Ô của lưới, bao gồm cả hai đầu. level 1..10 = cần level*10%
+    // số ô CỦA CHÍNH VÙNG ĐÓ cùng động. Hai vùng cùng mức vẫn là hai vùng riêng.
+    std::string motionZones;
+    // Ghi sự kiện xuống DB hay chỉ bắn WebSocket. Tắt thì lớp phủ live vẫn vẽ
+    // bình thường, chỉ là không còn lịch sử để xem lại/tìm kiếm.
+    bool motionSaveEvents = true;
 };
 
 struct StreamStatusSnapshot {

@@ -28,6 +28,7 @@ public:
                         stream::StreamStatusSink statusSink = {},
                         recording::RecordingSegmentSink segmentSink = {},
                         recording::MotionEventSink motionSink = {},
+                        recording::MotionFrameSink motionFrameSink = {},
                         std::shared_ptr<stream::CameraSourceRegistry> sources = {})
         : m_config(std::move(config)),
           m_camera(std::move(camera)),
@@ -37,6 +38,7 @@ public:
           m_statusSink(std::move(statusSink)),
           m_segmentSink(std::move(segmentSink)),
           m_motionSink(std::move(motionSink)),
+          m_motionFrameSink(std::move(motionFrameSink)),
           m_sourceRegistry(std::move(sources))
     {
         if (m_camera.hardware.empty()) m_camera.hardware = m_config.defaultHardware;
@@ -195,6 +197,24 @@ public:
         notifyStatusChanged();
     }
 
+    /**
+     * Chuyển tiếp "vừa có sự kiện AI" xuống phiên ghi hình.
+     *
+     * Trả false khi camera này không đang ghi, hoặc đang ghi ở chế độ khác
+     * 'motion' — bên gọi (HTTP) cần phân biệt "đã giữ" với "cấu hình này chưa
+     * có tác dụng", chứ báo 200 cho cả hai là người dùng bật 'chỉ ghi khi có
+     * sự kiện' rồi ngồi chờ mãi không hiểu vì sao không có gì.
+     */
+    bool noteAiEvent() {
+        std::shared_ptr<CameraRecordingSession> recording;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            recording = m_recording;
+        }
+        if (!recording) return false;
+        return recording->noteAiEvent();
+    }
+
     stream::StreamStatusSnapshot snapshot() const {
         std::lock_guard<std::mutex> lock(m_mutex);
         stream::StreamStatusSnapshot out;
@@ -288,7 +308,8 @@ private:
         };
 
         auto session = std::make_shared<CameraRecordingSession>(
-            m_config, m_camera, codec, m_segmentSink, m_motionSink, recordingErrorSink,
+            m_config, m_camera, codec, m_segmentSink, m_motionSink, m_motionFrameSink,
+            recordingErrorSink,
             std::move(source));
         if (!session->start()) {
             return;
@@ -692,6 +713,7 @@ private:
     stream::StreamStatusSink m_statusSink;
     recording::RecordingSegmentSink m_segmentSink;
     recording::MotionEventSink m_motionSink;
+    recording::MotionFrameSink m_motionFrameSink;
     std::shared_ptr<stream::CameraSourceRegistry> m_sourceRegistry;
     std::shared_ptr<CameraRecordingSession> m_recording;
 

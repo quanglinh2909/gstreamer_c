@@ -286,6 +286,49 @@ public:
                                  m_service.getMotionEvents(id, decodeParam(from), decodeParam(to)));
     }
 
+    ENDPOINT_INFO(noteAiEvent) {
+        info->summary = "Bao engine rang camera vua co su kien AI (giu doan ghi)";
+        info->addConsumes<oatpp::Object<AiEventDto>>("application/json");
+        info->addResponse<oatpp::Object<StatusDto>>(
+            Status::CODE_200, "application/json");
+        info->addResponse<oatpp::Object<StatusDto>>(
+            Status::CODE_404, "application/json");
+    }
+    ENDPOINT("POST", "/cameras/{id}/ai-event", noteAiEvent,
+             PATH(oatpp::String, id),
+             BODY_DTO(oatpp::Object<AiEventDto>, body))
+    {
+        return createDtoResponse(Status::CODE_200,
+                                 m_service.noteAiEvent(id, body));
+    }
+
+    ENDPOINT_INFO(getMotionEventImage) {
+        info->summary = "Khung hinh cua mot su kien chuyen dong";
+        info->addResponse<String>(Status::CODE_200, "image/jpeg");
+        info->addResponse<oatpp::Object<StatusDto>>(
+            Status::CODE_404, "application/json");
+    }
+    ENDPOINT("GET", "/motion-events/{id}/image", getMotionEventImage,
+             PATH(oatpp::String, id))
+    {
+        const std::string path = m_service.getMotionEventImagePath(id);
+        std::ifstream file(path, std::ios::binary);
+        // Hàng còn mà file mất (đã bị dọn dung lượng xoá) -> 404 chứ không 500:
+        // với người xem thì "không có ảnh" chứ không phải "máy chủ hỏng".
+        OATPP_ASSERT_HTTP(file.good(), Status::CODE_404, "Motion image not found");
+        std::string contents((std::istreambuf_iterator<char>(file)),
+                             std::istreambuf_iterator<char>());
+
+        auto response = createResponse(
+            Status::CODE_200, oatpp::String(contents.data(), contents.size()));
+        response->putHeader("Content-Type", "image/jpeg");
+        // Ảnh của một sự kiện đã kết thúc thì không bao giờ đổi -> cache thoải
+        // mái. Bảng sự kiện cuộn qua hàng trăm thẻ, tải lại mỗi lần là phí.
+        response->putHeader("Cache-Control", "public, max-age=86400");
+        response->putHeader("Access-Control-Allow-Origin", "*");
+        return response;
+    }
+
     ENDPOINT_INFO(getRecordingFile) {
         info->summary = "Download a recording segment file (supports HTTP Range)";
         info->addResponse<String>(Status::CODE_200, "video/mp2t");

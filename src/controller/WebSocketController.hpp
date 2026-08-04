@@ -30,9 +30,19 @@ public:
             request->getHeaders(), m_websocketConnectionHandler);
     }
 
+    // Sự kiện chuyển động, kèm danh sách ô đã động (xem MotionEventSocket.hpp).
+    ENDPOINT("GET", "/ws/motion-events", wsMotionEvents,
+             REQUEST(std::shared_ptr<IncomingRequest>, request))
+    {
+        return oatpp::websocket::Handshaker::serversideHandshake(
+            request->getHeaders(), m_motionWebsocketConnectionHandler);
+    }
+
 private:
     OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>,
                     m_websocketConnectionHandler, "websocket");
+    OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>,
+                    m_motionWebsocketConnectionHandler, "websocket-motion");
 };
 
 #include OATPP_CODEGEN_END(ApiController)

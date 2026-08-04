@@ -381,20 +381,25 @@ void testUuidValidationRejectsMalformedPathIds() {
 
 void testMotionMessageClassification() {
     using recording::MotionMessageKind;
-    // motioncells posts element messages named "motion" for BOTH the start
-    // and the end of a motion event — the field present distinguishes them:
-    // "motion_begin" on start, "motion_finished" on end.
-    assert(recording::classifyMotionMessage("motion", true, false)
+    // motioncells gửi thông điệp tên "motion" cho cả ba việc; trường nào có mặt
+    // mới phân biệt được: motion_begin (khung đầu), motion (mỗi khung tiếp
+    // theo), motion_finished (đã im lặng đủ gap).
+    assert(recording::classifyMotionMessage("motion", true, false, true)
            == MotionMessageKind::Started);
-    assert(recording::classifyMotionMessage("motion", false, true)
+    assert(recording::classifyMotionMessage("motion", false, true, false)
            == MotionMessageKind::Finished);
     // "motion_finished" wins if both fields are somehow present.
-    assert(recording::classifyMotionMessage("motion", true, true)
+    assert(recording::classifyMotionMessage("motion", true, true, true)
            == MotionMessageKind::Finished);
-    // A "motion" structure with neither field, or any non-motion structure.
-    assert(recording::classifyMotionMessage("motion", false, false)
+    // KHUNG GIỮA: chỉ có motion_cells_indices, không có motion_begin. Đây là
+    // phần lớn thông điệp khi postallmotion=true — bỏ qua chúng thì bản dò theo
+    // vùng (đếm ô trên từng khung) gần như không bao giờ chạy.
+    assert(recording::classifyMotionMessage("motion", false, false, true)
+           == MotionMessageKind::Started);
+    // A "motion" structure with no field at all, or any non-motion structure.
+    assert(recording::classifyMotionMessage("motion", false, false, false)
            == MotionMessageKind::None);
-    assert(recording::classifyMotionMessage("splitmuxsink-fragment-closed", false, true)
+    assert(recording::classifyMotionMessage("splitmuxsink-fragment-closed", false, true, false)
            == MotionMessageKind::None);
 }
 
