@@ -205,6 +205,24 @@ public:
      * có tác dụng", chứ báo 200 cho cả hai là người dùng bật 'chỉ ghi khi có
      * sự kiện' rồi ngồi chờ mãi không hiểu vì sao không có gì.
      */
+    /** Chuyển tiếp nguồn ảnh sự kiện xuống phiên ghi hình. */
+    void setMotionJpegSource(
+        std::function<std::vector<uint8_t>(const std::string&)> source) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_motionJpegSource = std::move(source);
+        if (m_recording) m_recording->setMotionJpegSource(m_motionJpegSource);
+    }
+
+    /** Ô đã động của một khung, do MotionDetector trên pipeline AI gửi sang. */
+    void noteMotionCells(const std::string& indices) {
+        std::shared_ptr<CameraRecordingSession> recording;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            recording = m_recording;
+        }
+        if (recording) recording->noteMotionCells(indices);
+    }
+
     bool noteAiEvent() {
         std::shared_ptr<CameraRecordingSession> recording;
         {
@@ -311,6 +329,12 @@ private:
             m_config, m_camera, codec, m_segmentSink, m_motionSink, m_motionFrameSink,
             recordingErrorSink,
             std::move(source));
+        // Đặt TRƯỚC start(): sự kiện đầu tiên có thể tới ngay khung đầu tiên,
+        // nối sau là sự kiện đó không có ảnh.
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if (m_motionJpegSource) session->setMotionJpegSource(m_motionJpegSource);
+        }
         if (!session->start()) {
             return;
         }
@@ -714,6 +738,7 @@ private:
     recording::RecordingSegmentSink m_segmentSink;
     recording::MotionEventSink m_motionSink;
     recording::MotionFrameSink m_motionFrameSink;
+    std::function<std::vector<uint8_t>(const std::string&)> m_motionJpegSource;
     std::shared_ptr<stream::CameraSourceRegistry> m_sourceRegistry;
     std::shared_ptr<CameraRecordingSession> m_recording;
 

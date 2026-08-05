@@ -25,6 +25,9 @@
 #include "Config.hpp"
 #include "ResultPublisher.hpp"
 #include "pipeline/AiCameraPipeline.hpp"
+#include "JpegEncoder.hpp"
+#include "RgaConverter.hpp"
+#include "pipeline/MotionDetector.hpp"
 #include "pipeline/AiJob.hpp"
 #include "postprocess.h"
 #include "service/CameraSourceRegistry.hpp"
@@ -44,6 +47,87 @@ public:
     void setSourceRegistry(std::shared_ptr<stream::CameraSourceRegistry> sources) {
         std::lock_guard<std::mutex> lock(m_mutex);
         m_sources = std::move(sources);
+    }
+
+    // Nơi nhận ô đã động của MỖI khung được phân tích: (cameraId, "r:c,r:c").
+    // Gọi cả khi chuỗi rỗng — bên nhận cần tin "khung này không có gì" để đóng
+    // sự kiện đang mở. Đặt một lần lúc dựng component (App.cpp), truyền bằng
+    // std::function để AiManager KHÔNG phải include GStreamerService (hai
+    // chiều include nhau là vòng).
+    void setMotionSink(std::function<void(const std::string&, const std::string&)> sink) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_motionSink = std::move(sink);
+    }
+
+    // Bật/tắt dò chuyển động cho một camera. Gọi từ GStreamerService mỗi khi
+    // camera khởi động / đổi cấu hình / dừng.
+    //
+    // Camera KHÔNG có job AI nào vẫn dựng pipeline nếu bật chuyển động: lúc đó
+    // pipeline chỉ để giải mã + RGA, và đó vẫn rẻ hơn nhiều so với nhánh
+    // GStreamer riêng trước đây (đo được ~25% -> vài %).
+    void setCameraMotion(const cfg::Camera& camera, bool enabled,
+                         uint32_t gridX, uint32_t gridY) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_started) return;
+
+        auto found = m_groups.find(camera.id);
+        if (!enabled) {
+            if (found == m_groups.end() || !found->second.motionEnabled) return;
+            found->second.motionEnabled = false;
+            // Không còn job lẫn chuyển động -> bỏ hẳn nhóm, đừng giữ một
+            // pipeline giải mã không ai dùng.
+            if (found->second.jobConfigs.empty()) {
+                teardownLocked(found->second);
+                m_groups.erase(found);
+                return;
+            }
+            rebuildLocked(found->second);
+            return;
+        }
+
+        CameraGroup& group = m_groups[camera.id];
+        const bool unchanged = group.motionEnabled &&
+                               group.motionGridX == gridX &&
+                               group.motionGridY == gridY &&
+                               group.camera.uri == camera.uri;
+        group.camera = camera;
+        group.motionEnabled = true;
+        group.motionGridX = gridX;
+        group.motionGridY = gridY;
+        // Dựng lại pipeline là ngắt luồng vài giây; chỉ làm khi thực sự đổi.
+        if (unchanged) return;
+        rebuildLocked(group);
+    }
+
+    /**
+     * JPEG của khung MỚI NHẤT mà bộ dò chuyển động của camera này đã xem.
+     * Rỗng khi camera không bật chuyển động hoặc chưa có khung nào.
+     *
+     * Mã hoá NGAY LÚC GỌI (tức lúc một sự kiện bắt đầu) chứ không encode đều
+     * đặn rồi cất sẵn: sự kiện là chuyện thi thoảng, còn encode 1 khung/giây
+     * liên tục đã đo được 5,6% CPU mỗi camera — gần như toàn bộ đổ đi.
+     */
+    std::vector<uint8_t> grabMotionJpeg(const std::string& cameraId) {
+        FramePtr frame;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            auto found = m_groups.find(cameraId);
+            if (found == m_groups.end() || !found->second.motion) return {};
+            frame = found->second.motion->latestFrame();
+        }
+        if (!frame || frame->rgb.empty()) return {};
+
+        // JpegEncoder nhận NV12; khung của bộ dò là RGB888 ở cỡ inference.
+        const int w = frame->inferW;
+        const int h = frame->inferH;
+        if (w <= 0 || h <= 0) return {};
+        std::vector<uint8_t> nv12(static_cast<size_t>(w) * h * 3 / 2);
+        if (!rga::rgbToNv12(frame->rgb.data(), w, h, nv12.data())) return {};
+
+        std::vector<uint8_t> jpeg;
+        std::lock_guard<std::mutex> lock(m_motionJpegMutex);
+        if (!m_motionJpeg.encodeNv12(nv12.data(), w, h, jpeg)) return {};
+        return jpeg;
     }
 
     // Initialises postprocessing and the result publisher. Idempotent.
@@ -184,6 +268,12 @@ private:
         std::vector<cfg::AiJob> jobConfigs;        // desired set
         std::vector<std::unique_ptr<AiJob>> jobs;  // live workers
         std::unique_ptr<AiCameraPipeline> pipeline;
+
+        // Chuyển động chạy như một người tiêu thụ khung nữa của cùng pipeline.
+        bool motionEnabled = false;
+        uint32_t motionGridX = 32;
+        uint32_t motionGridY = 32;
+        std::unique_ptr<MotionDetector> motion;
     };
 
     static void stopGroupRuntime(CameraGroup& group) {
@@ -198,6 +288,9 @@ private:
             group.pipeline->stop();
             group.pipeline.reset();
         }
+        // SAU pipeline: nó gọi thẳng vào detector trên thread appsink, huỷ
+        // trước khi pipeline dừng là gọi vào vùng nhớ đã giải phóng.
+        group.motion.reset();
     }
 
     void teardownLocked(CameraGroup& group) { stopGroupRuntime(group); }
@@ -228,7 +321,9 @@ private:
             group.jobs.push_back(std::move(job));
         }
 
-        if (group.jobs.empty()) return;
+        // KHÔNG còn "không job thì thôi": camera chỉ bật chuyển động vẫn cần
+        // pipeline này để có khung đã giải mã + đã qua RGA.
+        if (group.jobs.empty() && !group.motionEnabled) return;
 
         std::vector<AiJob*> jobPtrs;
         jobPtrs.reserve(group.jobs.size());
@@ -247,14 +342,29 @@ private:
             };
         }
 
+        std::function<void(const FramePtr&)> motionSink;
+        if (group.motionEnabled) {
+            auto sink = m_motionSink;
+            const std::string cid = group.camera.id;
+            group.motion.reset(new MotionDetector(
+                cid, group.motionGridX, group.motionGridY,
+                [sink, cid](const std::string& cells) {
+                    if (sink) sink(cid, cells);
+                }));
+            MotionDetector* detector = group.motion.get();
+            motionSink = [detector](const FramePtr& frame) { detector->submit(frame); };
+        }
+
         group.pipeline.reset(new AiCameraPipeline(
-            group.camera, kInferW, kInferH, kPadColor, jobPtrs, std::move(lookup)));
+            group.camera, kInferW, kInferH, kPadColor, jobPtrs, std::move(lookup),
+            std::move(motionSink)));
 
         for (auto& job : group.jobs) job->start();
         group.pipeline->start();
 
-        std::fprintf(stderr, "[ai] camera %s running %zu job(s)\n",
-                     group.camera.id.c_str(), group.jobs.size());
+        std::fprintf(stderr, "[ai] camera %s running %zu job(s)%s\n",
+                     group.camera.id.c_str(), group.jobs.size(),
+                     group.motionEnabled ? " + chuyen dong" : "");
     }
 
     struct CachedJpeg {
@@ -285,6 +395,12 @@ private:
     // Sổ nguồn RTP dùng chung để pipeline AI bám kết nối sẵn có (xem
     // setSourceRegistry). nullptr => AI tự mở rtspsrc như cũ.
     std::shared_ptr<stream::CameraSourceRegistry> m_sources;
+    // (cameraId, "r:c,r:c") -> CameraRecordingSession. Xem setMotionSink.
+    std::function<void(const std::string&, const std::string&)> m_motionSink;
+    // Bộ mã hoá JPEG dùng riêng cho ảnh sự kiện chuyển động (khoá riêng để
+    // không chặn m_mutex trong lúc encode).
+    std::mutex m_motionJpegMutex;
+    JpegEncoder m_motionJpeg;
 
     mutable std::mutex m_cacheMutex;
     std::unordered_map<std::string, CachedJpeg> m_latestJpegs;

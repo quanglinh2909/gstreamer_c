@@ -31,7 +31,7 @@ public:
                                       in->recordingMode, in->motionEnabled,
                                       in->motionSensitivity, in->motionThreshold,
                                       in->preMotionSeconds, in->postMotionSeconds,
-                                      in->segmentSeconds, in->motionKeyframeOnly,
+                                      in->segmentSeconds,
                                       in->motionGridX, in->motionGridY,
                                       in->motionCellLevels,
                                       in->motionZones,
@@ -124,7 +124,7 @@ public:
                                       in->recordingMode, in->motionEnabled,
                                       in->motionSensitivity, in->motionThreshold,
                                       in->preMotionSeconds, in->postMotionSeconds,
-                                      in->segmentSeconds, in->motionKeyframeOnly,
+                                      in->segmentSeconds,
                                       in->motionGridX, in->motionGridY,
                                       in->motionCellLevels,
                                       in->motionZones,
@@ -386,8 +386,7 @@ private:
                    static_cast<bool>(in->motionThreshold),
                    static_cast<bool>(in->preMotionSeconds),
                    static_cast<bool>(in->postMotionSeconds),
-                   static_cast<bool>(in->segmentSeconds),
-                   static_cast<bool>(in->motionKeyframeOnly)) ||
+                   static_cast<bool>(in->segmentSeconds)) ||
                // Đổi lưới/mức là phải dựng lại pipeline: số motioncells và mặt
                // nạ nằm trong chuỗi launch, không set nóng được.
                static_cast<bool>(in->motionGridX) ||

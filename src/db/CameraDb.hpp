@@ -22,7 +22,7 @@ public:
           "  name, rtsp, state, input_rtsp, output_rtsp, codec, "
           "  hardware, recording_enabled, recording_mode, motion_enabled, "
           "  motion_sensitivity, motion_threshold, pre_motion_seconds, "
-          "  post_motion_seconds, segment_seconds, motion_keyframe_only, "
+          "  post_motion_seconds, segment_seconds, "
           "  motion_grid_x, motion_grid_y, motion_cell_levels, motion_zones, "
           "  motion_save_events, retention_days, "
           "  retry_count, last_error, last_changed_at"
@@ -33,7 +33,7 @@ public:
           "  COALESCE(:recordingMode, 'off'), COALESCE(:motionEnabled, false), "
           "  COALESCE(:motionSensitivity, 0.5), COALESCE(:motionThreshold, 0.01), "
           "  COALESCE(:preMotionSeconds, 10), COALESCE(:postMotionSeconds, 20), "
-          "  COALESCE(:segmentSeconds, 10), COALESCE(:motionKeyframeOnly, false), "
+          "  COALESCE(:segmentSeconds, 10), "
           "  COALESCE(:motionGridX, 32), COALESCE(:motionGridY, 32), "
           "  COALESCE(:motionCellLevels, ''), COALESCE(:motionZones, ''), "
           "  COALESCE(:motionSaveEvents, true), COALESCE(:retentionDays, 0), 0, '', ''"
@@ -45,7 +45,6 @@ public:
           "motion_sensitivity AS \"motionSensitivity\", motion_threshold AS \"motionThreshold\", "
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
-          "motion_keyframe_only AS \"motionKeyframeOnly\", "
           "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
           "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
           "motion_save_events AS \"motionSaveEvents\", "
@@ -61,7 +60,6 @@ public:
           PARAM(oatpp::UInt32, preMotionSeconds),
           PARAM(oatpp::UInt32, postMotionSeconds),
           PARAM(oatpp::UInt32, segmentSeconds),
-          PARAM(oatpp::Boolean, motionKeyframeOnly),
           PARAM(oatpp::UInt32, motionGridX),
           PARAM(oatpp::UInt32, motionGridY),
           PARAM(oatpp::String, motionCellLevels),
@@ -77,7 +75,6 @@ public:
           "motion_sensitivity AS \"motionSensitivity\", motion_threshold AS \"motionThreshold\", "
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
-          "motion_keyframe_only AS \"motionKeyframeOnly\", "
           "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
           "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
           "motion_save_events AS \"motionSaveEvents\", "
@@ -94,7 +91,6 @@ public:
           "motion_sensitivity AS \"motionSensitivity\", motion_threshold AS \"motionThreshold\", "
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
-          "motion_keyframe_only AS \"motionKeyframeOnly\", "
           "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
           "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
           "motion_save_events AS \"motionSaveEvents\", "
@@ -112,7 +108,6 @@ public:
           "motion_sensitivity AS \"motionSensitivity\", motion_threshold AS \"motionThreshold\", "
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
-          "motion_keyframe_only AS \"motionKeyframeOnly\", "
           "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
           "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
           "motion_save_events AS \"motionSaveEvents\", "
@@ -134,7 +129,6 @@ public:
           "  pre_motion_seconds = COALESCE(:preMotionSeconds, pre_motion_seconds), "
           "  post_motion_seconds = COALESCE(:postMotionSeconds, post_motion_seconds), "
           "  segment_seconds   = COALESCE(:segmentSeconds, segment_seconds), "
-          "  motion_keyframe_only = COALESCE(:motionKeyframeOnly, motion_keyframe_only), "
           "  motion_grid_x = COALESCE(:motionGridX, motion_grid_x), "
           "  motion_grid_y = COALESCE(:motionGridY, motion_grid_y), "
           "  motion_cell_levels = COALESCE(:motionCellLevels, motion_cell_levels), "
@@ -149,7 +143,6 @@ public:
           "motion_sensitivity AS \"motionSensitivity\", motion_threshold AS \"motionThreshold\", "
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
-          "motion_keyframe_only AS \"motionKeyframeOnly\", "
           "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
           "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
           "motion_save_events AS \"motionSaveEvents\", "
@@ -166,7 +159,6 @@ public:
           PARAM(oatpp::UInt32, preMotionSeconds),
           PARAM(oatpp::UInt32, postMotionSeconds),
           PARAM(oatpp::UInt32, segmentSeconds),
-          PARAM(oatpp::Boolean, motionKeyframeOnly),
           PARAM(oatpp::UInt32, motionGridX),
           PARAM(oatpp::UInt32, motionGridY),
           PARAM(oatpp::String, motionCellLevels),
@@ -209,7 +201,6 @@ public:
           "motion_sensitivity AS \"motionSensitivity\", motion_threshold AS \"motionThreshold\", "
           "pre_motion_seconds AS \"preMotionSeconds\", post_motion_seconds AS \"postMotionSeconds\", "
           "segment_seconds AS \"segmentSeconds\", "
-          "motion_keyframe_only AS \"motionKeyframeOnly\", "
           "motion_grid_x AS \"motionGridX\", motion_grid_y AS \"motionGridY\", "
           "motion_cell_levels AS \"motionCellLevels\", motion_zones AS \"motionZones\", "
           "motion_save_events AS \"motionSaveEvents\", "

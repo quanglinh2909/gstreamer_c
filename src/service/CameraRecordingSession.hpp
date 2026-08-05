@@ -97,6 +97,49 @@ public:
      * không có nhánh dò nào (đỡ CPU) mà chế độ ghi 'motion' vẫn hoạt động —
      * chỉ là do AI đánh thức thay vì do ô lưới.
      */
+    /**
+     * Danh sách ô đã động của MỘT khung ("r:c,r:c"), rỗng = khung này không có
+     * gì. Điểm vào DUY NHẤT cho việc xét vùng, dùng chung cho hai nguồn:
+     *
+     *   * motioncells trong pipeline ghi hình (đường cũ), và
+     *   * MotionDetector chạy trên khung của pipeline AI (đường mới, rẻ hơn
+     *       một bậc vì khung đã được giải mã và RGA co giãn sẵn).
+     *
+     * Gọi từ thread nào cũng được: mọi trạng thái đụng tới đều nằm trong khoá.
+     */
+    /** Nguồn ảnh sự kiện: (cameraId) -> JPEG. Xem writeMotionSnapshot. */
+    void setMotionJpegSource(
+        std::function<std::vector<uint8_t>(const std::string&)> source) {
+        m_motionJpegSource = std::move(source);
+    }
+
+    void noteMotionCells(const std::string& indices) {
+        if (!isMotionMode() && !m_camera.motionEnabled) return;
+
+        const auto hitCells = evaluateZones(indices);
+        if (!hitCells.empty()) {
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                for (const auto& cell : hitCells) m_motionCells.insert(cell);
+                m_lastZoneHit = Clock::now();
+            }
+            startOrUpdateMotionEvent();
+            return;
+        }
+
+        // Có động nhưng KHÔNG vùng nào đủ ngưỡng (hoặc không động gì). Nếu đã
+        // im đủ lâu thì đóng sự kiện ngay tại đây: cảnh có thứ động liên tục
+        // ngoài vùng (cây, quạt) thì không bao giờ có tin "hết chuyển động",
+        // và sự kiện sẽ treo mãi.
+        bool expired = false;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            expired = m_motionActive &&
+                      (Clock::now() - m_lastZoneHit) >= postMotionDuration();
+        }
+        if (expired) finishMotionEvent();
+    }
+
     bool noteAiEvent() {
         // Chế độ 'always' đã ghi mọi thứ, 'off' thì không ghi gì — cả hai đều
         // không có đoạn nào để giữ. Trả false chứ không im lặng bỏ qua: bên
@@ -178,10 +221,6 @@ public:
                     delete static_cast<std::weak_ptr<CameraRecordingSession>*>(data);
                 });
             gst_object_unref(bus);
-        }
-
-        if (includeMotionBranch && m_camera.motionKeyframeOnly) {
-            installKeyframeOnlyProbe(pipeline);
         }
 
         {
@@ -364,27 +403,6 @@ private:
     // Stateless pad probe: drops encoded P/B frames so the motion decoder only
     // processes IDR keyframes. No userData, so nothing to outlive — the probe
     // is released together with the pipeline.
-    static GstPadProbeReturn dropDeltaFramesProbe(GstPad*, GstPadProbeInfo* info, gpointer) {
-        GstBuffer* buffer = GST_PAD_PROBE_INFO_BUFFER(info);
-        if (buffer && GST_BUFFER_FLAG_IS_SET(buffer, GST_BUFFER_FLAG_DELTA_UNIT)) {
-            return GST_PAD_PROBE_DROP;
-        }
-        return GST_PAD_PROBE_OK;
-    }
-
-    static void installKeyframeOnlyProbe(GstElement* pipeline) {
-        GstElement* queue = gst_bin_get_by_name(GST_BIN(pipeline), "motion_q");
-        if (!queue) return;  // no motion branch in this pipeline
-        GstPad* pad = gst_element_get_static_pad(queue, "sink");
-        if (pad) {
-            gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER,
-                              &CameraRecordingSession::dropDeltaFramesProbe,
-                              nullptr, nullptr);
-            gst_object_unref(pad);
-        }
-        gst_object_unref(queue);
-    }
-
     static std::string gstMessageErrorText(GstMessage* message) {
         GError* error = nullptr;
         gchar* debug = nullptr;
@@ -404,9 +422,12 @@ private:
         return recording::effectiveRecordingMode(m_camera) == recording::RecordingMode::Motion;
     }
 
+    // Nhánh dò chuyển động chỉ chạy khi NGƯỜI DÙNG bật phát hiện chuyển động.
+    // KHÔNG kéo theo `mode == Motion`: xem ghi chú dài ở RecordingTypes.hpp,
+    // chỗ dựng chuỗi launch. Đây phải khớp đúng với điều kiện ở đó, lệch nhau
+    // là m_motionBranchEnabled nói dối về một nhánh không tồn tại.
     bool shouldUseMotionBranch() const {
-        const auto mode = recording::effectiveRecordingMode(m_camera);
-        return mode == recording::RecordingMode::Motion || m_camera.motionEnabled;
+        return m_camera.motionEnabled;
     }
 
     bool canFallbackToRecordOnly() const {
@@ -586,11 +607,6 @@ private:
         // Ngưỡng của nó đặt ở mức một ô cũng báo, và KHÔNG có mặt nạ — vì mặt nạ
         // chỉ đọc được 255 ô đầu (đã đo). Việc "ô đó có thuộc vùng nào không" và
         // "vùng đó đủ số ô chưa" do chính chỗ này quyết định.
-        std::vector<std::string> hitCells;
-        if (const gchar* cells = gst_structure_get_string(structure, "motion_cells_indices")) {
-            hitCells = evaluateZones(cells);
-        }
-
         // Phần tử tự báo hết chuyển động (im lặng suốt `gap` giây) — chốt sự
         // kiện. Đây là đường lùi cho trường hợp cả khung hình đứng yên hẳn, lúc
         // đó không còn thông điệp nào để xét theo vùng nữa.
@@ -599,27 +615,8 @@ private:
             return;
         }
 
-        if (!hitCells.empty()) {
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                for (const auto& cell : hitCells) m_motionCells.insert(cell);
-                m_lastZoneHit = Clock::now();
-            }
-            startOrUpdateMotionEvent();
-            return;
-        }
-
-        // Có động nhưng KHÔNG vùng nào đủ ngưỡng. Nếu đã im đủ lâu thì đóng sự
-        // kiện ngay tại đây, không đợi phần tử: cảnh có thứ động liên tục ngoài
-        // vùng (cây, quạt) thì nó không bao giờ báo hết chuyển động, và sự kiện
-        // sẽ treo mãi.
-        bool expired = false;
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            expired = m_motionActive &&
-                      (Clock::now() - m_lastZoneHit) >= postMotionDuration();
-        }
-        if (expired) finishMotionEvent();
+        const gchar* cells = gst_structure_get_string(structure, "motion_cells_indices");
+        noteMotionCells(cells ? cells : "");
     }
 
     /**
@@ -799,54 +796,37 @@ private:
         // tới nó, file chỉ nằm chiếm chỗ.
         if (!m_camera.motionSaveEvents) return {};
 
-        GstElement* pipeline = nullptr;
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (!m_motionBranchEnabled) return {};
-            pipeline = m_pipeline;
-            if (!pipeline) return {};
-            gst_object_ref(pipeline);
-        }
-        // Ref ở trên rồi thao tác NGOÀI khoá: pull_sample có thể chờ, giữ khoá
-        // trong lúc chờ là chặn cả bus handler lẫn closeSegment.
-        GstElement* sink = gst_bin_get_by_name(GST_BIN(pipeline), "motion_snap");
-        gst_object_unref(pipeline);
-        if (!sink) return {};
+        // Ảnh giờ lấy từ khung của pipeline AI (bộ dò chuyển động giữ khung
+        // mới nhất) thay vì từ một appsink jpegenc riêng trong pipeline ghi
+        // hình. Nhánh cũ encode đều 1 khung/giây cho MỌI camera bật chuyển
+        // động — đo được 5,6% CPU mỗi camera, mà gần như toàn bộ số ảnh ấy bị
+        // vứt vì sự kiện thì thi thoảng mới có.
+        if (!m_motionJpegSource) return {};
+        const auto jpeg = m_motionJpegSource(m_camera.id);
+        if (jpeg.empty()) return {};
 
-        // try_pull_sample với timeout 0: lấy cái ĐANG có, không đợi. Nhánh ảnh
-        // chạy 1 khung/giây nên trong giây đầu tiên sau khi pipeline lên có thể
-        // chưa có gì — lúc đó sự kiện đơn giản là không có ảnh.
-        GstSample* sample = gst_app_sink_try_pull_sample(GST_APP_SINK(sink), 0);
-        gst_object_unref(sink);
-        if (!sample) return {};
-
-        std::string relative;
-        GstBuffer* buffer = gst_sample_get_buffer(sample);
-        GstMapInfo map;
-        if (buffer && gst_buffer_map(buffer, &map, GST_MAP_READ)) {
-            const auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
-            relative = recording::motionSnapshotRelativePath(
-                m_config, m_camera.id, todayYmd(), nowMs);
-            const std::filesystem::path path(relative);
-            std::error_code ec;
-            std::filesystem::create_directories(path.parent_path(), ec);
-            std::ofstream out(path, std::ios::binary);
-            if (out) {
-                out.write(reinterpret_cast<const char*>(map.data),
-                          static_cast<std::streamsize>(map.size));
-            }
-            // Ghi hỏng (đĩa đầy, hết quyền) thì trả rỗng: thà sự kiện không có
-            // ảnh còn hơn DB trỏ vào một file không tồn tại.
-            if (!out || !out.good()) {
-                std::filesystem::remove(path, ec);
-                relative.clear();
-            }
-            gst_buffer_unmap(buffer, &map);
+        const auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        std::string relative = recording::motionSnapshotRelativePath(
+            m_config, m_camera.id, todayYmd(), nowMs);
+        const std::filesystem::path path(relative);
+        std::error_code ec;
+        std::filesystem::create_directories(path.parent_path(), ec);
+        std::ofstream out(path, std::ios::binary);
+        if (out) {
+            out.write(reinterpret_cast<const char*>(jpeg.data()),
+                      static_cast<std::streamsize>(jpeg.size()));
         }
-        gst_sample_unref(sample);
+        // Ghi hỏng (đĩa đầy, hết quyền) thì trả rỗng: thà sự kiện không có ảnh
+        // còn hơn DB trỏ vào một file không tồn tại.
+        if (!out || !out.good()) {
+            std::filesystem::remove(path, ec);
+            relative.clear();
+        }
         return relative;
     }
+
+
 
     static std::string todayYmd() {
         const auto now = std::chrono::system_clock::now();
@@ -955,6 +935,7 @@ private:
     // Các vùng đã vẽ, đọc MỘT lần lúc dựng phiên (đổi vùng là engine dựng lại
     // pipeline nên không cần đọc lại giữa chừng).
     std::vector<recording::MotionZone> m_motionZones;
+    std::function<std::vector<uint8_t>(const std::string&)> m_motionJpegSource;
     // Lần gần nhất có MỘT vùng đủ ngưỡng. Dùng để đóng sự kiện khi cảnh vẫn
     // nhiễu bên ngoài vùng — lúc đó motioncells không bao giờ báo hết chuyển động.
     Clock::time_point m_lastZoneHit;

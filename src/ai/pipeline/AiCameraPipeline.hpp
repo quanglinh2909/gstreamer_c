@@ -39,16 +39,23 @@ public:
     // (kết nối ghi hình / xem live), hoặc nullptr nếu chưa có. Gọi ở MỖI lần
     // buildAndStart nên reconnect tự bám lại nguồn hiện tại. Rỗng => luôn tự mở
     // rtspsrc như cũ.
+    // motionSink: dò chuyển động dùng CHUNG khung với các job AI (xem
+    // MotionDetector.hpp). Rỗng = camera không bật chuyển động.
+    // motionFps: nhịp riêng của nó, độc lập với maxFps của từng job.
     AiCameraPipeline(cfg::Camera camera, int inferW, int inferH, int padColor,
                      std::vector<AiJob*> jobs,
                      std::function<std::shared_ptr<stream::FrameSource>()>
-                         sourceLookup = {})
+                         sourceLookup = {},
+                     std::function<void(const FramePtr&)> motionSink = {},
+                     uint32_t motionFps = 5)
         : m_camera(std::move(camera)),
           m_inferW(inferW),
           m_inferH(inferH),
           m_padColor(padColor),
           m_jobs(std::move(jobs)),
-          m_sourceLookup(std::move(sourceLookup)) {}
+          m_sourceLookup(std::move(sourceLookup)),
+          m_motionSink(std::move(motionSink)),
+          m_motionIntervalMs(motionFps > 0 ? 1000u / motionFps : 200u) {}
 
     ~AiCameraPipeline() { stop(); }
 
@@ -56,7 +63,10 @@ public:
     AiCameraPipeline& operator=(const AiCameraPipeline&) = delete;
 
     void start() {
-        if (m_jobs.empty()) return;
+        // Chuyển động cũng là một người tiêu thụ khung hợp lệ: camera CHỈ bật
+        // chuyển động, không có job AI nào, vẫn phải chạy pipeline này —
+        // không thì không ai giải mã cho nó.
+        if (m_jobs.empty() && !m_motionSink) return;
         if (m_running.exchange(true)) return;
         m_thread = std::thread([this] { run(); });
     }
@@ -428,7 +438,11 @@ private:
         for (AiJob* job : m_jobs) {
             if (job->wantsFrame(nowMs)) m_dueJobs.push_back(job);
         }
-        if (m_dueJobs.empty()) {
+        // Chuyển động có nhịp RIÊNG: nó cần đều đặn 5 khung/s để phép trừ hai
+        // khung liên tiếp có ý nghĩa, không phụ thuộc job AI nào đang tới hạn.
+        const bool motionDue =
+            m_motionSink && (nowMs - m_lastMotionMs) >= m_motionIntervalMs;
+        if (m_dueJobs.empty() && !motionDue) {
             // Vẫn là khung tới nơi => link còn sống; chỉ là chưa tới nhịp.
             noteHealthy();
             gst_sample_unref(sample);
@@ -445,6 +459,13 @@ private:
             for (AiJob* job : m_dueJobs) {
                 job->noteAccepted(nowMs);
                 job->submit(frame);
+            }
+            // Chạy THẲNG trên thread appsink chứ không đẩy vào hàng đợi như
+            // job AI: phép trừ theo ô tốn vài trăm micro giây, dựng thêm một
+            // thread cho nó là đắt hơn chính công việc.
+            if (motionDue) {
+                m_lastMotionMs = nowMs;
+                m_motionSink(frame);
             }
         }
         return GST_FLOW_OK;
@@ -516,6 +537,9 @@ private:
     int m_inferH;
     int m_padColor;
     std::vector<AiJob*> m_jobs;
+    std::function<void(const FramePtr&)> m_motionSink;
+    uint64_t m_motionIntervalMs = 200;
+    uint64_t m_lastMotionMs = 0;
     // Các job tới hạn nhận khung hiện tại (xem onNewSample). Là biến thành viên
     // để khỏi cấp phát vector mỗi khung; chỉ thread appsink dùng.
     std::vector<AiJob*> m_dueJobs;

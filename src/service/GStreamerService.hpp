@@ -154,6 +154,7 @@ public:
                     m_config, camera, m_mounts, m_statusSink, m_segmentSink, m_motionSink,
                     m_motionFrameSink,
                     m_sourceRegistry);
+                if (m_motionJpegSource) session->setMotionJpegSource(m_motionJpegSource);
                 m_sessions[camera.id] = session;
             } else {
                 session = found->second;
@@ -161,6 +162,11 @@ public:
         }
 
         session->restart(camera);
+
+        // Báo cho AI biết camera này có cần dò chuyển động không. Gọi NGOÀI
+        // khoá: AiManager giữ khoá riêng và có thể gọi ngược lại vào đây
+        // (noteMotionCells) — giữ hai khoá chéo nhau là công thức deadlock.
+        notifyMotionConfig(camera, camera.motionEnabled);
     }
 
     void startCamera(const oatpp::Object<CameraDto>& camera) {
@@ -177,6 +183,9 @@ public:
             if (found != m_sessions.end()) session = found->second;
         }
         if (session) session->stop();
+        stream::CameraRuntimeConfig gone;
+        gone.id = id;
+        notifyMotionConfig(gone, false);
     }
 
     void cleanupCamera(const oatpp::String& cameraId) {
@@ -191,12 +200,65 @@ public:
             m_sessions.erase(found);
         }
         session->cleanup();
+        stream::CameraRuntimeConfig gone;
+        gone.id = id;
+        notifyMotionConfig(gone, false);
     }
 
     /**
      * "Camera này vừa có sự kiện AI" — giữ đoạn ghi quanh thời điểm đó.
      * false = camera không tồn tại hoặc đang không ghi hình.
      */
+    /**
+     * Ô đã động của một khung, do AiManager gửi sang (MotionDetector chạy trên
+     * khung của pipeline AI). Bỏ qua trong im lặng khi camera không còn phiên
+     * — pipeline AI có thể còn nhả nốt vài khung sau khi camera đã dừng.
+     */
+    void noteMotionCells(const std::string& cameraId, const std::string& indices) {
+        std::shared_ptr<CameraStreamSession> session;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            auto found = m_sessions.find(cameraId);
+            if (found != m_sessions.end()) session = found->second;
+        }
+        if (session) session->noteMotionCells(indices);
+    }
+
+    /**
+     * Nơi báo cho AiManager biết camera nào cần dò chuyển động. Đặt bằng
+     * std::function để GStreamerService KHÔNG include AiManager (AiManager đã
+     * include service/ rồi, include ngược lại là vòng).
+     */
+    /** Nguồn ảnh sự kiện chuyển động (AiManager::grabMotionJpeg). */
+    void setMotionJpegSource(
+        std::function<std::vector<uint8_t>(const std::string&)> source) {
+        std::vector<std::shared_ptr<CameraStreamSession>> sessions;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_motionJpegSource = source;
+            for (auto& entry : m_sessions) sessions.push_back(entry.second);
+        }
+        for (auto& s : sessions) s->setMotionJpegSource(source);
+    }
+
+    void setMotionConfigSink(
+        std::function<void(const stream::CameraRuntimeConfig&, bool)> sink) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_motionConfigSink = std::move(sink);
+    }
+
+private:
+    void notifyMotionConfig(const stream::CameraRuntimeConfig& camera, bool enabled) {
+        std::function<void(const stream::CameraRuntimeConfig&, bool)> sink;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            sink = m_motionConfigSink;
+        }
+        if (sink) sink(camera, enabled);
+    }
+
+public:
+
     bool noteAiEvent(const oatpp::String& cameraId) {
         const auto id = toStdString(cameraId);
         std::shared_ptr<CameraStreamSession> session;
@@ -307,7 +369,6 @@ private:
         if (dto->preMotionSeconds) out.preMotionSeconds = *dto->preMotionSeconds;
         if (dto->postMotionSeconds) out.postMotionSeconds = *dto->postMotionSeconds;
         if (dto->segmentSeconds) out.segmentSeconds = *dto->segmentSeconds;
-        if (dto->motionKeyframeOnly) out.motionKeyframeOnly = *dto->motionKeyframeOnly;
         if (dto->motionGridX) out.motionGridX = *dto->motionGridX;
         if (dto->motionGridY) out.motionGridY = *dto->motionGridY;
         out.motionCellLevels = toStdString(dto->motionCellLevels);
@@ -388,6 +449,9 @@ private:
     recording::MotionEventSink m_motionSink;
     recording::MotionFrameSink m_motionFrameSink;
     std::shared_ptr<stream::CameraSourceRegistry> m_sourceRegistry;
+    // Báo cho AiManager camera nào cần dò chuyển động. Xem setMotionConfigSink.
+    std::function<void(const stream::CameraRuntimeConfig&, bool)> m_motionConfigSink;
+    std::function<std::vector<uint8_t>(const std::string&)> m_motionJpegSource;
     GstRTSPServer* m_server = nullptr;
     GstRTSPMountPoints* m_mounts = nullptr;
     GMainLoop* m_loop = nullptr;

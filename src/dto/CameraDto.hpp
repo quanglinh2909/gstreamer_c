@@ -57,8 +57,6 @@ class CameraDto : public oatpp::DTO {
     DTO_FIELD_INFO(segmentSeconds) { info->description = "Recording segment duration in seconds"; }
     DTO_FIELD(UInt32, segmentSeconds);
 
-    DTO_FIELD_INFO(motionKeyframeOnly) { info->description = "Analyze motion on keyframes only (lower CPU)"; }
-    DTO_FIELD(Boolean, motionKeyframeOnly);
 
     DTO_FIELD_INFO(motionGridX) { info->description = "Motion grid columns (8..32)"; }
     DTO_FIELD(UInt32, motionGridX);
@@ -120,7 +118,6 @@ class CreateCameraDto : public oatpp::DTO {
     DTO_FIELD(UInt32, preMotionSeconds);
     DTO_FIELD(UInt32, postMotionSeconds);
     DTO_FIELD(UInt32, segmentSeconds);
-    DTO_FIELD(Boolean, motionKeyframeOnly);
     DTO_FIELD(UInt32, motionGridX);
     DTO_FIELD(UInt32, motionGridY);
     DTO_FIELD(String, motionCellLevels);

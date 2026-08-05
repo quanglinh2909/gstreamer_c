@@ -74,7 +74,6 @@ struct CameraRuntimeConfig {
     uint32_t preMotionSeconds = 10;
     uint32_t postMotionSeconds = 20;
     uint32_t segmentSeconds = 10;
-    bool motionKeyframeOnly = false;
     // Lưới phát hiện chuyển động theo ô. motioncells chỉ nhận gridx/gridy trong
     // khoảng 8..32.
     uint32_t motionGridX = 32;

@@ -150,6 +150,45 @@ void run(const std::string& configPath) {
     gstreamerService->start();
     aiManager->start();
 
+    // Nối hai chiều giữa ghi hình và AI cho việc DÒ CHUYỂN ĐỘNG. Nối ở đây,
+    // bằng std::function, vì AiManager đã include service/ — để hai bên
+    // include lẫn nhau là vòng include.
+    //
+    //   xuôi : camera bật/tắt chuyển động -> AiManager dựng/bỏ MotionDetector
+    //   ngược: mỗi khung đã phân tích     -> CameraRecordingSession xét vùng
+    //
+    // Chuyển động giờ chạy TRÊN khung của pipeline AI (đã giải mã một lần, đã
+    // qua RGA) thay vì một nhánh GStreamer riêng có videoscale bằng CPU — đo
+    // được ~25% CPU mỗi camera 1080p ở nhánh cũ.
+    {
+        std::weak_ptr<AiManager> aiWeak = aiManager;
+        gstreamerService->setMotionConfigSink(
+            [aiWeak](const stream::CameraRuntimeConfig& camera, bool enabled) {
+                auto ai = aiWeak.lock();
+                if (!ai) return;
+                cfg::Camera c;
+                c.id = camera.id;
+                c.name = camera.name;
+                c.uri = camera.rtsp;
+                ai->setCameraMotion(c, enabled,
+                                    recording::clampMotionGrid(camera.motionGridX),
+                                    recording::clampMotionGrid(camera.motionGridY));
+            });
+
+        gstreamerService->setMotionJpegSource(
+            [aiWeak](const std::string& cameraId) -> std::vector<uint8_t> {
+                auto ai = aiWeak.lock();
+                return ai ? ai->grabMotionJpeg(cameraId) : std::vector<uint8_t>{};
+            });
+
+        std::weak_ptr<GStreamerService> gsWeak = gstreamerService;
+        aiManager->setMotionSink(
+            [gsWeak](const std::string& cameraId, const std::string& cells) {
+                auto gs = gsWeak.lock();
+                if (gs) gs->noteMotionCells(cameraId, cells);
+            });
+    }
+
     auto cameraController = std::make_shared<CameraController>();
     router->addController(cameraController);
 

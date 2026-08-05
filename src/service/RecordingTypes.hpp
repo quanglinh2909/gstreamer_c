@@ -134,8 +134,7 @@ inline bool recordingPatchRequiresRuntimeRestart(bool recordingEnabledPresent,
                                                  bool motionThresholdPresent,
                                                  bool preMotionSecondsPresent,
                                                  bool postMotionSecondsPresent,
-                                                 bool segmentSecondsPresent,
-                                                 bool motionKeyframeOnlyPresent) {
+                                                 bool segmentSecondsPresent) {
     return recordingEnabledPresent ||
            recordingModePresent ||
            motionEnabledPresent ||
@@ -143,8 +142,7 @@ inline bool recordingPatchRequiresRuntimeRestart(bool recordingEnabledPresent,
            motionThresholdPresent ||
            preMotionSecondsPresent ||
            postMotionSecondsPresent ||
-           segmentSecondsPresent ||
-           motionKeyframeOnlyPresent;
+           segmentSecondsPresent;
 }
 
 enum class MotionMessageKind {
@@ -424,83 +422,37 @@ inline std::string recordingLaunchStringForCamera(const stream::GStreamerConfig&
         << " send-keyframe-requests=true"
         << " location=" << stream::quoteLaunchValue(recordingFilePattern(config, camera));
 
-    if (includeMotionBranch && (mode == RecordingMode::Motion || camera.motionEnabled)) {
-        const auto gx = clampMotionGrid(camera.motionGridX);
-        const auto gy = clampMotionGrid(camera.motionGridY);
-        const double totalCells = static_cast<double>(gx) * gy;
-
-        // ĐÚNG MỘT motioncells cho cả camera, KHÔNG mặt nạ, ngưỡng đặt ở mức
-        // "một ô cũng báo". Toàn bộ chuyện vùng — ô nào thuộc vùng nào, vùng đó
-        // cần bao nhiêu ô — do CameraRecordingSession tự tính từ danh sách ô mà
-        // phần tử gửi lên.
-        //
-        // Vì sao KHÔNG dùng motionmaskcellspos + một phần tử cho mỗi vùng như
-        // bản trước: ĐO ĐƯỢC motioncells chỉ đọc 255 ô ĐẦU TIÊN của mặt nạ.
-        // Trên lưới 32x32, che 255 / 256 / 300 ô cho ra kết quả giống hệt nhau
-        // (ô đầu tiên bị bỏ lọt luôn là chỉ số 255). Vùng nhỏ trên lưới lớn cần
-        // che cả nghìn ô, tức mặt nạ vô tác dụng mà không có lỗi nào báo.
-        //
-        // Đổi lại còn rẻ hơn: một phần tử cho mọi vùng thay vì một phần tử cho
-        // mỗi mức.
-        launch
-            << " record_t. ! queue name=motion_q leaky=downstream max-size-buffers=2"
-            << " ! " << motionDecoder
-            << " ! videorate drop-only=true"
-            << " ! video/x-raw,framerate=5/1"
-            // Rẽ đôi SAU giải mã: một nhánh dò chuyển động, một nhánh giữ sẵn
-            // ảnh để chụp lúc sự kiện bắt đầu. Rẽ ở đây chứ không rẽ sớm hơn để
-            // không phải giải mã lần thứ hai — giải mã là phần đắt nhất.
-            << " ! tee name=motion_tee"
-            << " motion_tee. ! queue leaky=downstream max-size-buffers=2"
-            << " ! videoscale"
-            << " ! video/x-raw,width=320"
-            << " ! videoconvert"
-            << " ! video/x-raw,format=RGB"
-            // postallmotion=true: cần danh sách ô của MỖI khung; chỉ lấy
-            // begin/finished thì chỉ biết ô của đúng khung đầu tiên.
-            << " ! motioncells name=motion_detector display=false postallmotion=true"
-            << " gridx=" << gx
-            << " gridy=" << gy
-            // sensitivity = mức đổi PIXEL trong một ô mới tính ô đó động; giữ
-            // mặc định của motioncells. Cái người dùng chỉnh là MỨC CỦA VÙNG.
-            << " sensitivity=0.5"
-            // Ngưỡng của phần tử chỉ để "có ít nhất một ô động thì gửi tin".
-            // Đã đo: so sánh là >=, nên lấy nửa ô cho chắc.
-            << " threshold=" << (0.5 / totalCells)
-            // gap CHỈ nhận 1..60 (gst-inspect motioncells). Đặt ngoài dải là
-            // GStreamer bỏ qua giá trị, in một cảnh báo rồi dùng mặc định 5 —
-            // tức là camera để "Ghi sau = 0" thì thực tế chạy 5 giây mà không
-            // ai biết. Kẹp ở đây, KHÔNG kẹp postMotionSeconds nói chung: cửa sổ
-            // giữ đoạn ghi (postMotionDuration) thì 0 là một giá trị hợp lệ.
-            << " gap=" << std::min<uint32_t>(60, std::max<uint32_t>(1, camera.postMotionSeconds))
-            << " ! fakesink sync=false";
-
-        // Nhánh ẢNH: giữ sẵn một khung JPEG mới nhất để lúc sự kiện bắt đầu là
-        // ghi ra đĩa ngay. Trước đây thẻ sự kiện chuyển động phải mượn khung từ
-        // endpoint thumbnail của BẢN GHI — hỏng ở hai chỗ: camera không bật ghi
-        // thì không có gì để trích, và sự kiện vừa xảy ra thì đoạn chứa nó còn
-        // đang ghi dở nên trả 404.
-        //
-        // 1 khung/giây chứ không 5: ảnh chỉ dùng làm ảnh đại diện cho cả sự
-        // kiện, chậm tối đa một giây là không nhìn ra được, mà encode JPEG bằng
-        // phần mềm thì đắt gấp bội việc dò ô.
-        launch
-            << " motion_tee. ! queue leaky=downstream max-size-buffers=1"
-            << " ! videorate drop-only=true"
-            << " ! video/x-raw,framerate=1/1"
-            << " ! videoscale"
-            // pixel-aspect-ratio=1/1 là BẮT BUỘC, không phải trang trí: chỉ ép
-            // width thì videoscale giữ nguyên height và bù tỉ lệ bằng PAR, ra
-            // 640x1080 với PAR không vuông. JPEG không mang được PAR nên ảnh
-            // hiện lên bị kéo dọc. Đo được: bỏ dòng này -> "JPEG 640x1080".
-            << " ! video/x-raw,width=640,pixel-aspect-ratio=1/1"
-            << " ! videoconvert"
-            << " ! jpegenc quality=75"
-            // drop=true + max-buffers=1: appsink này không ai đọc cho tới lúc
-            // có sự kiện, không cho rơi khung là nó chặn ngược cả nhánh dò.
-            << " ! appsink name=motion_snap emit-signals=false sync=false"
-            << " max-buffers=1 drop=true";
-    }
+    // CHỈ dựng nhánh dò chuyển động khi người dùng BẬT phát hiện chuyển động.
+    //
+    // Trước đây điều kiện còn có `mode == Motion`, tức bật "chỉ ghi khi có sự
+    // kiện" là kéo theo cả bộ dò chuyển động dù công tắc chuyển động đang tắt.
+    // ĐO ĐƯỢC trên 12 camera thật: 403% -> 60% CPU khi bỏ nhánh này, tức 29%
+    // mỗi camera (giải mã 1,3% + videoscale/convert 15,1% + motioncells 8,8%
+    // + JPEG 1fps 5,6%). Tệ hơn: 11/12 camera đó có motion_zones RỖNG, mà vòng
+    // xét sự kiện lặp theo vùng — không vùng thì không sự kiện nào nổ được, nên
+    // toàn bộ số CPU ấy chạy để rồi vứt mọi đoạn ghi.
+    //
+    // "Chỉ ghi khi có sự kiện" giờ đúng nghĩa là một CÁI CỔNG: không có sự kiện
+    // thì không giữ đoạn nào. Nguồn sự kiện là AI (POST /cameras/{id}/ai-event)
+    // và — nếu người dùng tự bật — chuyển động. Không bật gì thì không ghi gì,
+    // đúng như "coi như chưa bật".
+    // KHÔNG còn nhánh dò chuyển động ở đây.
+    //
+    // Trước đây pipeline ghi hình tự dựng một nhánh riêng:
+    //     mppvideodec ! videorate ! videoscale ! videoconvert ! motioncells
+    //     + một nhánh nữa videoscale ! jpegenc để chụp ảnh sự kiện
+    // Đo trên camera 1080p thật: 25% CPU MỖI CAMERA, trong đó 15,1% chỉ để
+    // videoscale/videoconvert 1080p BẰNG CPU, dù chính camera đó đã được
+    // pipeline AI giải mã và RGA co giãn sẵn cho các model.
+    //
+    // Giờ chuyển động là một người tiêu thụ khung của pipeline AI
+    // (MotionDetector.hpp): giải mã một lần, co giãn bằng RGA, việc còn lại chỉ
+    // là trừ hai khung theo ô. Ô đã động đi ngược về đây qua
+    // AiManager::setMotionSink -> GStreamerService::noteMotionCells ->
+    // CameraRecordingSession::noteMotionCells, tức LOGIC VÙNG/NGƯỠNG không đổi
+    // một dòng — chỉ đổi chỗ lấy khung.
+    (void)includeMotionBranch;
+    (void)motionDecoder;
 
     return launch.str();
 }

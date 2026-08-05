@@ -101,14 +101,13 @@ void testRecordingModeParsing() {
 
 void testRecordingPatchPresenceRequiresRuntimeRestart() {
     assert(recording::recordingPatchRequiresRuntimeRestart(
-        false, true, false, false, false, false, false, false, false));
+        false, true, false, false, false, false, false, false));
     assert(recording::recordingPatchRequiresRuntimeRestart(
-        false, false, true, false, false, false, false, false, false));
-    // The new motionKeyframeOnly flag also forces a runtime restart.
+        false, false, true, false, false, false, false, false));
     assert(recording::recordingPatchRequiresRuntimeRestart(
-        false, false, false, false, false, false, false, false, true));
+        false, false, false, false, false, false, false, true));
     assert(!recording::recordingPatchRequiresRuntimeRestart(
-        false, false, false, false, false, false, false, false, false));
+        false, false, false, false, false, false, false, false));
 }
 
 void testMotionRetentionWindowKeepsOverlappingSegments() {
