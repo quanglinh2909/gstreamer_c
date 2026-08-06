@@ -4,6 +4,7 @@
 #include "config/ConfigDto.hpp"
 #include "db/CameraDb.hpp"
 #include "service/GStreamerService.hpp"
+#include "service/MoqFeedService.hpp"
 #include "service/StreamTypes.hpp"
 #include "service/PlaybackService.hpp"
 #include "service/WebRtcService.hpp"
@@ -160,15 +161,27 @@ private:
         out.motionSnapshotDir = toStdString(in->motionSnapshotDir, out.motionSnapshotDir);
         out.webrtcStunServer = toStdString(in->webrtcStunServer, out.webrtcStunServer);
         out.webrtcTurnServer = toStdString(in->webrtcTurnServer, out.webrtcTurnServer);
+        out.moqFeedSocket = toStdString(in->moqFeedSocket, out.moqFeedSocket);
         return out;
     }
 
 public:
+    // Sổ phiên xem qua MoQ. Cùng vòng đời, cùng registry nguồn như WebRTC —
+    // hai đường xem chia nhau đúng một kết nối RTSP và đúng một bộ transcode
+    // cho mỗi camera.
+    OATPP_CREATE_COMPONENT(std::shared_ptr<moq::MoqFeedService>, moqFeedService)([] {
+        OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
+        OATPP_COMPONENT(std::shared_ptr<GStreamerService>, streams);
+        return std::make_shared<moq::MoqFeedService>(
+            toStreamConfig(config), streams->sourceRegistry());
+    }());
+
     // Sổ đăng ký phiên xem WebRTC. Tách khỏi GStreamerService vì vòng đời khác
     // hẳn: session sống theo tab trình duyệt, còn stream sống theo camera.
     OATPP_CREATE_COMPONENT(std::shared_ptr<webrtc::WebRtcService>, webRtcService)([] {
         OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
         OATPP_COMPONENT(std::shared_ptr<GStreamerService>, streams);
+        OATPP_COMPONENT(std::shared_ptr<moq::MoqFeedService>, moqFeeds);
         // Dùng CHUNG registry nguồn của GStreamerService: xem live và ghi hình
         // qua đó chia sẻ đúng một kết nối RTSP tới mỗi camera.
         auto service = std::make_shared<webrtc::WebRtcService>(
@@ -181,9 +194,15 @@ public:
         //
         // weak_ptr: sink sống trong GStreamerService, giữ shared_ptr sẽ tạo
         // vòng tham chiếu khiến cả hai service không bao giờ được giải phóng.
+        //
+        // MỘT sink duy nhất dọn cả hai đường xem: setStreamResetSink chỉ giữ
+        // được một hàm, đăng ký lần thứ hai là ghi đè lần đầu — người xem
+        // WebRTC sẽ lặng lẽ không còn được dọn nữa.
         std::weak_ptr<webrtc::WebRtcService> weak = service;
-        streams->setStreamResetSink([weak](const std::string& cameraId) {
+        std::weak_ptr<moq::MoqFeedService> weakMoq = moqFeeds;
+        streams->setStreamResetSink([weak, weakMoq](const std::string& cameraId) {
             if (auto locked = weak.lock()) locked->destroySessionsForCamera(cameraId);
+            if (auto locked = weakMoq.lock()) locked->destroySessionsForCamera(cameraId);
         });
         return service;
     }());

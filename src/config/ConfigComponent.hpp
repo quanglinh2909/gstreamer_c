@@ -24,6 +24,7 @@
 //   GS_RECORDING_DIR      gstreamer.recordingDir
 //   GS_WEBRTC_STUN_SERVER gstreamer.webrtcStunServer
 //   GS_WEBRTC_TURN_SERVER gstreamer.webrtcTurnServer
+//   GS_MOQ_FEED_SOCKET    gstreamer.moqFeedSocket
 //   GS_WEIGHTS_DIR        ai.weightsDir
 
 #include "config/ConfigDto.hpp"
@@ -119,6 +120,7 @@ private:
         overrideStr("GS_MOTION_SNAPSHOT_DIR", cfg->gstreamer->motionSnapshotDir);
         overrideStr("GS_WEBRTC_STUN_SERVER", cfg->gstreamer->webrtcStunServer);
         overrideStr("GS_WEBRTC_TURN_SERVER", cfg->gstreamer->webrtcTurnServer);
+        overrideStr("GS_MOQ_FEED_SOCKET", cfg->gstreamer->moqFeedSocket);
 
         overrideStr("GS_WEIGHTS_DIR", cfg->ai->weightsDir);
     }

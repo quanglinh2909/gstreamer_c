@@ -24,7 +24,8 @@
     "recordingEnabled": false,
     "recordingDir": "recordings",
     "webrtcStunServer": "stun://stun.l.google.com:19302",
-    "webrtcTurnServer": "turn://vms:123456@103.226.251.58:3478"
+    "webrtcTurnServer": "turn://vms:123456@103.226.251.58:3478",
+    "moqFeedSocket": "/tmp/vms-moq-feed.sock"
   },
   "ai": {
     "weightsDir": "/home/orangepi/Documents/ai_gstreamer/weights"

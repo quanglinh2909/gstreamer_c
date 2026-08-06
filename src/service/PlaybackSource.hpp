@@ -49,6 +49,12 @@ namespace stream {
 // Từ tốc độ này trở lên chỉ gửi keyframe. Xem giải thích ở đầu file.
 inline constexpr double kKeyframeOnlyRate = 4.0;
 
+// Lùi thêm ngần này trước mốc người dùng bấm khi seek trong file. Camera ở hệ
+// này đặt GOP ~2s; lùi 4s là chắc chắn có ít nhất một IDR nằm trước mốc dù
+// KEY_UNIT của tsdemux có đáp lệch tới đâu. Phần dư được bơm đi hết tốc lực
+// (xem m_catchUpToMs) nên không làm chậm cú bấm.
+inline constexpr int64_t kSeekBackMs = 4000;
+
 // Chênh lệch tối đa giữa hai access unit liên tiếp mà còn coi là "liền mạch".
 // Quá mức này (khoảng không ghi, hoặc vừa seek) thì dời mốc nhịp thay vì ngủ
 // chờ thật — người xem không phải ngồi đợi khoảng trống của camera.
@@ -360,12 +366,21 @@ private:
         if (offsetMs > 0) {
             // SNAP_BEFORE + KEY_UNIT: lùi về keyframe gần nhất TRƯỚC mốc, vì
             // bắt đầu giữa GOP thì trình duyệt không có gì để giải mã.
+            //
+            // TRỪ THÊM kSeekBackMs: tsdemux KHÔNG có bảng chỉ mục keyframe nên
+            // KEY_UNIT của nó chỉ là ước lượng theo PCR — đo được nó đáp xuống
+            // giữa GOP (access unit đầu là TRAIL_R chứ không phải IDR). Người
+            // tiêu thụ chờ keyframe THẬT (xem isRandomAccessPoint) sẽ phải đợi
+            // hết GOP mới có hình. Lùi thêm một quãng để chắc chắn có IDR nằm
+            // trước mốc; phần thừa được `m_catchUpToMs` bơm đi hết tốc lực nên
+            // người dùng không thấy chậm.
+            const int64_t seekMs = std::max<int64_t>(0, offsetMs - kSeekBackMs);
             gst_element_seek_simple(
                 m_filePipeline, GST_FORMAT_TIME,
                 static_cast<GstSeekFlags>(GST_SEEK_FLAG_FLUSH |
                                           GST_SEEK_FLAG_KEY_UNIT |
                                           GST_SEEK_FLAG_SNAP_BEFORE),
-                static_cast<gint64>(offsetMs) * GST_MSECOND);
+                static_cast<gint64>(seekMs) * GST_MSECOND);
         }
         gst_element_set_state(m_filePipeline, GST_STATE_PLAYING);
 
@@ -424,8 +439,24 @@ private:
         const int64_t wallMs =
             inFileMs >= 0 ? m_segStartMs + inFileMs : m_positionMs.load();
 
-        const bool keyframe =
-            !GST_BUFFER_FLAG_IS_SET(buffer, GST_BUFFER_FLAG_DELTA_UNIT);
+        // Keyframe đọc từ CHÍNH BITSTREAM, không tin cờ DELTA_UNIT của
+        // GStreamer.
+        //
+        // Vì sao: tsdemux không có bảng chỉ mục keyframe, nên KEY_UNIT +
+        // SNAP_BEFORE của nó chỉ là ước lượng theo PCR — nó đáp xuống giữa
+        // GOP. h265parse sau đó gắn VPS/SPS/PPS vào access unit ĐẦU TIÊN sau
+        // flush (config-interval=-1) và bỏ luôn cờ DELTA_UNIT, nên một khung
+        // TRAIL_R (khung P) được dán nhãn "keyframe".
+        //
+        // Hậu quả đo được (05/08/2026, camera H265 'test'): mppvideodec trong
+        // bộ transcode nhận khung P mà không có ảnh tham chiếu -> nhả ra NV12
+        // TOÀN SỐ 0, tức RGB(0,135,0) — đúng cái CHỚP XANH LÁ thấy mỗi lần
+        // bấm seek. 29/195 khung đầu phiên là xanh; bản ghi H264 (đường
+        // passthrough, không transcode) thì 0 khung xanh.
+        //
+        // Đọc kiểu NAL thì tốn vài chục byte quét mỗi access unit, đổi lại
+        // "bắt đầu từ keyframe" thành sự thật thay vì một lời hứa.
+        const bool keyframe = isRandomAccessPoint(buffer, m_codec == "h265");
 
         // Nhịp: ngủ cho tới đúng lúc access unit này phải rời máy. Đây là chỗ
         // duy nhất quyết định tốc độ phát.
@@ -440,6 +471,46 @@ private:
 
         deliver(buffer, caps, keyframe);
         gst_sample_unref(sample);
+    }
+
+    // Access unit này có phải điểm truy cập ngẫu nhiên thật không (IRAP/IDR).
+    //
+    // Quét start code rồi đọc kiểu NAL đầu tiên có nghĩa; gặp slice thường
+    // trước khi gặp IRAP là kết luận "không phải" và dừng — không quét hết
+    // access unit.
+    static bool isRandomAccessPoint(GstBuffer* buffer, bool h265) {
+        GstMapInfo map;
+        if (!gst_buffer_map(buffer, &map, GST_MAP_READ)) return false;
+        bool irap = false;
+        const guint8* data = map.data;
+        const gsize size = map.size;
+        for (gsize i = 0; i + 4 < size;) {
+            gsize nal;
+            if (data[i] == 0 && data[i + 1] == 0 && data[i + 2] == 1) {
+                nal = i + 3;
+            } else if (data[i] == 0 && data[i + 1] == 0 && data[i + 2] == 0 &&
+                       data[i + 3] == 1) {
+                nal = i + 4;
+            } else {
+                ++i;
+                continue;
+            }
+            if (h265) {
+                const int type = (data[nal] >> 1) & 0x3F;
+                // 16..23 = BLA/IDR/CRA — mọi loại ảnh mở đầu được.
+                if (type >= 16 && type <= 23) { irap = true; break; }
+                // 0..9 = ảnh trailing/leading thường: đã tới phần ảnh mà chưa
+                // gặp IRAP nào thì access unit này không mở đầu được.
+                if (type <= 9) break;
+            } else {
+                const int type = data[nal] & 0x1F;
+                if (type == 5) { irap = true; break; }   // IDR
+                if (type == 1) break;                    // slice non-IDR
+            }
+            i = nal + 2;
+        }
+        gst_buffer_unmap(buffer, &map);
+        return irap;
     }
 
     void pace(int64_t wallMs) {

@@ -45,6 +45,8 @@ class GStreamerConfigDto : public oatpp::DTO {
     DTO_FIELD(String, webrtcStunServer);
     // TURN cho WebRTC, "turn://user:pass@host:port". Trống = không dùng TURN.
     DTO_FIELD(String, webrtcTurnServer);
+    // Unix socket bơm khung sang máy chủ MoQ. Trống = tắt đường xem MoQ.
+    DTO_FIELD(String, moqFeedSocket);
 };
 
 class AiConfigDto : public oatpp::DTO {

@@ -59,6 +59,10 @@ struct GStreamerConfig {
     // ICE chọn khi mọi cặp candidate trực tiếp đều hỏng.
     // Mật khẩu có ký tự lạ (@ : / ?) thì phải mã hoá %XX.
     std::string webrtcTurnServer;
+    // Unix socket engine bơm access unit sang máy chủ MoQ (tiến trình Python
+    // giữ phần QUIC/WebTransport). Phải khớp MOQ_FEED_SOCKET bên đó.
+    // Để trống = tắt hẳn đường xem MoQ.
+    std::string moqFeedSocket = "/tmp/vms-moq-feed.sock";
 };
 
 struct CameraRuntimeConfig {

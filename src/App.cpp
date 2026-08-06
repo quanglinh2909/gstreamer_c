@@ -10,6 +10,7 @@
 #include "controller/WebSocketController.hpp"
 #include "controller/WebRtcController.hpp"
 #include "controller/PlaybackController.hpp"
+#include "controller/MoqController.hpp"
 #include "AiComponent.hpp"
 
 #include "oatpp-swagger/Controller.hpp"
@@ -206,6 +207,11 @@ void run(const std::string& configPath) {
 
     auto playbackController = std::make_shared<PlaybackController>();
     router->addController(playbackController);
+
+    // Duong xem thu hai: MoQ tren QUIC. Chi may chu MoQ (tien trinh Python)
+    // goi vao day; trinh duyet noi thang QUIC voi no.
+    auto moqController = std::make_shared<MoqController>();
+    router->addController(moqController);
 
     // Load camera streams and AI jobs from the database in the background so a
     // slow or temporarily-unavailable PostgreSQL does not block the HTTP server

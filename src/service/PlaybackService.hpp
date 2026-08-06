@@ -104,6 +104,21 @@ public:
         return out;
     }
 
+    // Nhận nuôi một nguồn xem lại do NƠI KHÁC dựng và sở hữu — hiện là phiên
+    // MoQ (moq::MoqFeedSession giữ shared_ptr, ở đây vẫn chỉ weak như thường).
+    //
+    // Vì sao đáng làm: nhờ vậy /playback/{id}/control, /playback/{id} và cả
+    // logic seek/tốc độ/tạm dừng dùng LẠI NGUYÊN VẸN cho MoQ. Người xem MoQ
+    // kéo timeline đi qua đúng đường mà người xem WebRTC đang đi; không có
+    // đường điều khiển thứ hai để lệch nhau.
+    void adopt(const std::string& sessionId,
+               const std::shared_ptr<stream::PlaybackSource>& source) {
+        if (!source || sessionId.empty()) return;
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_sources[sessionId] = source;
+        pruneLocked();
+    }
+
     // Bất kỳ tham số nào cũng có thể bỏ trống (nullptr) = giữ nguyên.
     bool control(const std::string& sessionId,
                  const int64_t* seekToMs,

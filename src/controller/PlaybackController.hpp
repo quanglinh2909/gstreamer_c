@@ -22,6 +22,7 @@
 #include "service/CameraService.hpp"
 #include "service/HlsPlaylist.hpp"
 #include "service/PlaybackService.hpp"
+#include "service/RecordingSegments.hpp"
 #include "service/ThumbnailExtractor.hpp"
 
 #include "oatpp/web/server/api/ApiController.hpp"
@@ -78,13 +79,13 @@ public:
         // Codec lấy từ CHÍNH bản ghi chứ không từ camera đang chạy: camera có
         // thể đã đổi codec sau khi ghi, mà file cũ thì không đổi theo.
         CameraService service = m_service;
-        auto segments = loadSegments(service, cameraId, startMs - 1000, startMs + 60'000);
+        auto segments = playback::loadSegments(service, cameraId, startMs - 1000, startMs + 60'000);
         std::string codec = segments.empty() ? std::string("h264") : segments.front().codec;
         if (codec != "h264" && codec != "h265") codec = "h264";
 
         auto loader = [service, cameraId](int64_t fromMs, int64_t toMs) mutable {
             std::vector<stream::PlaybackSegment> out;
-            for (auto& seg : loadSegments(service, cameraId, fromMs, toMs)) {
+            for (auto& seg : playback::loadSegments(service, cameraId, fromMs, toMs)) {
                 out.push_back({seg.id, seg.path, seg.startMs, seg.endMs});
             }
             return out;
@@ -202,11 +203,11 @@ public:
         // đoạn nào -> 404 -> frontend rơi về chip giờ nhỏ (nhìn như "ảnh bị nhỏ
         // lại").
         CameraService service = m_service;
-        auto rows = loadSegments(service, cameraId, atMs - 180'000, atMs + 5'000);
+        auto rows = playback::loadSegments(service, cameraId, atMs - 180'000, atMs + 5'000);
 
         // Ưu tiên đoạn CHỨA mốc; nếu không có (mốc trong đoạn đang ghi hoặc rơi
         // vào khoảng trống) thì lấy đoạn hoàn tất gần nhất TRƯỚC đó.
-        const SegmentRow* chosen = nullptr;
+        const playback::SegmentRow* chosen = nullptr;
         for (const auto& seg : rows) {
             if (seg.startMs <= atMs && seg.endMs > atMs) { chosen = &seg; break; }
             if (seg.startMs <= atMs && (!chosen || seg.startMs > chosen->startMs)) {
@@ -267,84 +268,8 @@ public:
     }
 
 private:
-    struct SegmentRow {
-        std::string id;
-        std::string path;
-        std::string codec;
-        int64_t startMs = 0;
-        int64_t endMs = 0;
-    };
-
-    // Đọc các đoạn 'complete' trong khoảng [fromMs, toMs).
-    //
-    // NUỐT mọi ngoại lệ: hàm này còn được gọi TỪ THREAD FEEDER của
-    // PlaybackSource, mà CameraService ném lỗi HTTP của oatpp — ngoại lệ thoát
-    // khỏi một thread không phải thread HTTP sẽ giết cả tiến trình.
-    static std::vector<SegmentRow> loadSegments(CameraService& service,
-                                                const std::string& cameraId,
-                                                int64_t fromMs, int64_t toMs) {
-        std::vector<SegmentRow> out;
-        try {
-            auto rows = service.getRecordingSegments(
-                oatpp::String(cameraId.c_str()),
-                oatpp::String(isoFromMs(fromMs).c_str()),
-                oatpp::String(isoFromMs(toMs).c_str()));
-            if (!rows) return out;
-            for (const auto& row : *rows) {
-                if (!row || !row->path || !row->startAt || !row->durationMs) continue;
-                const std::string status = row->status ? row->status->c_str() : "complete";
-                if (status != "complete") continue;
-                const std::string container = row->container ? row->container->c_str() : "ts";
-                if (container != "ts") continue;
-                const int64_t startMs = parseEpochMs(row->startAt->c_str());
-                if (startMs < 0) continue;
-                SegmentRow item;
-                item.id = row->id ? row->id->c_str() : "";
-                item.path = row->path->c_str();
-                item.codec = row->codec ? row->codec->c_str() : "h264";
-                item.startMs = startMs;
-                item.endMs = startMs + *row->durationMs;
-                out.push_back(std::move(item));
-            }
-        } catch (const std::exception& exc) {
-            OATPP_LOGE("PlaybackController", "loadSegments loi: %s", exc.what());
-        } catch (...) {
-            OATPP_LOGE("PlaybackController", "loadSegments loi khong ro");
-        }
-        return out;
-    }
-
-    // "2026-07-23 13:37:20.512+00" -> epoch ms. parseEpochSeconds bỏ phần thập
-    // phân (nó chỉ cần so sánh giây), còn ở đây sai một phần giây là con trỏ
-    // timeline lệch thấy được, nên phải cộng lại mili giây.
-    static int64_t parseEpochMs(const std::string& value) {
-        const long long seconds = playback::parseEpochSeconds(value);
-        if (seconds < 0) return -1;
-        int64_t millis = 0;
-        const size_t dot = value.find('.');
-        if (dot != std::string::npos) {
-            std::string frac;
-            for (size_t i = dot + 1; i < value.size() && std::isdigit(value[i]); ++i) {
-                frac.push_back(value[i]);
-            }
-            frac.resize(3, '0');
-            millis = std::strtoll(frac.c_str(), nullptr, 10);
-        }
-        return static_cast<int64_t>(seconds) * 1000 + millis;
-    }
-
-    static std::string isoFromMs(int64_t ms) {
-        const std::time_t seconds = static_cast<std::time_t>(ms / 1000);
-        std::tm tm{};
-        gmtime_r(&seconds, &tm);
-        char buffer[64];
-        std::snprintf(buffer, sizeof(buffer),
-                      "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-                      tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-                      tm.tm_hour, tm.tm_min, tm.tm_sec,
-                      static_cast<int>(((ms % 1000) + 1000) % 1000));
-        return buffer;
-    }
+    // SegmentRow / loadSegments / parseEpochMs / isoFromMs nay o
+    // service/RecordingSegments.hpp — MoqController dung chung.
 
     static oatpp::Object<PlaybackStatusDto> toDto(const std::string& sessionId,
                                                   const playback::PlaybackStatus& in) {
