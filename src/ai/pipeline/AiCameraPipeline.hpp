@@ -11,6 +11,7 @@
 // a refcount — no extra decode, no extra colour-convert, no extra allocation
 // per job.
 
+#include <algorithm>
 #include <atomic>
 #include <cstdio>
 #include <cstring>
@@ -28,6 +29,7 @@
 
 #include "AiJob.hpp"
 #include "Config.hpp"
+#include "FramePrep.hpp"
 #include "FrameTypes.hpp"
 #include "RgaConverter.hpp"
 #include "service/AppSrcBridge.hpp"
@@ -42,16 +44,17 @@ public:
     // motionSink: dò chuyển động dùng CHUNG khung với các job AI (xem
     // MotionDetector.hpp). Rỗng = camera không bật chuyển động.
     // motionFps: nhịp riêng của nó, độc lập với maxFps của từng job.
-    AiCameraPipeline(cfg::Camera camera, int inferW, int inferH, int padColor,
+    // motionSpec: khung dựng cho phép trừ chuyển động khi KHÔNG job nào tới hạn
+    // (camera chỉ bật chuyển động). Có job tới hạn thì chuyển động dùng ké khung
+    // của job, khỏi blit thêm lần nữa.
+    AiCameraPipeline(cfg::Camera camera, FrameSpec motionSpec,
                      std::vector<AiJob*> jobs,
                      std::function<std::shared_ptr<stream::FrameSource>()>
                          sourceLookup = {},
                      std::function<void(const FramePtr&)> motionSink = {},
                      uint32_t motionFps = 5)
         : m_camera(std::move(camera)),
-          m_inferW(inferW),
-          m_inferH(inferH),
-          m_padColor(padColor),
+          m_motionSpec(motionSpec),
           m_jobs(std::move(jobs)),
           m_sourceLookup(std::move(sourceLookup)),
           m_motionSink(std::move(motionSink)),
@@ -449,31 +452,55 @@ private:
             return GST_FLOW_OK;
         }
 
-        // Decode + letterbox once; fan the shared Frame out to every due job.
-        FramePtr frame = buildFrame(sample);
-        if (frame) {
+        // Gom job tới hạn theo KHUNG chúng cần. Cỡ và kiểu dựng là của model
+        // tầng 0 (đọc từ .rknn), nên một camera chạy cùng lúc job yolov8 640x640
+        // và job PP-OCR det 480x480 thì mỗi bên ăn đúng khung của mình. Gần như
+        // lúc nào cũng chỉ có MỘT spec -> đúng một lần letterbox như trước.
+        m_dueSpecs.clear();
+        for (AiJob* job : m_dueJobs) {
+            const FrameSpec spec = job->frameSpec();
+            if (std::find(m_dueSpecs.begin(), m_dueSpecs.end(), spec) ==
+                m_dueSpecs.end()) {
+                m_dueSpecs.push_back(spec);
+            }
+        }
+        // Chỉ chuyển động tới hạn (không job nào) thì vẫn cần một khung.
+        if (m_dueSpecs.empty() && motionDue) m_dueSpecs.push_back(m_motionSpec);
+
+        FramePtr motionFrame;
+        for (const FrameSpec& spec : m_dueSpecs) {
+            // Mỗi Frame giữ ref RIÊNG của sample (dtor của nó unref); ref gốc
+            // do onNewSample nắm và nhả ở cuối hàm.
+            gst_sample_ref(sample);
+            FramePtr frame = buildFrame(sample, spec);
+            if (!frame) continue;
             // A successful sample means the link is alive — clear any
             // reconnect backoff so a *future* failure starts again at the
             // short 2s interval instead of the capped 30s.
             noteHealthy();
             for (AiJob* job : m_dueJobs) {
+                if (job->frameSpec() != spec) continue;
                 job->noteAccepted(nowMs);
                 job->submit(frame);
             }
-            // Chạy THẲNG trên thread appsink chứ không đẩy vào hàng đợi như
-            // job AI: phép trừ theo ô tốn vài trăm micro giây, dựng thêm một
-            // thread cho nó là đắt hơn chính công việc.
-            if (motionDue) {
-                m_lastMotionMs = nowMs;
-                m_motionSink(frame);
-            }
+            if (!motionFrame) motionFrame = frame;
         }
+
+        // Chạy THẲNG trên thread appsink chứ không đẩy vào hàng đợi như job AI:
+        // phép trừ theo ô tốn vài trăm micro giây, dựng thêm một thread cho nó
+        // là đắt hơn chính công việc.
+        if (motionDue && motionFrame) {
+            m_lastMotionMs = nowMs;
+            m_motionSink(motionFrame);
+        }
+        gst_sample_unref(sample);
         return GST_FLOW_OK;
     }
 
-    // Wraps a decoded NV12 sample in a Frame and RGA-letterboxes it once.
-    // Ownership of the sample moves into the Frame. Returns nullptr on failure.
-    FramePtr buildFrame(GstSample* sample) {
+    // Wraps a decoded NV12 sample in a Frame and RGA-letterboxes it once, to
+    // the size/fit `spec` asks for. Ownership of the sample ref moves into the
+    // Frame. Returns nullptr on failure.
+    FramePtr buildFrame(GstSample* sample, const FrameSpec& spec) {
         GstBuffer* buf = gst_sample_get_buffer(sample);
         GstCaps* caps = gst_sample_get_caps(sample);
         if (!buf || !caps) {
@@ -519,23 +546,21 @@ private:
             return nullptr;  // Frame dtor unrefs the sample
         }
 
-        frame->inferW = m_inferW;
-        frame->inferH = m_inferH;
+        frame->inferW = spec.width;
+        frame->inferH = spec.height;
         frame->ptsUs = GST_BUFFER_PTS(buf) != GST_CLOCK_TIME_NONE
                            ? static_cast<int64_t>(GST_BUFFER_PTS(buf) / 1000)
                            : 0;
         frame->seq = ++m_seq;
 
-        if (!rga::letterboxNv12ToRgb(*frame, m_padColor)) {
+        if (!rga::letterboxNv12ToRgb(*frame, spec.padColor(), spec.prep)) {
             return nullptr;  // Frame dtor cleans up
         }
         return frame;
     }
 
     cfg::Camera m_camera;
-    int m_inferW;
-    int m_inferH;
-    int m_padColor;
+    FrameSpec m_motionSpec;
     std::vector<AiJob*> m_jobs;
     std::function<void(const FramePtr&)> m_motionSink;
     uint64_t m_motionIntervalMs = 200;
@@ -543,6 +568,9 @@ private:
     // Các job tới hạn nhận khung hiện tại (xem onNewSample). Là biến thành viên
     // để khỏi cấp phát vector mỗi khung; chỉ thread appsink dùng.
     std::vector<AiJob*> m_dueJobs;
+    // Các cỡ khung khác nhau mà đám job tới hạn đòi. Cùng lý do: không cấp phát
+    // mỗi khung. Thực tế gần như luôn có đúng một phần tử.
+    std::vector<FrameSpec> m_dueSpecs;
 
     std::atomic<bool> m_running{false};
     std::thread m_thread;

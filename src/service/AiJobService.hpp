@@ -3,6 +3,7 @@
 
 #include "ai/AiCatalog.hpp"
 #include "ai/AiManager.hpp"
+#include "ai/pipeline/StageRunner.hpp"
 #include "config/ConfigDto.hpp"
 #include "db/AiJobDb.hpp"
 #include "db/CameraDb.hpp"
@@ -11,6 +12,7 @@
 #include "dto/CameraDto.hpp"
 #include "dto/StatusDto.hpp"
 #include "http/Uuid.hpp"
+#include "service/AiStageMapper.hpp"
 
 #include "oatpp/core/macro/component.hpp"
 #include "oatpp/web/protocol/http/Http.hpp"
@@ -35,9 +37,7 @@ public:
         requireCameraExists(in->cameraId);
 
         auto res = m_db->createAiJob(in->name, in->cameraId, in->enabled,
-                                     in->modelPath, in->modelType, in->classFilter,
-                                     in->modelPath2, in->modelType2, in->transformData,
-                                     in->primaryConf, in->secondaryConf, in->maxFps);
+                                     in->maxFps, serializeStages(in->stages));
         assertSuccess(res);
         auto job = fetchOne(res, Status::CODE_500, "Failed to create AI job");
         syncToManager(job);
@@ -55,7 +55,7 @@ public:
     getAllAiJobs(const oatpp::Int64& limit, const oatpp::Int64& offset) {
         auto res = m_db->getAllAiJobs(limit, offset);
         assertSuccess(res);
-        return res->fetch<oatpp::List<oatpp::Object<AiJobDto>>>();
+        return toApiList(res->fetch<oatpp::List<oatpp::Object<AiJobRowDto>>>());
     }
 
     // All AI jobs (enabled and disabled) belonging to one camera.
@@ -66,7 +66,7 @@ public:
                           "Camera not found");
         auto res = m_db->getAiJobsByCamera(cameraId);
         assertSuccess(res);
-        return res->fetch<oatpp::List<oatpp::Object<AiJobDto>>>();
+        return toApiList(res->fetch<oatpp::List<oatpp::Object<AiJobRowDto>>>());
     }
 
     oatpp::Object<AiJobDto> updateAiJob(const oatpp::String& id,
@@ -76,9 +76,7 @@ public:
         if (in->cameraId) requireCameraExists(in->cameraId);
 
         auto res = m_db->updateAiJob(id, in->name, in->cameraId, in->enabled,
-                                     in->modelPath, in->modelType, in->classFilter,
-                                     in->modelPath2, in->modelType2, in->transformData,
-                                     in->primaryConf, in->secondaryConf, in->maxFps);
+                                     in->maxFps, serializeStages(in->stages));
         assertSuccess(res);
         auto job = fetchOne(res, Status::CODE_404, "AI job not found");
         syncToManager(job);
@@ -150,9 +148,9 @@ public:
         return list;
     }
 
-    // Lists the stage-2 helper functions (transforms) a job can apply to a
-    // crop before model 2. Driven by AiCatalog — a newly registered transform
-    // shows up here automatically.
+    // Lists the crop helpers (transforms) a stage can apply to its parent's
+    // detection before running. Driven by AiCatalog — a newly registered
+    // transform shows up here automatically.
     oatpp::List<oatpp::Object<AiTransformDto>> getTransforms() {
         auto list = oatpp::List<oatpp::Object<AiTransformDto>>::createShared();
         for (const auto& transform : ai::transformList()) {
@@ -165,17 +163,13 @@ public:
         return list;
     }
 
-    // Supported model-type values for modelType (model 1) and modelType2
-    // (model 2). Models are stage-agnostic, so both lists are identical.
-    // Driven by AiCatalog — a newly registered model type shows up here
-    // automatically.
+    // Supported values for stage.modelType. Driven by AiCatalog — a newly
+    // registered model type shows up here automatically.
     oatpp::Object<AiModelTypesDto> getModelTypes() {
         auto dto = AiModelTypesDto::createShared();
-        dto->stage1 = oatpp::List<oatpp::String>::createShared();
-        dto->stage2 = oatpp::List<oatpp::String>::createShared();
+        dto->types = oatpp::List<oatpp::String>::createShared();
         for (const auto& type : ai::modelTypes()) {
-            dto->stage1->push_back(oatpp::String(type.c_str()));
-            dto->stage2->push_back(oatpp::String(type.c_str()));
+            dto->types->push_back(oatpp::String(type.c_str()));
         }
         return dto;
     }
@@ -185,7 +179,7 @@ public:
     void startAllFromDatabase() {
         auto res = m_db->getEnabledAiJobs();
         assertSuccess(res);
-        auto jobs = res->fetch<oatpp::List<oatpp::Object<AiJobDto>>>();
+        auto jobs = toApiList(res->fetch<oatpp::List<oatpp::Object<AiJobRowDto>>>());
         if (!jobs) return;
         // GIÃN CÁCH như khởi động stream (xem CameraService): mỗi job dựng
         // pipeline giải mã + nạp model RKNN (khởi tạo NPU tốn CPU dồn cục).
@@ -211,9 +205,57 @@ private:
     OATPP_COMPONENT(std::shared_ptr<CameraDb>, m_cameraDb);
     OATPP_COMPONENT(std::shared_ptr<AiManager>, m_ai);
     OATPP_COMPONENT(oatpp::Object<ConfigDto>, m_config);
+    // Cột stages là jsonb, đi qua lớp DB dưới dạng chuỗi; đây là chỗ dịch
+    // chuỗi đó thành DTO và ngược lại.
+    OATPP_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, m_mapper);
 
     static std::string stdstr(const oatpp::String& v) {
         return v ? std::string(v->c_str()) : std::string();
+    }
+
+    using StageList = oatpp::List<oatpp::Object<AiStageDto>>;
+
+    // --- jsonb <-> DTO -----------------------------------------------------
+
+    // Rỗng/không gửi => nullptr, để câu UPDATE giữ nguyên cây cũ (COALESCE).
+    oatpp::String serializeStages(const StageList& stages) {
+        if (!stages) return nullptr;
+        return m_mapper->writeToString(stages);
+    }
+
+    // JSON hỏng trong DB là lỗi dữ liệu, không phải lỗi người gọi: trả mảng
+    // rỗng rồi để StageRunner từ chối job đó, thay vì làm sập cả danh sách.
+    StageList parseStages(const oatpp::String& json, const char* what) {
+        if (!json || json->size() == 0) return nullptr;
+        try {
+            return m_mapper->readFromString<StageList>(json);
+        } catch (const std::exception& e) {
+            std::fprintf(stderr, "[ai] %s: stages JSON hong (%s)\n", what,
+                         e.what());
+            return nullptr;
+        }
+    }
+
+    oatpp::Object<AiJobDto> toApi(const oatpp::Object<AiJobRowDto>& row) {
+        if (!row) return nullptr;
+        auto dto = AiJobDto::createShared();
+        dto->id = row->id;
+        dto->name = row->name;
+        dto->cameraId = row->cameraId;
+        dto->enabled = row->enabled;
+        dto->maxFps = row->maxFps;
+        dto->stages = parseStages(row->stages, stdstr(row->id).c_str());
+        return dto;
+    }
+
+    oatpp::List<oatpp::Object<AiJobDto>>
+    toApiList(const oatpp::List<oatpp::Object<AiJobRowDto>>& rows) {
+        auto out = oatpp::List<oatpp::Object<AiJobDto>>::createShared();
+        if (!rows) return out;
+        for (const auto& row : *rows) {
+            if (row) out->push_back(toApi(row));
+        }
+        return out;
     }
 
     // Pushes a job row (and its camera) into the live AiManager. A disabled
@@ -241,18 +283,12 @@ private:
         // null check — so `job->enabled ? *job->enabled : true` wrongly
         // yields true when enabled is false. getValue() reads it correctly.
         aiJob.enabled = job->enabled.getValue(true);
-        aiJob.model1Path = stdstr(job->modelPath);
-        aiJob.model1Type = stdstr(job->modelType);
-        aiJob.classFilter = cfg::parseClassFilter(stdstr(job->classFilter));
-        aiJob.model2Path = stdstr(job->modelPath2);
-        aiJob.model2Type = stdstr(job->modelType2);
-        aiJob.transform = stdstr(job->transformData);
-        aiJob.primaryConf = job->primaryConf ? static_cast<float>(*job->primaryConf) : 0.25f;
-        aiJob.secondaryConf = job->secondaryConf ? static_cast<float>(*job->secondaryConf) : 0.25f;
         aiJob.maxFps = job->maxFps ? *job->maxFps : 0;
+        aiJob.stages = ai_stage::toCfg(job->stages);
 
         m_ai->applyJob(camera, aiJob);
     }
+
 
     oatpp::Object<CameraDto> fetchCamera(const oatpp::String& cameraId) {
         if (!cameraId || !http::isUuid(cameraId->c_str())) return nullptr;
@@ -278,39 +314,60 @@ private:
                               Status::CODE_400, "name required");
             OATPP_ASSERT_HTTP(in->cameraId && in->cameraId->size() > 0,
                               Status::CODE_400, "cameraId required");
-            OATPP_ASSERT_HTTP(in->modelPath && in->modelPath->size() > 0,
-                              Status::CODE_400, "modelPath required");
-        }
-
-        // Model types and transforms are validated against the AiCatalog
-        // registry, so adding a new type needs no change here. Models are
-        // stage-agnostic: any registered type is valid for either stage.
-        if (in->modelType) {
-            OATPP_ASSERT_HTTP(ai::isModelType(in->modelType->c_str()),
-                              Status::CODE_400,
-                              "modelType is not a registered model");
-        }
-        if (in->modelType2 && in->modelType2->size() > 0) {
-            OATPP_ASSERT_HTTP(ai::isModelType(in->modelType2->c_str()),
-                              Status::CODE_400,
-                              "modelType2 is not a registered model");
-        }
-        if (in->transformData && in->transformData->size() > 0) {
-            OATPP_ASSERT_HTTP(ai::getTransform(in->transformData->c_str()) != nullptr,
-                              Status::CODE_400,
-                              "transformData is not a registered transform");
-        }
-        if (in->primaryConf) {
-            OATPP_ASSERT_HTTP(*in->primaryConf >= 0.0 && *in->primaryConf <= 1.0,
-                              Status::CODE_400, "primaryConf must be 0..1");
-        }
-        if (in->secondaryConf) {
-            OATPP_ASSERT_HTTP(*in->secondaryConf >= 0.0 && *in->secondaryConf <= 1.0,
-                              Status::CODE_400, "secondaryConf must be 0..1");
+            OATPP_ASSERT_HTTP(in->stages && in->stages->size() > 0,
+                              Status::CODE_400, "stages required (it nhat mot tang)");
         }
         if (in->maxFps) {
             OATPP_ASSERT_HTTP(*in->maxFps >= 0 && *in->maxFps <= 120,
                               Status::CODE_400, "maxFps must be 0..120");
+        }
+        if (in->stages) validateStages(in->stages);
+    }
+
+    // Bắt lỗi cấu hình NGAY LÚC LƯU chứ không đợi tới lúc chạy: job sai được
+    // nhận vào DB thì tới lần khởi động sau nó lặng lẽ không lên, và người dùng
+    // chỉ thấy "AI không chạy" mà không biết vì sao.
+    //
+    // Loại model và transform đối chiếu với AiCatalog nên đăng ký thêm loại mới
+    // là tự hợp lệ, không phải sửa ở đây.
+    static void validateStages(const StageList& stages) {
+        OATPP_ASSERT_HTTP(stages->size() > 0, Status::CODE_400,
+                          "stages rong");
+        OATPP_ASSERT_HTTP(stages->size() <= StageRunner::kMaxStages,
+                          Status::CODE_400, "qua nhieu tang");
+
+        int index = 0;
+        for (const auto& s : *stages) {
+            const std::string at = "stage " + std::to_string(index) + ": ";
+            OATPP_ASSERT_HTTP(s, Status::CODE_400, (at + "tang rong").c_str());
+            OATPP_ASSERT_HTTP(s->modelPath && s->modelPath->size() > 0,
+                              Status::CODE_400, (at + "thieu modelPath").c_str());
+            OATPP_ASSERT_HTTP(s->modelType && ai::isModelType(s->modelType->c_str()),
+                              Status::CODE_400,
+                              (at + "modelType chua duoc dang ky").c_str());
+            if (s->transform && s->transform->size() > 0) {
+                OATPP_ASSERT_HTTP(ai::getTransform(s->transform->c_str()) != nullptr,
+                                  Status::CODE_400,
+                                  (at + "transform chua duoc dang ky").c_str());
+            }
+            if (s->conf != nullptr) {
+                OATPP_ASSERT_HTTP(*s->conf >= 0.0 && *s->conf <= 1.0,
+                                  Status::CODE_400, (at + "conf phai 0..1").c_str());
+            }
+            // Cha phải là tầng ĐỨNG TRƯỚC — vừa cấm vòng lặp, vừa bảo đảm khi
+            // chạy tới tầng này thì tầng cha đã có kết quả (StageRunner kiểm
+            // lại y hệt; ở đây chỉ để báo lỗi sớm và rõ ràng cho người gọi).
+            if (index == 0) {
+                OATPP_ASSERT_HTTP(s->parent == nullptr || *s->parent < 0,
+                                  Status::CODE_400,
+                                  "stage 0 phai chay tren khung (parent = -1)");
+            } else if (s->parent != nullptr) {
+                OATPP_ASSERT_HTTP(*s->parent >= 0 && *s->parent < index,
+                                  Status::CODE_400,
+                                  (at + "parent phai tro toi mot tang dung truoc")
+                                      .c_str());
+            }
+            ++index;
         }
     }
 
@@ -326,14 +383,14 @@ private:
     }
 
     template <class Res>
-    static oatpp::Object<AiJobDto> fetchOne(
+    oatpp::Object<AiJobDto> fetchOne(
         const std::shared_ptr<Res>& res,
         const oatpp::web::protocol::http::Status& notFoundStatus,
         const char* notFoundMsg) {
         OATPP_ASSERT_HTTP(res->hasMoreToFetch(), notFoundStatus, notFoundMsg);
-        auto list = res->template fetch<oatpp::List<oatpp::Object<AiJobDto>>>();
+        auto list = res->template fetch<oatpp::List<oatpp::Object<AiJobRowDto>>>();
         OATPP_ASSERT_HTTP(list && list->size() > 0, notFoundStatus, notFoundMsg);
-        return list[0];
+        return toApi(list[0]);
     }
 };
 

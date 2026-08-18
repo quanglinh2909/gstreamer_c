@@ -181,6 +181,29 @@ private:
            << ",\"x2\":" << d.x2 << ",\"y2\":" << d.y2 << ',';
         os << "\"score\":" << d.score << ',';
         os << "\"classId\":" << d.classId << ',';
+        // Hộp theo toạ độ KHUNG GỐC. x1..y2 của một tầng con nằm trong không
+        // gian ẢNH CẮT của tầng đó, nên hai tầng con khác nhau không so sánh
+        // được với nhau — mà đọc một biển số hai dòng thì đúng là phải xếp các
+        // ký tự của nhiều dòng vào một hệ toạ độ. Chỉ tầng con mới có (tầng 0
+        // vốn đã ở khung gốc), nên job một tầng không tốn thêm byte nào.
+        if (d.hasFrameBox) {
+            os << "\"fx1\":" << d.fx1 << ",\"fy1\":" << d.fy1
+               << ",\"fx2\":" << d.fx2 << ",\"fy2\":" << d.fy2 << ',';
+        }
+        // Tầng nào sinh ra hộp này. Độ sâu trong cây KHÔNG thay được nó: cây
+        // phân nhánh có hai tầng anh em cùng nằm ở độ sâu 1, nhìn kết quả thì
+        // không biết hộp thuộc nhánh nào. Bỏ khoá khi bằng 0 (tầng gốc) để job
+        // một tầng không tốn thêm byte nào — cùng cách với fx1..fy2.
+        if (d.stage > 0) {
+            os << "\"stage\":" << d.stage << ',';
+        }
+        // Chỉ có ở model mang bảng nhãn riêng (OCR). Bỏ hẳn khoá khi rỗng để
+        // mọi job khác không phải gánh thêm byte nào trên socket.
+        if (!d.text.empty()) {
+            os << "\"text\":";
+            jsonEscape(os, d.text);
+            os << ',';
+        }
         os << "\"keypoints\":[";
         for (size_t k = 0; k < d.keypoints.size(); ++k) {
             if (k) os << ',';

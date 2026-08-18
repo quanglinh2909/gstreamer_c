@@ -20,14 +20,17 @@ public:
         return "Rectify the license plate before OCR (currently a plain crop)";
     }
 
-    bool apply(const TransformContext& ctx, std::vector<uint8_t>& outRgb) override {
-        const Detection& d = *ctx.det;
-        int x = std::max(0, static_cast<int>(d.x1));
-        int y = std::max(0, static_cast<int>(d.y1));
-        int w = static_cast<int>(d.x2 - d.x1);
-        int h = static_cast<int>(d.y2 - d.y1);
+    bool apply(TransformContext& ctx, std::vector<uint8_t>& outRgb) override {
+        int x = std::max(0, static_cast<int>(ctx.x1));
+        int y = std::max(0, static_cast<int>(ctx.y1));
+        int w = static_cast<int>(ctx.x2 - ctx.x1);
+        int h = static_cast<int>(ctx.y2 - ctx.y1);
         if (w <= 1 || h <= 1) return false;
         rga::expandCropToMin(x, y, w, h, ctx.frame->width, ctx.frame->height);
+        ctx.srcX = static_cast<float>(x);
+        ctx.srcY = static_cast<float>(y);
+        ctx.srcW = static_cast<float>(w);
+        ctx.srcH = static_cast<float>(h);
         return rga::cropNv12ToRgb(*ctx.frame, x, y, w, h, ctx.targetW,
                                   ctx.targetH, outRgb);
     }

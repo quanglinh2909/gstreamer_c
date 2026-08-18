@@ -3,20 +3,23 @@
 
 // One-shot HTTP inference endpoint.
 // Accepts multipart/form-data with these parts:
-//   image          (file)   — JPEG bytes
-//   modelPath      (text)   — path to stage-1 .rknn
-//   modelType      (text)   — yolov8_detect | yolov8_pose | yolov8_seg | face_recognition
-//   modelPath2     (text)   — optional, stage-2 .rknn
-//   modelType2     (text)   — optional, stage-2 type
-//   transformData  (text)   — optional, "" | align_face | align_plate
-//   primaryConf    (text)   — float, e.g. "0.25"
-//   secondaryConf  (text)   — float, e.g. "0.3"
+//   image   (file)  — JPEG bytes
+//   stages  (text)  — chuỗi JSON, mảng tầng y hệt trường `stages` của ai-job:
+//
+//     [{"modelPath":"weights/yolov8.rknn","modelType":"yolov8_detect",
+//       "classFilter":"7","conf":0.25},
+//      {"parent":0,"modelPath":"weights/plate_det.rknn",
+//       "modelType":"paddle_ocr_det","transform":"align_plate","conf":0.3},
+//      {"parent":1,"modelPath":"weights/plate_rec.rknn",
+//       "modelType":"paddle_ocr_rec","conf":0.3}]
+//
 // Returns the same JSON shape the Python consumer receives over the socket.
 
 #include <cstdlib>
 #include <string>
 #include <vector>
 
+#include "service/AiStageMapper.hpp"
 #include "service/ImageInferenceService.hpp"
 
 #include "oatpp/web/server/api/ApiController.hpp"
@@ -37,10 +40,9 @@ public:
     ENDPOINT_INFO(run) {
         info->summary = "Run AI inference on an uploaded image (one-shot)";
         info->description =
-            "multipart/form-data: 'image' (JPEG file) + text fields "
-            "modelPath, modelType, modelPath2, modelType2, transformData, "
-            "primaryConf, secondaryConf. Returns the same JSON shape as the "
-            "live RTSP pipeline emits to the Python consumer.";
+            "multipart/form-data: 'image' (JPEG file) + 'stages' (chuoi JSON, "
+            "mang tang y het truong stages cua ai-job). Returns the same JSON "
+            "shape as the live RTSP pipeline emits to the Python consumer.";
         info->addConsumes<oatpp::Any>("multipart/form-data");
         info->addResponse<oatpp::String>(Status::CODE_200, "application/json");
         info->addResponse<oatpp::String>(Status::CODE_400, "text/plain");
@@ -69,13 +71,17 @@ public:
         ImageInferenceRequest req;
         req.jpegBytes.assign(imageData->data(),
                              imageData->data() + imageData->size());
-        req.modelPath = getText(multipart, "modelPath");
-        req.modelType = getText(multipart, "modelType");
-        req.modelPath2 = getText(multipart, "modelPath2");
-        req.modelType2 = getText(multipart, "modelType2");
-        req.transformData = getText(multipart, "transformData");
-        req.primaryConf = getFloat(multipart, "primaryConf", 0.25f);
-        req.secondaryConf = getFloat(multipart, "secondaryConf", 0.0f);
+
+        const std::string stagesJson = getText(multipart, "stages");
+        if (stagesJson.empty()) {
+            return createResponse(Status::CODE_400, "missing 'stages' part");
+        }
+        req.stages = ai_stage::fromJson(getDefaultObjectMapper(),
+                                        oatpp::String(stagesJson.c_str()));
+        if (req.stages.empty()) {
+            return createResponse(Status::CODE_400,
+                                  "'stages' khong phai mang JSON hop le");
+        }
 
         try {
             std::string json = ImageInferenceService::run(req);
@@ -96,18 +102,6 @@ private:
         auto data = part->getPayload()->getInMemoryData();
         if (!data) return "";
         return std::string(data->c_str(), data->size());
-    }
-
-    static float getFloat(
-        const std::shared_ptr<oatpp::web::mime::multipart::PartList>& mp,
-        const std::string& name, float defaultVal) {
-        auto s = getText(mp, name);
-        if (s.empty()) return defaultVal;
-        try {
-            return std::stof(s);
-        } catch (...) {
-            return defaultVal;
-        }
     }
 };
 

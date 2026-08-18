@@ -165,25 +165,72 @@ ALTER TABLE IF EXISTS cameras ADD COLUMN IF NOT EXISTS retention_days INTEGER NO
 -- AI jobs (truoc day o file 002_init_ai_jobs.sql)
 -- ===========================================================================
 
--- AI jobs: one detector (optionally cascaded into a model-2 stage) per row.
--- A camera can have many AI jobs. Deleting a camera removes its AI jobs.
+-- AI jobs: MOT CAY MODEL cho moi dong. Mot camera co nhieu job. Xoa camera thi
+-- xoa luon job cua no.
+--
+-- `stages` la mang JSON theo thu tu chay, phan tu 0 chay tren ca khung hinh,
+-- moi phan tu sau tro ve mot tang DUNG TRUOC qua `parent`:
+--
+--   [{"modelPath":"weights/yolov8.rknn","modelType":"yolov8_detect",
+--     "classFilter":"2,3,5,7","conf":0.25},
+--    {"parent":0,"modelPath":"weights/plate_det.rknn",
+--     "modelType":"paddle_ocr_det","inputClasses":"7","conf":0.3},
+--    {"parent":1,"modelPath":"weights/plate_rec.rknn",
+--     "modelType":"paddle_ocr_rec","conf":0.3}]
+--
+-- VI SAO JSONB CHU KHONG PHAI BANG RIENG: engine luon nap CA CAY mot luot va
+-- chi so `parent` chi co nghia trong pham vi ca mang, nen vá le tung tang la vo
+-- nghia. Mot dong = mot cay, doc-ghi nguyen khoi.
+--
+-- Cỡ dau vao cua tung tang KHONG nam o day: engine doc thang tu file .rknn.
 
 CREATE TABLE IF NOT EXISTS ai_jobs (
   id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   name            VARCHAR(128) NOT NULL,
   camera_id       UUID         NOT NULL REFERENCES cameras(id) ON DELETE CASCADE,
   enabled         BOOLEAN      NOT NULL DEFAULT true,
-  model_path      VARCHAR(512) NOT NULL,
-  model_type      VARCHAR(32)  NOT NULL DEFAULT 'yolov8_detect',
-  class_filter    VARCHAR(256) NOT NULL DEFAULT 'all',
-  model_path_2    VARCHAR(512) NOT NULL DEFAULT '',
-  model_type_2    VARCHAR(32)  NOT NULL DEFAULT '',
-  transform_data  VARCHAR(32)  NOT NULL DEFAULT '',
-  primary_conf    DOUBLE PRECISION NOT NULL DEFAULT 0.25,
-  secondary_conf  DOUBLE PRECISION NOT NULL DEFAULT 0.25,
   max_fps         INTEGER      NOT NULL DEFAULT 0,
+  stages          JSONB        NOT NULL DEFAULT '[]'::jsonb,
   created_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_ai_jobs_camera ON ai_jobs(camera_id);
 CREATE INDEX IF NOT EXISTS idx_ai_jobs_enabled ON ai_jobs(enabled);
+
+-- Chuyen DB cu (mot model_path + mot model_path_2 tuy chon) sang `stages`.
+-- Idempotent va tu bo qua khi bang da o dang moi: dieu kien la con cot cu.
+-- Chay TRUOC khi DROP COLUMN ben duoi, va chi dung cho dong stages con rong.
+ALTER TABLE IF EXISTS ai_jobs ADD COLUMN IF NOT EXISTS stages JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'ai_jobs' AND column_name = 'model_path') THEN
+    EXECUTE $mig$
+      UPDATE ai_jobs SET stages =
+        CASE WHEN COALESCE(model_path_2, '') = '' THEN
+          jsonb_build_array(jsonb_build_object(
+            'modelPath', model_path, 'modelType', model_type,
+            'classFilter', class_filter, 'conf', primary_conf, 'parent', -1))
+        ELSE
+          jsonb_build_array(
+            jsonb_build_object(
+              'modelPath', model_path, 'modelType', model_type,
+              'classFilter', class_filter, 'conf', primary_conf, 'parent', -1),
+            jsonb_build_object(
+              'modelPath', model_path_2, 'modelType', model_type_2,
+              'transform', transform_data, 'conf', secondary_conf, 'parent', 0))
+        END
+      WHERE stages = '[]'::jsonb
+    $mig$;
+  END IF;
+END $$;
+
+ALTER TABLE IF EXISTS ai_jobs DROP COLUMN IF EXISTS model_path;
+ALTER TABLE IF EXISTS ai_jobs DROP COLUMN IF EXISTS model_type;
+ALTER TABLE IF EXISTS ai_jobs DROP COLUMN IF EXISTS class_filter;
+ALTER TABLE IF EXISTS ai_jobs DROP COLUMN IF EXISTS model_path_2;
+ALTER TABLE IF EXISTS ai_jobs DROP COLUMN IF EXISTS model_type_2;
+ALTER TABLE IF EXISTS ai_jobs DROP COLUMN IF EXISTS transform_data;
+ALTER TABLE IF EXISTS ai_jobs DROP COLUMN IF EXISTS primary_conf;
+ALTER TABLE IF EXISTS ai_jobs DROP COLUMN IF EXISTS secondary_conf;

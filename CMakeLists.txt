@@ -61,6 +61,8 @@ set(AI_DETECT_SOURCES
     src/ai/detect_ai/face_recognition.cc
     src/ai/detect_ai/file_utils.c
     src/ai/detect_ai/postprocess.cc
+    src/ai/detect_ai/ppocr_det.cc
+    src/ai/detect_ai/ppocr_rec.cc
     src/ai/detect_ai/yolov8.cc
     src/ai/detect_ai/yolov8_pose.cc
     src/ai/detect_ai/yolov8_seg.cc)

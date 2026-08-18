@@ -13,18 +13,18 @@ class AiModelDto : public oatpp::DTO {
     DTO_FIELD_INFO(fileName) { info->description = "Model file name"; }
     DTO_FIELD(String, fileName);
 
-    DTO_FIELD_INFO(path) { info->description = "Absolute path, use as modelPath/modelPath2"; }
+    DTO_FIELD_INFO(path) { info->description = "Absolute path, dung lam stage.modelPath"; }
     DTO_FIELD(String, path);
 
     DTO_FIELD_INFO(sizeBytes) { info->description = "File size in bytes"; }
     DTO_FIELD(Int64, sizeBytes);
 };
 
-// One stage-2 helper (transform) that can be applied to a crop before model 2.
+// Một cách dựng ảnh đầu vào cho tầng con từ hộp của tầng cha.
 class AiTransformDto : public oatpp::DTO {
     DTO_INIT(AiTransformDto, DTO)
 
-    DTO_FIELD_INFO(value) { info->description = "Value for AiJob.transformData"; }
+    DTO_FIELD_INFO(value) { info->description = "Value for stage.transform"; }
     DTO_FIELD(String, value);
 
     DTO_FIELD_INFO(label) { info->description = "Human-readable name"; }
@@ -34,15 +34,14 @@ class AiTransformDto : public oatpp::DTO {
     DTO_FIELD(String, description);
 };
 
-// Supported model-type values for AiJob.modelType / modelType2.
+// Các giá trị hợp lệ cho stage.modelType. MỘT danh sách chứ không tách theo
+// tầng: model là stage-agnostic, tầng nào cũng nhận được mọi loại — loại nào
+// không cài vai trò của tầng đó thì đơn giản là không ra kết quả.
 class AiModelTypesDto : public oatpp::DTO {
     DTO_INIT(AiModelTypesDto, DTO)
 
-    DTO_FIELD_INFO(stage1) { info->description = "Valid values for AiJob.modelType"; }
-    DTO_FIELD(List<String>, stage1);
-
-    DTO_FIELD_INFO(stage2) { info->description = "Valid values for AiJob.modelType2"; }
-    DTO_FIELD(List<String>, stage2);
+    DTO_FIELD_INFO(types) { info->description = "Valid values for stage.modelType"; }
+    DTO_FIELD(List<String>, types);
 };
 
 #include OATPP_CODEGEN_END(DTO)

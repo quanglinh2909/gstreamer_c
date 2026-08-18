@@ -8,148 +8,88 @@
 #include OATPP_CODEGEN_BEGIN(DbClient)
 
 // UUID columns (id, camera_id) are cast to text on the way out and back to
-// uuid on the way in, mirroring CameraDb.
+// uuid on the way in, mirroring CameraDb. Cột `stages` (jsonb) đi theo ĐÚNG
+// cách đó: ra thì `CAST(... AS text)`, vào thì `CAST(:stages AS jsonb)` —
+// oatpp-postgresql không ánh xạ jsonb sang DTO lồng nhau, còn Postgres thì vẫn
+// kiểm tra cú pháp JSON giúp. Mọi truy vấn trả về AiJobRowDto.
 class AiJobDb : public oatpp::orm::DbClient {
 public:
     explicit AiJobDb(const std::shared_ptr<oatpp::orm::Executor>& executor)
         : oatpp::orm::DbClient(executor) {}
 
+    // Danh sách cột trả về, viết một lần cho mọi truy vấn.
+#define AI_JOB_COLUMNS                                     \
+    "CAST(id AS text) AS id, name, "                       \
+    "CAST(camera_id AS text) AS \"cameraId\", enabled, "   \
+    "max_fps AS \"maxFps\", CAST(stages AS text) AS stages"
+
+    // ĐỪNG viết `'[]'::jsonb`: oatpp quét dấu hai chấm để tìm tham số, nên
+    // `::jsonb` bị hiểu thành tham số tên `jsonb` và câu lệnh chết ngay lúc
+    // chạy với "Parameter not found". Luôn dùng CAST(... AS ...).
     QUERY(createAiJob,
-          "INSERT INTO ai_jobs("
-          "  name, camera_id, enabled, model_path, model_type, class_filter, "
-          "  model_path_2, model_type_2, transform_data, primary_conf, "
-          "  secondary_conf, max_fps"
-          ") VALUES ("
-          "  :name, CAST(:cameraId AS uuid), COALESCE(:enabled, true), "
-          "  :modelPath, COALESCE(:modelType, 'yolov8_detect'), "
-          "  COALESCE(:classFilter, 'all'), COALESCE(:modelPath2, ''), "
-          "  COALESCE(:modelType2, ''), COALESCE(:transformData, ''), "
-          "  COALESCE(:primaryConf, 0.25), COALESCE(:secondaryConf, 0.25), "
-          "  COALESCE(:maxFps, 0)"
-          ") "
-          "RETURNING CAST(id AS text) AS id, name, "
-          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
-          "model_path AS \"modelPath\", model_type AS \"modelType\", "
-          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
-          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
-          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
-          "max_fps AS \"maxFps\";",
+          "INSERT INTO ai_jobs(name, camera_id, enabled, max_fps, stages) "
+          "VALUES (:name, CAST(:cameraId AS uuid), COALESCE(:enabled, true), "
+          "        COALESCE(:maxFps, 0), "
+          "        COALESCE(CAST(:stages AS jsonb), CAST('[]' AS jsonb))) "
+          "RETURNING " AI_JOB_COLUMNS ";",
           PARAM(oatpp::String, name),
           PARAM(oatpp::String, cameraId),
           PARAM(oatpp::Boolean, enabled),
-          PARAM(oatpp::String, modelPath),
-          PARAM(oatpp::String, modelType),
-          PARAM(oatpp::String, classFilter),
-          PARAM(oatpp::String, modelPath2),
-          PARAM(oatpp::String, modelType2),
-          PARAM(oatpp::String, transformData),
-          PARAM(oatpp::Float64, primaryConf),
-          PARAM(oatpp::Float64, secondaryConf),
-          PARAM(oatpp::Int32, maxFps))
+          PARAM(oatpp::Int32, maxFps),
+          PARAM(oatpp::String, stages))
 
     QUERY(getAiJobById,
-          "SELECT CAST(id AS text) AS id, name, "
-          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
-          "model_path AS \"modelPath\", model_type AS \"modelType\", "
-          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
-          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
-          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
-          "max_fps AS \"maxFps\" "
-          "FROM ai_jobs WHERE id = CAST(:id AS uuid) LIMIT 1;",
+          "SELECT " AI_JOB_COLUMNS
+          " FROM ai_jobs WHERE id = CAST(:id AS uuid) LIMIT 1;",
           PARAM(oatpp::String, id))
 
     QUERY(getAllAiJobs,
-          "SELECT CAST(id AS text) AS id, name, "
-          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
-          "model_path AS \"modelPath\", model_type AS \"modelType\", "
-          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
-          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
-          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
-          "max_fps AS \"maxFps\" "
-          "FROM ai_jobs ORDER BY id LIMIT :limit OFFSET :offset;",
+          "SELECT " AI_JOB_COLUMNS
+          " FROM ai_jobs ORDER BY id LIMIT :limit OFFSET :offset;",
           PARAM(oatpp::Int64, limit),
           PARAM(oatpp::Int64, offset))
 
     QUERY(getEnabledAiJobs,
-          "SELECT CAST(id AS text) AS id, name, "
-          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
-          "model_path AS \"modelPath\", model_type AS \"modelType\", "
-          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
-          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
-          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
-          "max_fps AS \"maxFps\" "
-          "FROM ai_jobs WHERE enabled = true ORDER BY id;")
+          "SELECT " AI_JOB_COLUMNS
+          " FROM ai_jobs WHERE enabled = true ORDER BY id;")
 
     QUERY(getAiJobsByCamera,
-          "SELECT CAST(id AS text) AS id, name, "
-          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
-          "model_path AS \"modelPath\", model_type AS \"modelType\", "
-          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
-          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
-          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
-          "max_fps AS \"maxFps\" "
-          "FROM ai_jobs WHERE camera_id = CAST(:cameraId AS uuid) ORDER BY id;",
+          "SELECT " AI_JOB_COLUMNS
+          " FROM ai_jobs WHERE camera_id = CAST(:cameraId AS uuid) ORDER BY id;",
           PARAM(oatpp::String, cameraId))
 
+    // stages đi NGUYÊN KHỐI: gửi lên là thay cả cây, không gửi thì giữ nguyên
+    // cây cũ. Vá lẻ từng tầng qua SQL là vô nghĩa vì chỉ số parent của các tầng
+    // sau phụ thuộc vào cả mảng.
     QUERY(updateAiJob,
           "UPDATE ai_jobs SET "
-          "  name           = COALESCE(:name, name), "
-          "  camera_id      = COALESCE(CAST(:cameraId AS uuid), camera_id), "
-          "  enabled        = COALESCE(:enabled, enabled), "
-          "  model_path     = COALESCE(:modelPath, model_path), "
-          "  model_type     = COALESCE(:modelType, model_type), "
-          "  class_filter   = COALESCE(:classFilter, class_filter), "
-          "  model_path_2   = COALESCE(:modelPath2, model_path_2), "
-          "  model_type_2   = COALESCE(:modelType2, model_type_2), "
-          "  transform_data = COALESCE(:transformData, transform_data), "
-          "  primary_conf   = COALESCE(:primaryConf, primary_conf), "
-          "  secondary_conf = COALESCE(:secondaryConf, secondary_conf), "
-          "  max_fps        = COALESCE(:maxFps, max_fps) "
+          "  name      = COALESCE(:name, name), "
+          "  camera_id = COALESCE(CAST(:cameraId AS uuid), camera_id), "
+          "  enabled   = COALESCE(:enabled, enabled), "
+          "  max_fps   = COALESCE(:maxFps, max_fps), "
+          "  stages    = COALESCE(CAST(:stages AS jsonb), stages) "
           "WHERE id = CAST(:id AS uuid) "
-          "RETURNING CAST(id AS text) AS id, name, "
-          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
-          "model_path AS \"modelPath\", model_type AS \"modelType\", "
-          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
-          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
-          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
-          "max_fps AS \"maxFps\";",
+          "RETURNING " AI_JOB_COLUMNS ";",
           PARAM(oatpp::String, id),
           PARAM(oatpp::String, name),
           PARAM(oatpp::String, cameraId),
           PARAM(oatpp::Boolean, enabled),
-          PARAM(oatpp::String, modelPath),
-          PARAM(oatpp::String, modelType),
-          PARAM(oatpp::String, classFilter),
-          PARAM(oatpp::String, modelPath2),
-          PARAM(oatpp::String, modelType2),
-          PARAM(oatpp::String, transformData),
-          PARAM(oatpp::Float64, primaryConf),
-          PARAM(oatpp::Float64, secondaryConf),
-          PARAM(oatpp::Int32, maxFps))
+          PARAM(oatpp::Int32, maxFps),
+          PARAM(oatpp::String, stages))
 
     QUERY(setAiJobEnabled,
           "UPDATE ai_jobs SET enabled = :enabled "
           "WHERE id = CAST(:id AS uuid) "
-          "RETURNING CAST(id AS text) AS id, name, "
-          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
-          "model_path AS \"modelPath\", model_type AS \"modelType\", "
-          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
-          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
-          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
-          "max_fps AS \"maxFps\";",
+          "RETURNING " AI_JOB_COLUMNS ";",
           PARAM(oatpp::String, id),
           PARAM(oatpp::Boolean, enabled))
 
     QUERY(deleteAiJobReturning,
           "DELETE FROM ai_jobs WHERE id = CAST(:id AS uuid) "
-          "RETURNING CAST(id AS text) AS id, name, "
-          "CAST(camera_id AS text) AS \"cameraId\", enabled, "
-          "model_path AS \"modelPath\", model_type AS \"modelType\", "
-          "class_filter AS \"classFilter\", model_path_2 AS \"modelPath2\", "
-          "model_type_2 AS \"modelType2\", transform_data AS \"transformData\", "
-          "primary_conf AS \"primaryConf\", secondary_conf AS \"secondaryConf\", "
-          "max_fps AS \"maxFps\";",
+          "RETURNING " AI_JOB_COLUMNS ";",
           PARAM(oatpp::String, id))
+
+#undef AI_JOB_COLUMNS
 };
 
 #include OATPP_CODEGEN_END(DbClient)

@@ -43,6 +43,7 @@
 #include <rga/rga.h>
 
 #include "DmaHeapBuffer.hpp"
+#include "FramePrep.hpp"
 #include "FrameTypes.hpp"
 #include "RgaLock.hpp"
 
@@ -163,7 +164,13 @@ inline void expandCropToMin(int& x, int& y, int& w, int& h,
 // NV12 (full-res) -> letterboxed RGB888 at frame.inferW x frame.inferH.
 // Black/gray bars keep aspect ratio so the detector sees no distortion.
 // Fills frame.rgb and the contentX/Y/W/H rect.
-inline bool letterboxNv12ToRgb(Frame& f, int padColor) {
+//
+// `stretch` fills the whole input instead, distorting the aspect ratio: what a
+// text recogniser trained on lines squashed into a fixed 48x320 needs. The
+// contentX/Y/W/H rect is filled either way, so Frame::inferToOrig maps boxes
+// back correctly without knowing which mode ran.
+inline bool letterboxNv12ToRgb(Frame& f, int padColor,
+                               FramePrep prep = FramePrep::Letterbox) {
     if (f.width <= 0 || f.height <= 0 || f.inferW <= 0 || f.inferH <= 0) {
         return false;
     }
@@ -177,6 +184,21 @@ inline bool letterboxNv12ToRgb(Frame& f, int padColor) {
     int newH = alignDown2(std::max(2, static_cast<int>(f.height * scale)));
     int offX = alignDown2((f.inferW - newW) / 2);
     int offY = alignDown2((f.inferH - newH) / 2);
+    if (prep == FramePrep::Stretch) {
+        newW = alignDown2(f.inferW);
+        newH = alignDown2(f.inferH);
+        offX = 0;
+        offY = 0;
+    } else if (prep == FramePrep::FitHeight) {
+        // Cao đúng bằng khung, rộng theo tỉ lệ thật, dán sát mép trái; phần
+        // thừa bên phải giữ nguyên padColor.
+        const float s = static_cast<float>(f.inferH) / f.height;
+        newH = alignDown2(f.inferH);
+        newW = alignDown2(std::max(2, std::min(f.inferW,
+                                               static_cast<int>(f.width * s))));
+        offX = 0;
+        offY = 0;
+    }
 
     f.contentX = offX;
     f.contentY = offY;

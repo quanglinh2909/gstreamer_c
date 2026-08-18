@@ -1,9 +1,12 @@
 #ifndef IMAGE_INFERENCE_SERVICE_HPP
 #define IMAGE_INFERENCE_SERVICE_HPP
 
-// One-shot HTTP inference. Decodes a JPEG, runs the same stage-1 + optional
-// stage-2 pipeline as the live RTSP path, and returns the AiResult serialized
-// in the same JSON shape the Python consumer receives.
+// One-shot HTTP inference. Decodes a JPEG, runs the SAME model tree as the live
+// RTSP path (StageRunner), and returns the AiResult serialized in the same JSON
+// shape the Python consumer receives.
+//
+// Dùng chung StageRunner với AiJob là có chủ ý: /model-test phải cho ra đúng
+// cái mà camera sẽ cho ra, nếu không thì thử nghiệm vô nghĩa.
 
 #include <algorithm>
 #include <cstring>
@@ -18,11 +21,14 @@
 
 #include "ai/AiCatalog.hpp"
 #include "ai/AiResult.hpp"
+#include "ai/Config.hpp"
+#include "ai/FramePrep.hpp"
 #include "ai/FrameTypes.hpp"
 #include "ai/MaskBits.hpp"
 #include "ai/RgaConverter.hpp"
 #include "ai/ResultPublisher.hpp"
 #include "ai/models/AiModel.hpp"
+#include "ai/pipeline/StageRunner.hpp"
 #include "ai/transforms/Transform.hpp"
 
 #include "common.h"
@@ -30,13 +36,8 @@
 
 struct ImageInferenceRequest {
     std::vector<uint8_t> jpegBytes;
-    std::string modelPath;
-    std::string modelType;
-    std::string modelPath2;
-    std::string modelType2;
-    std::string transformData;
-    float primaryConf = 0.25f;
-    float secondaryConf = 0.0f;
+    // Cùng dạng cây tầng như job chạy thật (xem AiJobDto/StageRunner).
+    std::vector<cfg::AiStage> stages;
 };
 
 class ImageInferenceService {
@@ -47,12 +48,62 @@ public:
         std::lock_guard<std::mutex> lock(s_mutex);
 
         if (req.jpegBytes.empty()) throw std::runtime_error("empty image");
-        if (req.modelPath.empty() || req.modelType.empty()) {
-            throw std::runtime_error("modelPath and modelType are required");
-        }
+        if (req.stages.empty()) throw std::runtime_error("stages required");
 
         cv::Mat bgr = cv::imdecode(req.jpegBytes, cv::IMREAD_COLOR);
         if (bgr.empty()) throw std::runtime_error("JPEG decode failed");
+
+        // Cả cây phải nạp TRƯỚC khi xử lý ảnh: cỡ đầu vào của tầng 0 quyết định
+        // ảnh có phải thu nhỏ bằng CPU trước hay không (ngay dưới).
+        StageRunner runner;
+        std::string error;
+        if (!runner.init(req.stages, "inference", &error)) {
+            throw std::runtime_error(error);
+        }
+        AiModel* model1 = runner.rootModel();
+        if (!model1) throw std::runtime_error("stage 0 khong nap duoc");
+
+        // RGA chỉ THU NHỎ được tối đa 8 lần trong một lần blit. Model OCR cao
+        // 48px mà người dùng tải lên ảnh màn hình 1080p là 22 lần -> blit hỏng,
+        // endpoint trả "letterbox failed". Thu nhỏ trước bằng CPU (một lần,
+        // INTER_AREA) cho về trong tầm 4 lần rồi mới giao cho RGA.
+        //
+        // Giữ nguyên tỉ lệ: frontend vẽ box theo tỉ lệ origWidth/origHeight nên
+        // ảnh nhỏ đi không làm lệch khung, miễn là không bóp méo.
+        const int maxW = model1->inputWidth() * 4;
+        const int maxH = model1->inputHeight() * 4;
+        if (bgr.cols > maxW || bgr.rows > maxH) {
+            const double s = std::min(static_cast<double>(maxW) / bgr.cols,
+                                      static_cast<double>(maxH) / bgr.rows);
+            cv::Mat small;
+            cv::resize(bgr, small,
+                       cv::Size(std::max(16, static_cast<int>(bgr.cols * s)),
+                                std::max(16, static_cast<int>(bgr.rows * s))),
+                       0, 0, cv::INTER_AREA);
+            bgr = small;
+        }
+
+        // Chiều ngược lại: ảnh NHỎ hơn hẳn cỡ đầu vào thì phóng to sẵn bằng
+        // CPU (INTER_CUBIC) thay vì để RGA kéo giãn tuyến tính lúc letterbox.
+        //
+        // Cùng một ảnh biển số, chỉ khác cách phóng: RGA tự kéo 272px lên 640
+        // đọc ra '9G99' (0,69); phóng CUBIC 2 lần trước rồi mới đưa vào thì ra
+        // '9999' (0,96). Nét chữ nhỏ sống hay chết là ở khâu nội suy này.
+        //
+        // Chặn ở 4 lần: phóng hơn nữa chỉ là bịa thêm pixel, tốn thời gian mà
+        // không thêm thông tin.
+        const int minW = model1->inputWidth() / 2;
+        const int minH = model1->inputHeight() / 2;
+        if (bgr.cols < minW && bgr.rows < minH) {
+            const double s = std::min(4.0, std::min(static_cast<double>(minW) / bgr.cols,
+                                                    static_cast<double>(minH) / bgr.rows));
+            cv::Mat big;
+            cv::resize(bgr, big,
+                       cv::Size(static_cast<int>(bgr.cols * s),
+                                static_cast<int>(bgr.rows * s)),
+                       0, 0, cv::INTER_CUBIC);
+            bgr = big;
+        }
 
         // RGA requires RGB888 source width stride to be 16-aligned, and NV12
         // chroma is 2x2-subsampled so height must be even. Trim the input so
@@ -75,26 +126,6 @@ public:
             throw std::runtime_error("RGB->NV12 conversion failed");
         }
 
-        auto model1 = ai::createModel(req.modelType);
-        if (!model1) throw std::runtime_error("unknown modelType: " + req.modelType);
-        if (!model1->load(req.modelPath)) {
-            throw std::runtime_error("failed to load model: " + req.modelPath);
-        }
-
-        std::unique_ptr<AiModel> model2;
-        Transform* transform = nullptr;
-        if (!req.modelPath2.empty() && !req.modelType2.empty()) {
-            model2 = ai::createModel(req.modelType2);
-            if (!model2) throw std::runtime_error("unknown modelType2: " + req.modelType2);
-            if (!model2->load(req.modelPath2)) {
-                throw std::runtime_error("failed to load model2: " + req.modelPath2);
-            }
-            transform = ai::getTransform(req.transformData);
-            if (!transform) {
-                throw std::runtime_error("unknown transformData: " + req.transformData);
-            }
-        }
-
         Frame frame;
         frame.nv12 = nv12Buf.data();
         frame.width = origW;
@@ -105,8 +136,14 @@ public:
         frame.inferW = model1->inputWidth();
         frame.inferH = model1->inputHeight();
 
-        if (!rga::letterboxNv12ToRgb(frame, 114)) {
-            throw std::runtime_error("letterbox failed");
+        // Model tự khai kiểu nhét ảnh vào khung (xem FramePrep.hpp), y như
+        // đường RTSP giờ cũng dựng khung theo model tầng 0.
+        const FramePrep prep = model1->framePrep();
+        if (!rga::letterboxNv12ToRgb(frame, padColorFor(prep), prep)) {
+            throw std::runtime_error("letterbox failed: anh " + std::to_string(origW) +
+                                     "x" + std::to_string(origH) + " -> " +
+                                     std::to_string(frame.inferW) + "x" +
+                                     std::to_string(frame.inferH));
         }
 
         image_buffer_t img;
@@ -120,103 +157,15 @@ public:
         img.size = static_cast<int>(frame.rgb.size());
         img.fd = -1;
 
-        object_detect_result_list results;
-        std::memset(&results, 0, sizeof(results));
-        if (!model1->detect(img, results)) {
-            throw std::runtime_error("stage-1 detect failed");
-        }
-
         AiResult res;
         res.origWidth = origW;
         res.origHeight = origH;
 
-        for (int i = 0; i < results.count && i < OBJ_NUMB_MAX_SIZE; ++i) {
-            const object_detect_result& d = results.results[i];
-            if (d.prop < req.primaryConf) continue;
-
-            Detection det;
-            frame.inferToOrig(static_cast<float>(d.box.left),
-                              static_cast<float>(d.box.top), &det.x1, &det.y1);
-            frame.inferToOrig(static_cast<float>(d.box.right),
-                              static_cast<float>(d.box.bottom), &det.x2, &det.y2);
-            if (det.x2 <= det.x1 || det.y2 <= det.y1) continue;
-            det.score = d.prop;
-            det.classId = d.cls_id;
-
-            const int kpCount = d.keypoint_count < AI_POSE_KEYPOINT_NUM
-                                    ? d.keypoint_count
-                                    : AI_POSE_KEYPOINT_NUM;
-            for (int k = 0; k < kpCount; ++k) {
-                float ox, oy;
-                frame.inferToOrig(d.keypoints[k].x, d.keypoints[k].y, &ox, &oy);
-                det.keypoints.push_back(ox);
-                det.keypoints.push_back(oy);
-                det.keypoints.push_back(d.keypoints[k].score);
-            }
-
-            // Cùng lưới bit mask như pipeline RTSP — endpoint này hứa trả
-            // ĐÚNG JSON mà pipeline bắn ra, nên không được thiếu khoá `mask`.
-            if (results.seg_valid && results.seg_width > 0 && results.seg_height > 0) {
-                fillMaskBits(results, d, det);
-            }
-
-            if (model2) {
-                bool ok = runStage2(*model2, *transform, frame, det);
-                std::fprintf(stderr,
-                             "[infer] stage2 transform=%s ok=%d "
-                             "embedding=%zu children=%zu\n",
-                             transform->id().c_str(), int(ok),
-                             det.embedding.size(), det.children.size());
-            } else {
-                std::fprintf(stderr,
-                             "[infer] stage2 SKIPPED (modelPath2='%s' modelType2='%s')\n",
-                             req.modelPath2.c_str(), req.modelType2.c_str());
-            }
-
-            if (req.secondaryConf > 0.0f && !det.children.empty()) {
-                det.children.erase(
-                    std::remove_if(det.children.begin(), det.children.end(),
-                                   [&](const Detection& c) {
-                                       return c.score < req.secondaryConf;
-                                   }),
-                    det.children.end());
-            }
-
-            res.detections.push_back(std::move(det));
-        }
+        // Lọc lớp, ngưỡng điểm, cắt ảnh và chạy các tầng con: tất cả nằm trong
+        // StageRunner, y hệt đường RTSP.
+        runner.run(frame, img, res);
 
         return ResultPublisher::buildJson(res);
-    }
-
-private:
-    static bool runStage2(AiModel& model2, Transform& transform,
-                          const Frame& frame, Detection& det) {
-        TransformContext ctx;
-        ctx.frame = &frame;
-        ctx.det = &det;
-        ctx.keypoints = &det.keypoints;
-        ctx.targetW = model2.inputWidth();
-        ctx.targetH = model2.inputHeight();
-
-        std::vector<uint8_t> stageInput;
-        if (!transform.apply(ctx, stageInput)) {
-            std::fprintf(stderr, "[infer] transform.apply(%s) returned false\n",
-                         transform.id().c_str());
-            return false;
-        }
-
-        image_buffer_t img;
-        std::memset(&img, 0, sizeof(img));
-        img.width = ctx.targetW;
-        img.height = ctx.targetH;
-        img.width_stride = ctx.targetW;
-        img.height_stride = ctx.targetH;
-        img.format = IMAGE_FORMAT_RGB888;
-        img.virt_addr = stageInput.data();
-        img.size = static_cast<int>(stageInput.size());
-        img.fd = -1;
-
-        return model2.runStage2(img, det);
     }
 };
 

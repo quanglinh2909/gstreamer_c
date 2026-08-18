@@ -355,8 +355,14 @@ private:
             motionSink = [detector](const FramePtr& frame) { detector->submit(frame); };
         }
 
+        // Khung cho dò chuyển động khi không job nào tới hạn: mượn spec của job
+        // đầu tiên để khỏi phát sinh thêm một cỡ khung nữa; camera chỉ bật
+        // chuyển động thì dùng mặc định của FrameSpec.
+        FrameSpec motionSpec;
+        if (!group.jobs.empty()) motionSpec = group.jobs.front()->frameSpec();
+
         group.pipeline.reset(new AiCameraPipeline(
-            group.camera, kInferW, kInferH, kPadColor, jobPtrs, std::move(lookup),
+            group.camera, motionSpec, jobPtrs, std::move(lookup),
             std::move(motionSink)));
 
         for (auto& job : group.jobs) job->start();
@@ -384,9 +390,6 @@ private:
     }
 
     static constexpr const char* kSocketPath = "/tmp/ai_engine.sock";
-    static constexpr int kInferW = 640;
-    static constexpr int kInferH = 640;
-    static constexpr int kPadColor = 114;
 
     std::mutex m_mutex;
     bool m_started = false;

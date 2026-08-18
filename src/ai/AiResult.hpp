@@ -17,6 +17,11 @@ struct Detection {
     // Face embedding vector (empty for non-face jobs).
     std::vector<float> embedding;
 
+    // Readable name of classId when the model carries its own label table —
+    // today only OCR (the character this box holds). Empty for every other
+    // model, and then the JSON key is omitted entirely.
+    std::string text;
+
     // Segmentation mask for THIS detection, as a MASK_GRID×MASK_GRID bitmap
     // covering exactly the detection's bbox (bit set = pixel belongs to the
     // object). Empty unless the model is a *_seg one.
@@ -29,10 +34,24 @@ struct Detection {
     std::vector<uint8_t> maskBits;   // MASK_GRID*MASK_GRID/8 bytes, row-major
     static constexpr int MASK_GRID = 32;
 
-    // Stage-2 sub-detections produced when model 2 is itself a detector
-    // (e.g. OCR characters found inside this detection's crop). Coordinates
-    // are in stage-2 crop space. Empty for single-stage / embedding jobs.
+    // Sub-detections produced when a later stage is itself a detector (OCR
+    // characters inside a plate crop, a plate inside a car crop...).
+    // Toạ độ x1..y2 của chúng nằm trong KHÔNG GIAN ẢNH CẮT mà tầng đó nhìn
+    // thấy — giữ nguyên như trước để bộ ghép biển số bên Python không phải
+    // sửa gì.
     std::vector<Detection> children;
+
+    // Hộp của detection này trong hệ toạ độ KHUNG GỐC. Tầng 0 thì trùng
+    // x1..y2; với các tầng sau đây là chỗ duy nhất biết nó nằm đâu trong ảnh
+    // thật, và là thứ tầng kế tiếp dùng để cắt ảnh (cắt từ khung gốc chứ
+    // không cắt lại trên ảnh đã cắt — nét hơn hẳn).
+    float fx1 = 0, fy1 = 0, fx2 = 0, fy2 = 0;
+    bool hasFrameBox = false;
+
+    // Tầng nào sinh ra detection này (chỉ số trong cfg::AiJob::stages).
+    // Nhờ nó mà bên nhận phân biệt được "ký tự do model 3 đọc" với "chi tiết
+    // xe do model 4 phân loại" khi cả hai cùng treo dưới một hộp cha.
+    int stage = 0;
 };
 
 // One inference result for one frame of one AI job. Carries the structured

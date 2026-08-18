@@ -6,6 +6,7 @@
 
 #include <set>
 #include <string>
+#include <vector>
 
 namespace cfg {
 
@@ -16,28 +17,45 @@ struct Camera {
     bool enabled = true;
 };
 
-// One AI job: a model-1 detector, optionally cascaded into a model-2 stage.
-// classFilter picks which model-1 classes feed model-2; transform is the
-// alignment helper applied to each crop before model-2.
+// MỘT TẦNG của một job. Tầng 0 chạy trên cả khung hình; mọi tầng sau chạy
+// trên ảnh cắt ra từ từng detection của tầng cha (parent).
+//
+// Hai bộ lọc lớp, khác nhau và đều tuỳ chọn:
+//   * inputClasses — lọc ĐẦU VÀO: chỉ những detection của tầng cha mang lớp
+//     này mới được đưa vào tầng này. Đây là chỗ để "model 1 tìm ô tô, xe máy,
+//     xe tải, biển số; model 2 chỉ nhận biển số; model 3 chỉ nhận ba loại xe".
+//   * classFilter — lọc ĐẦU RA: giữ lại lớp nào trong kết quả của chính tầng
+//     này.
+// Rỗng = không lọc.
+struct AiStage {
+    std::string modelPath;
+    std::string modelType;
+    // Cách dựng ảnh đầu vào từ detection của tầng cha ("" = cắt thẳng theo hộp).
+    // Không dùng ở tầng 0 (tầng 0 nhận cả khung).
+    std::string transform;
+    std::set<int> inputClasses;
+    std::set<int> classFilter;
+    float conf = 0.25f;
+    // Chỉ số tầng cha trong mảng stages; -1 = chạy trên khung hình.
+    int parent = -1;
+};
+
+// Một job AI = một CÂY model chạy trên khung của một camera.
+//
+// KHÔNG còn khái niệm "model 1 / model 2": job nào cũng chỉ là một mảng tầng,
+// job một model là mảng một phần tử. Muốn thêm tầng thứ ba, thứ tư (đọc chữ
+// trong biển số đã cắt, phân biệt màu/hãng xe trên đúng những hộp xe) thì thêm
+// phần tử vào mảng, không phải sửa engine.
 struct AiJob {
     std::string jobId;
     std::string name;
     std::string cameraId;
     bool enabled = true;
-
-    std::string model1Path;       // rf_detect: backbone .rknn; head .onnx is "<stem>_detect.onnx" beside it
-    std::string model1Type;       // yolov8_detect | yolov8_pose | yolov8_seg | rf_detect
-    std::set<int> classFilter;    // empty => keep all classes
-
-    std::string model2Path;       // empty => single-stage job
-    std::string model2Type;       // face_recognition | yolov8_detect | ...
-    std::string transform;        // "" | align_face | align_plate
-
-    float primaryConf = 0.25f;
-    float secondaryConf = 0.25f;
     int maxFps = 0;               // 0 => run as fast as inference allows
 
-    bool hasModel2() const { return !model2Path.empty(); }
+    // Theo thứ tự chạy: phần tử 0 chạy trên cả khung, mọi phần tử sau trỏ về
+    // một tầng ĐỨNG TRƯỚC nó qua `parent`. StageRunner kiểm tra lại điều này.
+    std::vector<AiStage> stages;
 };
 
 // Parses a class filter string ("all" or csv like "0,2,5") into a set of ids.

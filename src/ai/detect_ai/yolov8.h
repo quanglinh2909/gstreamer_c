@@ -58,6 +58,11 @@ typedef struct rknn_app_context_t {
     // 1 = muốn zero-copy nhưng CHƯA gắn. Việc gắn phải hoãn tới sau lần
     // rknn_inputs_set ĐẦU TIÊN — xem arm_zero_copy_out trong yolov8.cc.
     int zc_want;
+
+    // Zero-copy ĐẦU VÀO cho model fp16 (xem rknn_in.h). Model fp16 buộc
+    // `rknn_inputs_set` đổi uint8 → fp16 bằng CPU mỗi lần gọi — 21 ms trên
+    // plate_det. NULL nghĩa là đi đường cũ.
+    struct RknnZeroCopyIn* zc_in;
 } rknn_app_context_t;
 
 #include "postprocess.h"
